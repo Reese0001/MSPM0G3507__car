@@ -1,23 +1,23 @@
 #include "delay.h"
 
-//´îÅäµÎ´ğ¶¨Ê±Æ÷ÊµÏÖµÄ¾«È·usÑÓÊ±
+//ä½¿ç”¨æ»´ç­”å®šæ—¶å™¨å®ç°çš„ç²¾ç¡®uså»¶æ—¶
 //Accurate us delay with tick timer
-void delay_us(unsigned long __us) 
+void delay_us(unsigned long __us)
 {
     uint32_t ticks;
     uint32_t told, tnow, tcnt = 38;
 
-    // ¼ÆËãĞèÒªµÄÊ±ÖÓÊı = ÑÓ³ÙÎ¢ÃëÊı * Ã¿Î¢ÃëµÄÊ±ÖÓÊı
+    // è®¡ç®—éœ€è¦çš„æ—¶é’Ÿæ•° = å»¶è¿Ÿå¾®ç§’æ•° * æ¯å¾®ç§’æ—¶é’Ÿæ•°
 	// Calculate the number of clocks required = delay microseconds * number of clocks per microsecond
     ticks = __us * (80000000 / 1000000);
 
-    // »ñÈ¡µ±Ç°µÄSysTickÖµ
+    // è·å–å½“å‰çš„SysTickå€¼
 	// Get the current SysTick value
     told = SysTick->VAL;
 
     while (1)
     {
-        // ÖØ¸´Ë¢ĞÂ»ñÈ¡µ±Ç°µÄSysTickÖµ
+        // åå¤åˆ·æ–°è·å–å½“å‰çš„SysTickå€¼
 		// Repeatedly refresh to get the current SysTick value
         tnow = SysTick->VAL;
 
@@ -30,16 +30,16 @@ void delay_us(unsigned long __us)
 
             told = tnow;
 
-            // Èç¹û´ïµ½ÁËĞèÒªµÄÊ±ÖÓÊı£¬¾ÍÍË³öÑ­»·
+            // å¦‚æœè¾¾åˆ°éœ€è¦çš„æ—¶é’Ÿæ•°é‡å°±é€€å‡ºå¾ªç¯
 			// If the required number of clocks is reached, exit the loop
             if (tcnt >= ticks)
                 break;
         }
     }
 }
-//´îÅäµÎ´ğ¶¨Ê±Æ÷ÊµÏÖµÄ¾«È·msÑÓÊ±
+//ä½¿ç”¨æ»´ç­”å®šæ—¶å™¨å®ç°çš„ç²¾ç¡®mså»¶æ—¶
 //Accurate ms delay with tick timer
-void delay_ms(unsigned long ms) 
+void delay_ms(unsigned long ms)
 {
 	delay_us( ms * 1000 );
 }

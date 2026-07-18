@@ -1,66 +1,31 @@
-/*
- * empty.c
- *
- * MPU6050 I2C扫描测试 - 尝试两个地址
- */
-
 #include "ti_msp_dl_config.h"
-#include "usart.h"
 #include "delay.h"
-#include "bsp_mpu6050.h"
-
-void PrintStr(char *str)
-{
-    while(*str) { USART_SendData(*str++); }
-}
-
-void PrintHex(uint8_t num)
-{
-    char hex[] = "0123456789ABCDEF";
-    USART_SendData(hex[(num >> 4) & 0x0F]);
-    USART_SendData(hex[num & 0x0F]);
-}
+#include "app_irtracking.h"
+#include "app_motor.h"
+#include "usart.h"
+#include "timer.h"
+#include "motor_safety.h"
+#include "bsp_motor_usart.h"
 
 int main(void)
 {
     SYSCFG_DL_init();
-    USART_Init();
+    Motor_Usart_init();
+    Timer_Init();
+    Motor_Safety_Init();
 
-    PrintStr("\r\n=== MPU6050 I2C Scan ===\r\n");
-
-    unsigned char Re[2] = {0};
-
-    // 尝试地址 0x68 (AD0接地)
-    PrintStr("Try addr 0x68: ");
-    MPU6050_ReadData(0x68, 0x75, 1, Re);
-    PrintHex(Re[0]);
-    if(Re[0] == 0x68)
-    {
-        PrintStr(" -> Found!\r\n");
-    }
-    else
-    {
-        PrintStr(" -> Not found\r\n");
-    }
-
-    // 尝试地址 0x69 (AD0接VCC)
-    Re[0] = 0;
-    PrintStr("Try addr 0x69: ");
-    MPU6050_ReadData(0x69, 0x75, 1, Re);
-    PrintHex(Re[0]);
-    if(Re[0] == 0x68)
-    {
-        PrintStr(" -> Found!\r\n");
-    }
-    else
-    {
-        PrintStr(" -> Not found\r\n");
-    }
-
-    PrintStr("\r\nDone.\r\n");
+    /* L 型 520 电机参数；配置期间保持零速，随后才允许软启动。 */
+    Set_Motor(5);
+    Motor_Safety_Arm();
 
     while(1)
     {
-        delay_ms(1000);
+        // 执行循迹
+        LineWalking();
+
+        Motor_Safety_Service();
+
+        // 短暂延时
+        delay_ms(10);
     }
 }

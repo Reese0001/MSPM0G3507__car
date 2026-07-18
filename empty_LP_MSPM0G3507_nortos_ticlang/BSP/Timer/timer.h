@@ -7,6 +7,7 @@
 #include "buzzer.h"
 
 uint32_t Get_Time(void);
+void Timer_Init(void);
 
 
 #endif

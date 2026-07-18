@@ -1,33 +1,33 @@
 #include "timer.h"
+#include "motor_safety.h"
 
 volatile uint32_t systick_counter = 0;
+
+void Timer_Init(void)
+{
+    NVIC_ClearPendingIRQ(TIMER_0_INST_INT_IRQN);
+    NVIC_EnableIRQ(TIMER_0_INST_INT_IRQN);
+    DL_TimerG_startCounter(TIMER_0_INST);
+}
 
 
 void TIMER_0_INST_IRQHandler(void)
 {
     switch( DL_TimerG_getPendingInterrupt(TIMER_0_INST) )
     {
-        case DL_TIMER_IIDX_ZERO://Èç¹ûÊÇ0Òç³öÖĞ¶Ï  If it is a 0 overflow interrupt
+        case DL_TIMER_IIDX_ZERO://å¦‚æœæ˜¯0æº¢å‡ºä¸­æ–­  If it is a 0 overflow interrupt
             Buzzer_Handle();
-            systick_counter++; // Ã¿1ms×Ô¶¯+1      +1 per sencond
+            systick_counter++; // æ¯1msè‡ªåŠ¨+1      +1 per second
+            Motor_Safety_Tick1ms();
             break;
 
         default:
             break;
     }
-    
+
 }
 
-uint32_t Get_Time(void)    
+uint32_t Get_Time(void)
 {
     return systick_counter;
 }
-
-
-
-
-
-
-
-
-

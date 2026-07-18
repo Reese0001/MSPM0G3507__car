@@ -13,9 +13,9 @@
 
 
 typedef struct {
-    uint32_t interval;    // ÈÎÎñÖ´ĞĞ¼ä¸ô£¨µ¥Î»£ºms£©   Task execution interval (unit: ms)
-    uint32_t last_call;    // ÉÏ´ÎÖ´ĞĞÊ±¼ä´Á    Last execution time stamp
-    void (*task)(void);    // ÈÎÎñº¯ÊıÖ¸Õë  Task function pointer
+    uint32_t interval;    // ä»»åŠ¡æ‰§è¡Œé—´éš”ï¼ˆå•ä½ï¼šmsï¼‰   Task execution interval (unit: ms)
+    uint32_t last_call;    // ä¸Šæ¬¡æ‰§è¡Œæ—¶é—´æˆ³    Last execution time stamp
+    void (*task)(void);    // ä»»åŠ¡å‡½æ•°æŒ‡é’ˆ  Task function pointer
 } Task;
 
 void Scheduler_Run(void);

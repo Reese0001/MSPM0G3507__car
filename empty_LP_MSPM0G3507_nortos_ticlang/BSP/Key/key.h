@@ -9,28 +9,28 @@
 #include "buzzer.h"
 #include "questions.h"
 
-/* °´¼üÊÂ¼şÀàĞÍ¶¨Òå - Key Event Type Definitions */
+/* æŒ‰é”®äº‹ä»¶ç±»å‹å®šä¹‰ - Key Event Type Definitions */
 typedef enum {
-    KEY_EVENT_NONE,     // ÎŞÊÂ¼ş / No event
-    KEY_EVENT_SHORT,    // ¶Ì°´ÊÂ¼ş / Short press event
-    KEY_EVENT_LONG      // ³¤°´ÊÂ¼ş / Long press event
+    KEY_EVENT_NONE,     // æ— äº‹ä»¶ / No event
+    KEY_EVENT_SHORT,    // çŸ­æŒ‰äº‹ä»¶ / Short press event
+    KEY_EVENT_LONG      // é•¿æŒ‰äº‹ä»¶ / Long press event
 } KeyEvent;
 
-/* °´¼ü×´Ì¬»ú×´Ì¬ - Key State Machine States */
+/* æŒ‰é”®çŠ¶æ€æœºçŠ¶æ€ - Key State Machine States */
 typedef enum {
-    KEY_STATE_RELEASED,     // °´¼üÊÍ·Å×´Ì¬ / Key is released
-    KEY_STATE_DEBOUNCE,     // Ïû¶¶¼ì²â×´Ì¬ / Debounce checking
-    KEY_STATE_PRESSED,      // È·ÈÏ°´ÏÂ×´Ì¬ / Key is confirmed pressed
-    KEY_STATE_LONG          // ³¤°´ÒÑ´¥·¢×´Ì¬ / Long press triggered
+    KEY_STATE_RELEASED,     // æŒ‰é”®é‡Šæ”¾çŠ¶æ€ / Key is released
+    KEY_STATE_DEBOUNCE,     // æ¶ˆæŠ–æ£€æµ‹çŠ¶æ€ / Debounce checking
+    KEY_STATE_PRESSED,      // ç¡®è®¤æŒ‰ä¸‹çŠ¶æ€ / Key is confirmed pressed
+    KEY_STATE_LONG          // é•¿æŒ‰å·²è§¦å‘çŠ¶æ€ / Long press triggered
 } KeyState;
 
-/* °´¼ü¾ä±ú½á¹¹Ìå - Key Handle Structure */
+/* æŒ‰é”®å¤„ç†ç»“æ„ä½“ - Key Handle Structure */
 typedef struct {
-    GPIO_Regs* GPIOx;    // GPIO¶Ë¿Ú / GPIO Port (e.g., GPIOA)
-    uint32_t GPIO_Pin;      // GPIOÒı½Å / GPIO Pin (e.g., GPIO_PIN_0)
-    KeyState state;         // µ±Ç°×´Ì¬ / Current state
-    uint32_t pressTime;     // °´ÏÂÊ±¼ä´Á£¨µ¥Î»£ºms£© / Press timestamp (ms)
-    uint32_t debounceTime;  // Ïû¶¶¼ÆÊ±Æğµã£¨µ¥Î»£ºms£© / Debounce start time (ms)
+    GPIO_Regs* GPIOx;    // GPIOç«¯å£ / GPIO Port (e.g., GPIOA)
+    uint32_t GPIO_Pin;      // GPIOå¼•è„š / GPIO Pin (e.g., GPIO_PIN_0)
+    KeyState state;         // å½“å‰çŠ¶æ€ / Current state
+    uint32_t pressTime;     // æŒ‰ä¸‹æ—¶é—´æˆ³ï¼ˆå•ä½ï¼šmsï¼‰ / Press timestamp (ms)
+    uint32_t debounceTime;  // æ¶ˆæŠ–èµ·å§‹ç‚¹ï¼ˆå•ä½ï¼šmsï¼‰ / Debounce start time (ms)
 } Key_t;
 
 KeyEvent Key_Scan(Key_t* key, uint32_t currentTime, uint32_t longPressThreshold);

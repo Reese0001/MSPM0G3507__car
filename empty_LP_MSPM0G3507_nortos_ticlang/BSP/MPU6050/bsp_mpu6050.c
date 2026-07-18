@@ -2,11 +2,11 @@
 #include "stdio.h"
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºI2C_Start
- * º¯ Êı Ëµ Ã÷£ºIICÆğÊ¼Ê±Ğò
- * º¯ Êı ĞÎ ²Î£ºÎŞ
- * º¯ Êı ·µ »Ø£ºÎŞ
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šI2C_Start
+ * åŠŸèƒ½è¯´æ˜ï¼šIICå¯åŠ¨æ—¶åº
+ * è¾“å…¥å‚æ•°ï¼šæ— 
+ * è¿”å›å€¼ï¼šæ— 
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: I2C_Start
  * Function description: IIC start timing
  * Function parameter: None
@@ -20,15 +20,15 @@ void I2C_Start(void)
 	SCL(1);
 	delay_us(1);
 	SDA(0);
-	delay_us(1);	   
+	delay_us(1);
 	SCL(0);
 }
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºI2C_Stop
- * º¯ Êı Ëµ Ã÷£ºIICÍ£Ö¹ĞÅºÅ
- * º¯ Êı ĞÎ ²Î£ºÎŞ
- * º¯ Êı ·µ »Ø£ºÎŞ
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šI2C_Stop
+ * åŠŸèƒ½è¯´æ˜ï¼šIICåœæ­¢ä¿¡å·
+ * è¾“å…¥å‚æ•°ï¼šæ— 
+ * è¿”å›å€¼ï¼šæ— 
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: I2C_Stop
  * Function description: IIC stop signal
  * Function parameters: None
@@ -40,20 +40,20 @@ void I2C_Stop(void)
         SDA_OUT();
         SCL(0);
         SDA(0);
-        
+
         SCL(1);
         delay_us(5);
         SDA(1);
         delay_us(5);
-        
+
 }
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºI2C_Send_Ack
- * º¯ Êı Ëµ Ã÷£ºÖ÷»ú·¢ËÍÓ¦´ğ»òÕß·ÇÓ¦´ğĞÅºÅ
- * º¯ Êı ĞÎ ²Î£º0·¢ËÍÓ¦´ğ  1·¢ËÍ·ÇÓ¦´ğ
- * º¯ Êı ·µ »Ø£ºÎŞ
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šI2C_Send_Ack
+ * åŠŸèƒ½è¯´æ˜ï¼šä¸»æœºå‘é€åº”ç­”æˆ–éåº”ç­”ä¿¡å·
+ * è¾“å…¥å‚æ•°ï¼š0å‘é€åº”ç­”  1å‘é€éåº”ç­”
+ * è¿”å›å€¼ï¼šæ— 
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: I2C_Send_Ack
  * Function description: The host sends a response or non-response signal
  * Function parameter: 0 sends a response 1 sends a non-response
@@ -75,11 +75,11 @@ void I2C_Send_Ack(unsigned char ack)
 }
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºI2C_WaitAck
- * º¯ Êı Ëµ Ã÷£ºµÈ´ı´Ó»úÓ¦´ğ
- * º¯ Êı ĞÎ ²Î£ºÎŞ
- * º¯ Êı ·µ »Ø£º0ÓĞÓ¦´ğ  1³¬Ê±ÎŞÓ¦´ğ
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šI2C_WaitAck
+ * åŠŸèƒ½è¯´æ˜ï¼šç­‰å¾…ä»æœºåº”ç­”
+ * è¾“å…¥å‚æ•°ï¼šæ— 
+ * è¿”å›å€¼ï¼š0åº”ç­”  1è¶…æ—¶æ— åº”ç­”
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: I2C_WaitAck
  * Function description: Wait for slave response
  * Function parameter: None
@@ -88,20 +88,20 @@ void I2C_Send_Ack(unsigned char ack)
 ******************************************************************/
 unsigned char I2C_WaitAck(void)
 {
-        
+
         char ack = 0;
         unsigned char ack_flag = 10;
         SCL(0);
         SDA(1);
         SDA_IN();
-        
+
         SCL(1);
         while( (SDA_GET()==1) && ( ack_flag ) )
         {
                 ack_flag--;
                 delay_us(5);
         }
-        
+
         if( ack_flag <= 0 )
         {
                 I2C_Stop();
@@ -116,11 +116,11 @@ unsigned char I2C_WaitAck(void)
 }
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºSend_Byte
- * º¯ Êı Ëµ Ã÷£ºĞ´ÈëÒ»¸ö×Ö½Ú
- * º¯ Êı ĞÎ ²Î£ºdatÒªĞ´ÈËµÄÊı¾İ
- * º¯ Êı ·µ »Ø£ºÎŞ
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šSend_Byte
+ * åŠŸèƒ½è¯´æ˜ï¼šå†™å…¥ä¸€ä¸ªå­—èŠ‚
+ * è¾“å…¥å‚æ•°ï¼šdatè¦å†™å…¥çš„æ•°æ®
+ * è¿”å›å€¼ï¼šæ— 
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: Send_Byte
  * Function description: Write a byte
  * Function parameter: dat data to be written
@@ -131,8 +131,8 @@ void Send_Byte(uint8_t dat)
 {
         int i = 0;
         SDA_OUT();
-        SCL(0);//À­µÍÊ±ÖÓ¿ªÊ¼Êı¾İ´«Êä Pull the clock low to start data transmission
-        
+        SCL(0);//æ‹‰ä½æ—¶é’Ÿå¼€å§‹æ•°æ®ä¼ è¾“ Pull the clock low to start data transmission
+
         for( i = 0; i < 8; i++ )
         {
                 SDA( (dat & 0x80) >> 7 );
@@ -142,15 +142,15 @@ void Send_Byte(uint8_t dat)
                 SCL(0);
                 delay_us(5);
                 dat<<=1;
-        }        
+        }
 }
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºRead_Byte
- * º¯ Êı Ëµ Ã÷£ºIIC¶ÁÊ±Ğò
- * º¯ Êı ĞÎ ²Î£ºÎŞ
- * º¯ Êı ·µ »Ø£º¶Áµ½µÄÊı¾İ
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šRead_Byte
+ * åŠŸèƒ½è¯´æ˜ï¼šIICè¯»æ—¶åº
+ * è¾“å…¥å‚æ•°ï¼šæ— 
+ * è¿”å›å€¼ï¼šè¯»å–åˆ°çš„æ•°æ®
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: Read_Byte
  * Function description: IIC read timing
  * Function parameters: None
@@ -160,7 +160,7 @@ void Send_Byte(uint8_t dat)
 unsigned char Read_Byte(void)
 {
         unsigned char i,receive=0;
-        SDA_IN();//SDAÉèÖÃÎªÊäÈë SDA is set as input
+        SDA_IN();//SDAè®¾ç½®ä¸ºè¾“å…¥ SDA is set as input
     for(i=0;i<8;i++ )
         {
         SCL(0);
@@ -169,21 +169,21 @@ unsigned char Read_Byte(void)
         delay_us(5);
         receive<<=1;
         if( SDA_GET() )
-        {        
-            receive|=1;   
+        {
+            receive|=1;
         }
-        delay_us(5); 
-    }                                         
-        SCL(0); 
+        delay_us(5);
+    }
+        SCL(0);
   return receive;
 }
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºMPU6050_WriteReg
- * º¯ Êı Ëµ Ã÷£ºIICÁ¬ĞøĞ´ÈëÊı¾İ
- * º¯ Êı ĞÎ ²Î£ºaddrÆ÷¼şµØÖ· regaddr¼Ä´æÆ÷µØÖ· numÒªĞ´ÈëµÄ³¤¶È regdataĞ´ÈëµÄÊı¾İµØÖ·
- * º¯ Êı ·µ »Ø£º0=¶ÁÈ¡³É¹¦   ÆäËû=¶ÁÈ¡Ê§°Ü
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šMPU6050_WriteReg
+ * åŠŸèƒ½è¯´æ˜ï¼šIICè¿ç»­å†™å…¥æ•°æ®
+ * è¾“å…¥å‚æ•°ï¼šaddrè®¾å¤‡åœ°å€ regaddrå¯„å­˜å™¨åœ°å€ numè¦å†™çš„é•¿åº¦ regdataå†™å…¥æ•°æ®çš„åœ°å€
+ * è¿”å›å€¼ï¼š0=è¯»å–æˆåŠŸ   å…¶ä»–=è¯»å–å¤±è´¥
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: MPU6050_WriteReg
  * Function description: IIC writes data continuously
  * Function parameters: addr device address regaddr register address num length to be written regdata data address to be written
@@ -198,23 +198,23 @@ char MPU6050_WriteReg(uint8_t addr,uint8_t regaddr,uint8_t num,uint8_t *regdata)
         if( I2C_WaitAck() == 1 ) {I2C_Stop();return 1;}
         Send_Byte(regaddr);
         if( I2C_WaitAck() == 1 ) {I2C_Stop();return 2;}
-    
+
         for(i=0;i<num;i++)
     {
         Send_Byte(regdata[i]);
         if( I2C_WaitAck() == 1 ) {I2C_Stop();return (3+i);}
-    }        
+    }
         I2C_Stop();
     return 0;
 }
 
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºMPU6050_ReadData
- * º¯ Êı Ëµ Ã÷£ºIICÁ¬Ğø¶ÁÈ¡Êı¾İ
- * º¯ Êı ĞÎ ²Î£ºaddrÆ÷¼şµØÖ· regaddr¼Ä´æÆ÷µØÖ· numÒª¶ÁÈ¡µÄ³¤¶È Read¶ÁÈ¡µ½µÄÊı¾İÒª´æ´¢µÄµØÖ·
- * º¯ Êı ·µ »Ø£º0=¶ÁÈ¡³É¹¦   ÆäËû=¶ÁÈ¡Ê§°Ü 
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šMPU6050_ReadData
+ * åŠŸèƒ½è¯´æ˜ï¼šIICè¿ç»­è¯»å–æ•°æ®
+ * è¾“å…¥å‚æ•°ï¼šaddrè®¾å¤‡åœ°å€ regaddrå¯„å­˜å™¨åœ°å€ numè¦è¯»å–çš„é•¿åº¦ Readè¯»å–åˆ°çš„æ•°æ®è¦å­˜å‚¨çš„åœ°å€
+ * è¿”å›å€¼ï¼š0=è¯»å–æˆåŠŸ   å…¶ä»–=è¯»å–å¤±è´¥
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: MPU6050_ReadData
  * Function description: IIC reads data continuously
  * Function parameters: addr device address regaddr register address num length to read Read address where the read data is to be stored
@@ -229,62 +229,62 @@ char MPU6050_ReadData(uint8_t addr, uint8_t regaddr,uint8_t num,uint8_t* Read)
         if( I2C_WaitAck() == 1 ) {I2C_Stop();return 1;}
         Send_Byte(regaddr);
         if( I2C_WaitAck() == 1 ) {I2C_Stop();return 2;}
-        
+
         I2C_Start();
         Send_Byte((addr<<1)|1);
         if( I2C_WaitAck() == 1 ) {I2C_Stop();return 3;}
-        
+
         for(i=0;i<(num-1);i++){
                 Read[i]=Read_Byte();
                 I2C_Send_Ack(0);
         }
         Read[i]=Read_Byte();
-        I2C_Send_Ack(1);         
+        I2C_Send_Ack(1);
         I2C_Stop();
         return 0;
 }
 
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºMPU_Set_Gyro_Fsr
- * º¯ Êı Ëµ Ã÷£ºÉèÖÃMPU6050ÍÓÂİÒÇ´«¸ĞÆ÷ÂúÁ¿³Ì·¶Î§
- * º¯ Êı ĞÎ ²Î£ºfsr:0,¡À250dps;1,¡À500dps;2,¡À1000dps;3,¡À2000dps
- * º¯ Êı ·µ »Ø£º0,ÉèÖÃ³É¹¦  ÆäËû,ÉèÖÃÊ§°Ü
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šMPU_Set_Gyro_Fsr
+ * åŠŸèƒ½è¯´æ˜ï¼šè®¾ç½®MPU6050é™€èºä»ªä¼ æ„Ÿå™¨çš„é‡ç¨‹èŒƒå›´
+ * è¾“å…¥å‚æ•°ï¼šfsr:0,Â±250dps;1,Â±500dps;2,Â±1000dps;3,Â±2000dps
+ * è¿”å›å€¼ï¼š0,è®¾ç½®æˆåŠŸ  å…¶ä»–,è®¾ç½®å¤±è´¥
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: MPU_Set_Gyro_Fsr
  * Function description: Set the full scale range of the MPU6050 gyroscope sensor
- * Function parameters: fsr: 0, ¡À250dps; 1, ¡À500dps; 2, ¡À1000dps; 3, ¡À2000dps
+ * Function parameters: fsr: 0, Â±250dps; 1, Â±500dps; 2, Â±1000dps; 3, Â±2000dps
  * Function return: 0, setting successful Others, setting failed
  * Notes: None
 ******************************************************************/
 uint8_t MPU_Set_Gyro_Fsr(uint8_t fsr)
 {
-        return MPU6050_WriteReg(0x68,MPU_GYRO_CFG_REG,1,(uint8_t*)(fsr<<3)); //ÉèÖÃÍÓÂİÒÇÂúÁ¿³Ì·¶Î§ Set the gyroscope full-scale range
-}    
+        return MPU6050_WriteReg(0x68,MPU_GYRO_CFG_REG,1,(uint8_t*)(fsr<<3)); //è®¾ç½®é™€èºä»ªçš„é‡ç¨‹èŒƒå›´ Set the gyroscope full-scale range
+}
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºMPU_Set_Accel_Fsr
- * º¯ Êı Ëµ Ã÷£ºÉèÖÃMPU6050¼ÓËÙ¶È´«¸ĞÆ÷ÂúÁ¿³Ì·¶Î§
- * º¯ Êı ĞÎ ²Î£ºfsr:0,¡À2g;1,¡À4g;2,¡À8g;3,¡À16g
- * º¯ Êı ·µ »Ø£º0,ÉèÖÃ³É¹¦  ÆäËû,ÉèÖÃÊ§°Ü
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šMPU_Set_Accel_Fsr
+ * åŠŸèƒ½è¯´æ˜ï¼šè®¾ç½®MPU6050åŠ é€Ÿåº¦ä¼ æ„Ÿå™¨çš„é‡ç¨‹èŒƒå›´
+ * è¾“å…¥å‚æ•°ï¼šfsr:0,Â±2g;1,Â±4g;2,Â±8g;3,Â±16g
+ * è¿”å›å€¼ï¼š0,è®¾ç½®æˆåŠŸ  å…¶ä»–,è®¾ç½®å¤±è´¥
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: MPU_Set_Accel_Fsr
  * Function description: Set the full scale range of the MPU6050 acceleration sensor
- * Function parameters: fsr: 0, ¡À2g; 1, ¡À4g; 2, ¡À8g; 3, ¡À16g
+ * Function parameters: fsr: 0, Â±2g; 1, Â±4g; 2, Â±8g; 3, Â±16g
  * Function return: 0, setting successful Others, setting failed
  * Notes: None
 ******************************************************************/
 uint8_t MPU_Set_Accel_Fsr(uint8_t fsr)
 {
-        return MPU6050_WriteReg(0x68,MPU_ACCEL_CFG_REG,1,(uint8_t*)(fsr<<3)); //ÉèÖÃ¼ÓËÙ¶È´«¸ĞÆ÷ÂúÁ¿³Ì·¶Î§   Set the full-scale range of the accelerometer
+        return MPU6050_WriteReg(0x68,MPU_ACCEL_CFG_REG,1,(uint8_t*)(fsr<<3)); //è®¾ç½®åŠ é€Ÿåº¦ä¼ æ„Ÿå™¨çš„é‡ç¨‹èŒƒå›´   Set the full-scale range of the accelerometer
 }
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºMPU_Set_LPF
- * º¯ Êı Ëµ Ã÷£ºÉèÖÃMPU6050µÄÊı×ÖµÍÍ¨ÂË²¨Æ÷
- * º¯ Êı ĞÎ ²Î£ºlpf:Êı×ÖµÍÍ¨ÂË²¨ÆµÂÊ(Hz)
- * º¯ Êı ·µ »Ø£º0,ÉèÖÃ³É¹¦  ÆäËû,ÉèÖÃÊ§°Ü
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šMPU_Set_LPF
+ * åŠŸèƒ½è¯´æ˜ï¼šè®¾ç½®MPU6050çš„æ•°å­—ä½é€šæ»¤æ³¢å™¨
+ * è¾“å…¥å‚æ•°ï¼šlpf:æ•°å­—ä½é€šæ»¤æ³¢é¢‘ç‡(Hz)
+ * è¿”å›å€¼ï¼š0,è®¾ç½®æˆåŠŸ  å…¶ä»–,è®¾ç½®å¤±è´¥
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: MPU_Set_LPF
  * Function description: Set the digital low-pass filter of MPU6050
  * Function parameter: lpf: digital low-pass filter frequency (Hz)
@@ -294,21 +294,21 @@ uint8_t MPU_Set_Accel_Fsr(uint8_t fsr)
 uint8_t MPU_Set_LPF(uint16_t lpf)
 {
         uint8_t data=0;
-        
+
         if(lpf>=188)data=1;
         else if(lpf>=98)data=2;
         else if(lpf>=42)data=3;
         else if(lpf>=20)data=4;
         else if(lpf>=10)data=5;
-        else data=6; 
-    return data=MPU6050_WriteReg(0x68,MPU_CFG_REG,1,&data);//ÉèÖÃÊı×ÖµÍÍ¨ÂË²¨Æ÷   Setting the digital low-pass filter
+        else data=6;
+    return data=MPU6050_WriteReg(0x68,MPU_CFG_REG,1,&data);//è®¾ç½®æ•°å­—ä½é€šæ»¤æ³¢å™¨   Setting the digital low-pass filter
 }
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºMPU_Set_Rate
- * º¯ Êı Ëµ Ã÷£ºÉèÖÃMPU6050µÄ²ÉÑùÂÊ(¼Ù¶¨Fs=1KHz)
- * º¯ Êı ĞÎ ²Î£ºrate:4~1000(Hz)  ³õÊ¼»¯ÖĞrateÈ¡50
- * º¯ Êı ·µ »Ø£º0,ÉèÖÃ³É¹¦  ÆäËû,ÉèÖÃÊ§°Ü
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šMPU_Set_Rate
+ * åŠŸèƒ½è¯´æ˜ï¼šè®¾ç½®MPU6050çš„é‡‡æ ·ç‡(å‡å®šFs=1KHz)
+ * è¾“å…¥å‚æ•°ï¼šrate:4~1000(Hz)  åˆå§‹åŒ–æ—¶rateå–50
+ * è¿”å›å€¼ï¼š0,è®¾ç½®æˆåŠŸ  å…¶ä»–,è®¾ç½®å¤±è´¥
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: MPU_Set_Rate
  * Function description: Set the sampling rate of MPU6050 (assuming Fs=1KHz)
  * Function parameter: rate: 4~1000 (Hz) Initialization rate is 50
@@ -321,17 +321,17 @@ uint8_t MPU_Set_Rate(uint16_t rate)
         if(rate>1000)rate=1000;
         if(rate<4)rate=4;
         data=1000/rate-1;
-        data=MPU6050_WriteReg(0x68,MPU_SAMPLE_RATE_REG,1,&data);        //ÉèÖÃÊı×ÖµÍÍ¨ÂË²¨Æ÷ Setting the digital low-pass filter
-         return MPU_Set_LPF(rate/2);            //×Ô¶¯ÉèÖÃLPFÎª²ÉÑùÂÊµÄÒ»°ë Automatically set LPF to half the sampling rate
+        data=MPU6050_WriteReg(0x68,MPU_SAMPLE_RATE_REG,1,&data);        //è®¾ç½®æ•°å­—ä½é€šæ»¤æ³¢å™¨ Setting the digital low-pass filter
+         return MPU_Set_LPF(rate/2);            //è‡ªåŠ¨è®¾ç½®LPFä¸ºé‡‡æ ·ç‡çš„ä¸€åŠ Automatically set LPF to half the sampling rate
 }
 
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºMPU6050ReadGyro
- * º¯ Êı Ëµ Ã÷£º¶ÁÈ¡ÍÓÂİÒÇÊı¾İ
- * º¯ Êı ĞÎ ²Î£ºÍÓÂİÒÇÊı¾İ´æ´¢µØÖ· 
- * º¯ Êı ·µ »Ø£ºÎŞ
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šMPU6050ReadGyro
+ * åŠŸèƒ½è¯´æ˜ï¼šè¯»å–é™€èºä»ªæ•°æ®
+ * è¾“å…¥å‚æ•°ï¼šé™€èºä»ªæ•°æ®å­˜å‚¨åœ°å€
+ * è¿”å›å€¼ï¼šæ— 
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: MPU6050ReadGyro
  * Function description: Read gyroscope data
  * Function parameter: Gyroscope data storage address
@@ -342,14 +342,14 @@ void MPU6050ReadGyro(short *gyroData)
 {
         uint8_t buf[6];
         uint8_t reg = 0;
-        //MPU6050_GYRO_OUT = MPU6050ÍÓÂİÒÇÊı¾İ¼Ä´æÆ÷µØÖ·
-        //ÍÓÂİÒÇÊı¾İÊä³ö¼Ä´æÆ÷×Ü¹²ÓÉ6¸ö¼Ä´æÆ÷×é³É£¬
-        //Êä³öX/Y/ZÈı¸öÖáµÄÍÓÂİÒÇ´«¸ĞÆ÷Êı¾İ£¬¸ß×Ö½ÚÔÚÇ°£¬µÍ×Ö½ÚÔÚºó¡£
-        //Ã¿Ò»¸öÖá16Î»£¬°´Ë³ĞòÎªxyz
-				//MPU6050_GYRO_OUT = MPU6050 gyroscope data register address
-				//The gyroscope data output register consists of 6 registers in total,
-				//Output the gyroscope sensor data of the three axes X/Y/Z, with the high byte in front and the low byte in the back.
-				//Each axis is 16 bits, in order of xyz
+        //MPU6050_GYRO_OUT = MPU6050é™€èºä»ªæ•°æ®å¯„å­˜å™¨åœ°å€
+        //é™€èºä»ªæ•°æ®è¾“å‡ºå¯„å­˜å™¨æ€»å…±ç”±6ä¸ªå¯„å­˜å™¨ç»„æˆï¼Œ
+        //è¾“å‡ºX/Y/Zä¸‰ä¸ªè½´çš„é™€èºä»ªä¼ æ„Ÿå™¨æ•°æ®ï¼Œé«˜å­—èŠ‚åœ¨å‰ï¼Œä½å­—èŠ‚åœ¨å
+        //æ¯ä¸€ä¸ªè½´16ä½ï¼Œé¡ºåºä¸ºxyz
+		//MPU6050_GYRO_OUT = MPU6050 gyroscope data register address
+		//The gyroscope data output register consists of 6 registers in total,
+		//Output the gyroscope sensor data of the three axes X/Y/Z, with the high byte in front and the low byte in the back.
+		//Each axis is 16 bits, in order of xyz
         reg = MPU6050_ReadData(0x68,MPU6050_GYRO_OUT,6,buf);
         if( reg == 0 )
         {
@@ -360,11 +360,11 @@ void MPU6050ReadGyro(short *gyroData)
 }
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºMPU6050ReadAcc
- * º¯ Êı Ëµ Ã÷£º¶ÁÈ¡¼ÓËÙ¶ÈÊı¾İ
- * º¯ Êı ĞÎ ²Î£º¼ÓËÙ¶ÈÊı¾İ´æ´¢µØÖ· 
- * º¯ Êı ·µ »Ø£ºÎŞ
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šMPU6050ReadAcc
+ * åŠŸèƒ½è¯´æ˜ï¼šè¯»å–åŠ é€Ÿåº¦æ•°æ®
+ * è¾“å…¥å‚æ•°ï¼šåŠ é€Ÿåº¦æ•°æ®å­˜å‚¨åœ°å€
+ * è¿”å›å€¼ï¼šæ— 
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: MPU6050ReadAcc
  * Function description: Read acceleration data
  * Function parameter: Acceleration data storage address
@@ -375,12 +375,12 @@ void MPU6050ReadAcc(short *accData)
 {
         uint8_t buf[6];
         uint8_t reg = 0;
-        //MPU6050_ACC_OUT = MPU6050¼ÓËÙ¶ÈÊı¾İ¼Ä´æÆ÷µØÖ·
-        //¼ÓËÙ¶È´«¸ĞÆ÷Êı¾İÊä³ö¼Ä´æÆ÷×Ü¹²ÓÉ6¸ö¼Ä´æÆ÷×é³É£¬
-        //Êä³öX/Y/ZÈı¸öÖáµÄ¼ÓËÙ¶È´«¸ĞÆ÷Öµ£¬¸ß×Ö½ÚÔÚÇ°£¬µÍ×Ö½ÚÔÚºó¡£
-				//MPU6050_ACC_OUT = MPU6050 acceleration data register address
-				//The acceleration sensor data output register consists of 6 registers in total,
-				//Output the acceleration sensor values ??of the three axes X/Y/Z, with the high byte in front and the low byte in the back.
+        //MPU6050_ACC_OUT = MPU6050åŠ é€Ÿåº¦æ•°æ®å¯„å­˜å™¨åœ°å€
+        //åŠ é€Ÿåº¦ä¼ æ„Ÿå™¨æ•°æ®è¾“å‡ºå¯„å­˜å™¨æ€»å…±ç”±6ä¸ªå¯„å­˜å™¨ç»„æˆï¼Œ
+        //è¾“å‡ºX/Y/Zä¸‰ä¸ªè½´çš„åŠ é€Ÿåº¦ä¼ æ„Ÿå™¨æ•°å€¼ï¼Œé«˜å­—èŠ‚åœ¨å‰ï¼Œä½å­—èŠ‚åœ¨å
+		//MPU6050_ACC_OUT = MPU6050 acceleration data register address
+		//The acceleration sensor data output register consists of 6 registers in total,
+		//Output the acceleration sensor values of the three axes X/Y/Z, with the high byte in front and the low byte in the back.
         reg = MPU6050_ReadData(0x68, MPU6050_ACC_OUT, 6, buf);
         if( reg == 0)
         {
@@ -391,15 +391,15 @@ void MPU6050ReadAcc(short *accData)
 }
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºMPU6050_GetTemp
- * º¯ Êı Ëµ Ã÷£º¶ÁÈ¡MPU6050ÉÏµÄÎÂ¶È
- * º¯ Êı ĞÎ ²Î£ºÎŞ
- * º¯ Êı ·µ »Ø£ºÎÂ¶ÈÖµµ¥Î»Îª¡æ
- * ±¸       ×¢£ºÎÂ¶È»»Ëã¹«Ê½Îª£ºTemperature = 36.53 + regval/340
+ * å‡½æ•°åç§°ï¼šMPU6050_GetTemp
+ * åŠŸèƒ½è¯´æ˜ï¼šè¯»å–MPU6050ä¸Šçš„æ¸©åº¦
+ * è¾“å…¥å‚æ•°ï¼šæ— 
+ * è¿”å›å€¼ï¼šæ¸©åº¦å€¼ï¼Œå•ä½ä¸ºâ„ƒ
+ * å¤‡æ³¨ï¼šæ¸©åº¦è½¬æ¢å…¬å¼ä¸ºï¼šTemperature = 36.53 + regval/340
  * Function name: MPU6050_GetTemp
  * Function description: Read the temperature on MPU6050
  * Function parameters: None
- * Function return: Temperature value in ¡ãC
+ * Function return: Temperature value in â„ƒ
  * Note: Temperature conversion formula: Temperature = 36.53 + regval/340
 ******************************************************************/
 float MPU6050_GetTemp(void)
@@ -407,18 +407,18 @@ float MPU6050_GetTemp(void)
         short temp3;
         uint8_t buf[2];
         float Temperature = 0;
-        MPU6050_ReadData(0x68,MPU6050_RA_TEMP_OUT_H,2,buf); 
-    temp3= (buf[0] << 8) | buf[1];        
+        MPU6050_ReadData(0x68,MPU6050_RA_TEMP_OUT_H,2,buf);
+    temp3= (buf[0] << 8) | buf[1];
         Temperature=((double) temp3/340.0)+36.53;
     return Temperature;
 }
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºMPU6050ReadID
- * º¯ Êı Ëµ Ã÷£º¶ÁÈ¡MPU6050µÄÆ÷¼şµØÖ·
- * º¯ Êı ĞÎ ²Î£ºÎŞ
- * º¯ Êı ·µ »Ø£º0=¼ì²â²»µ½MPU6050   1=ÄÜ¼ì²âµ½MPU6050
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šMPU6050ReadID
+ * åŠŸèƒ½è¯´æ˜ï¼šè¯»å–MPU6050çš„å™¨ä»¶åœ°å€
+ * è¾“å…¥å‚æ•°ï¼šæ— 
+ * è¿”å›å€¼ï¼š0=æ£€æµ‹ä¸åˆ°MPU6050   1=èƒ½æ£€æµ‹åˆ°MPU6050
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: MPU6050ReadID
  * Function description: Read the device address of MPU6050
  * Function parameter: None
@@ -428,14 +428,14 @@ float MPU6050_GetTemp(void)
 uint8_t MPU6050ReadID(void)
 {
         unsigned char Re[2] = {0};
-        //Æ÷¼şID¼Ä´æÆ÷ = 0x75 Device ID Register = 0x75
-        printf("mpu=%d\r\n",MPU6050_ReadData(0x68,0X75,1,Re)); //¶ÁÆ÷¼şµØÖ· Read device address
-        
-        if (Re[0] != 0x68) 
+        //å™¨ä»¶IDå¯„å­˜å™¨ = 0x75 Device ID Register = 0x75
+        printf("mpu=%d\r\n",MPU6050_ReadData(0x68,0X75,1,Re)); //è¯»å–å™¨ä»¶åœ°å€ Read device address
+
+        if (Re[0] != 0x68)
         {
                         printf("Not Found MPU6050 Model");
                         return 1;
-         } 
+         }
         else
         {
                         printf("MPU6050 ID = %x\r\n",Re[0]);
@@ -445,11 +445,11 @@ uint8_t MPU6050ReadID(void)
 }
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºMPU6050_Init
- * º¯ Êı Ëµ Ã÷£ºMPU6050³õÊ¼»¯
- * º¯ Êı ĞÎ ²Î£ºÎŞ
- * º¯ Êı ·µ »Ø£º0³É¹¦  1Ã»ÓĞ¼ì²âµ½MPU6050
- * ±¸       ×¢£ºÎŞ
+ * å‡½æ•°åç§°ï¼šMPU6050_Init
+ * åŠŸèƒ½è¯´æ˜ï¼šMPU6050åˆå§‹åŒ–
+ * è¾“å…¥å‚æ•°ï¼šæ— 
+ * è¿”å›å€¼ï¼š0æˆåŠŸ  1æ²¡æ£€æµ‹åˆ°MPU6050
+ * å¤‡æ³¨ï¼šæ— 
  * Function name: MPU6050_Init
  * Function description: MPU6050 initialization
  * Function parameters: None
@@ -460,28 +460,28 @@ char MPU6050_Init(void)
 {
         SDA_OUT();
     delay_ms(10);
-    //¸´Î»6050 Reset 6050
+    //å¤ä½6050 Reset 6050
     MPU6050_WriteReg(0x68,MPU6050_RA_PWR_MGMT_1, 1,(uint8_t*)(0x80));
     delay_ms(100);
-    //µçÔ´¹ÜÀí¼Ä´æÆ÷ Power Management Registers
-    //Ñ¡ÔñXÖáÍÓÂİ×÷Îª²Î¿¼PLLµÄÊ±ÖÓÔ´£¬ÉèÖÃCLKSEL=001
+    //ç”µæºç®¡ç†å¯„å­˜å™¨ Power Management Registers
+    //é€‰æ‹©Xè½´é™€èºä»ªä½œä¸ºå‚è€ƒPLLçš„æ—¶é’Ÿæºï¼Œè®¾ç½®CLKSEL=001
 		//Select the X-axis gyro as the clock source for the reference PLL, set CLKSEL=001
     MPU6050_WriteReg(0x68,MPU6050_RA_PWR_MGMT_1,1, (uint8_t*)(0x00));
-    
-    MPU_Set_Gyro_Fsr(3);    //ÍÓÂİÒÇ´«¸ĞÆ÷,¡À2000dps Gyroscope sensor, ¡À2000dps
-    MPU_Set_Accel_Fsr(0);   //¼ÓËÙ¶È´«¸ĞÆ÷,¡À2g Accelerometer, ¡À2g
-    MPU_Set_Rate(50);                
 
-    MPU6050_WriteReg(0x68,MPU_INT_EN_REG , 1,(uint8_t*)0x00);        //¹Ø±ÕËùÓĞÖĞ¶Ï Disable all interrupts
-    MPU6050_WriteReg(0x68,MPU_USER_CTRL_REG,1,(uint8_t*)0x00);        //I2CÖ÷Ä£Ê½¹Ø±Õ I2C Master Mode Off
-    MPU6050_WriteReg(0x68,MPU_FIFO_EN_REG,1,(uint8_t*)0x00);                //¹Ø±ÕFIFO Close FIFO
-    MPU6050_WriteReg(0x68,MPU_INTBP_CFG_REG,1,(uint8_t*)0X80);        //INTÒı½ÅµÍµçÆ½ÓĞĞ§ INT pin low level is effective
-      
-    if( MPU6050ReadID() == 0 )//¼ì²éÊÇ·ñÓĞ6050 Check if there is 6050
-    {       
-            MPU6050_WriteReg(0x68,MPU6050_RA_PWR_MGMT_1, 1,(uint8_t*)0x01);//ÉèÖÃCLKSEL,PLL XÖáÎª²Î¿¼ Set CLKSEL, PLL X axis as reference
-            MPU6050_WriteReg(0x68,MPU_PWR_MGMT2_REG, 1,(uint8_t*)0x00);//¼ÓËÙ¶ÈÓëÍÓÂİÒÇ¶¼¹¤×÷ Both the accelerometer and the gyroscope work
-            MPU_Set_Rate(50);        
+    MPU_Set_Gyro_Fsr(3);    //é™€èºä»ªä¼ æ„Ÿå™¨,Â±2000dps Gyroscope sensor, Â±2000dps
+    MPU_Set_Accel_Fsr(0);   //åŠ é€Ÿåº¦ä¼ æ„Ÿå™¨,Â±2g Accelerometer, Â±2g
+    MPU_Set_Rate(50);
+
+    MPU6050_WriteReg(0x68,MPU_INT_EN_REG , 1,(uint8_t*)0x00);        //å…³é—­æ‰€æœ‰ä¸­æ–­ Disable all interrupts
+    MPU6050_WriteReg(0x68,MPU_USER_CTRL_REG,1,(uint8_t*)0x00);        //I2Cä¸»æ¨¡å¼å…³é—­ I2C Master Mode Off
+    MPU6050_WriteReg(0x68,MPU_FIFO_EN_REG,1,(uint8_t*)0x00);                //å…³é—­FIFO Close FIFO
+    MPU6050_WriteReg(0x68,MPU_INTBP_CFG_REG,1,(uint8_t*)0X80);        //INTå¼•è„šä½ç”µå¹³æœ‰æ•ˆ INT pin low level is effective
+
+    if( MPU6050ReadID() == 0 )//æ£€æŸ¥æ˜¯å¦æœ‰6050 Check if there is 6050
+    {
+            MPU6050_WriteReg(0x68,MPU6050_RA_PWR_MGMT_1, 1,(uint8_t*)0x01);//è®¾ç½®CLKSEL,PLL Xè½´ä¸ºå‚è€ƒ Set CLKSEL, PLL X axis as reference
+            MPU6050_WriteReg(0x68,MPU_PWR_MGMT2_REG, 1,(uint8_t*)0x00);//åŠ é€Ÿåº¦ä¸é™€èºä»ªéƒ½å·¥ä½œ Both the accelerometer and the gyroscope work
+            MPU_Set_Rate(50);
             return 1;
     }
     return 0;

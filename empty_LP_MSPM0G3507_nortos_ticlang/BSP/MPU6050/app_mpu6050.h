@@ -7,7 +7,7 @@
 #include "delay.h"
 #include "timer.h"
 
-extern volatile float pitch,roll,yaw;   //??¡è???? Euler Angles
+extern volatile float pitch,roll,yaw;   //??Â¤???? Euler Angles
 
 extern volatile float yawBias,pitchBias,rollBias;
 extern volatile float calibratedYaw, calibratedPitch, calibratedRoll;

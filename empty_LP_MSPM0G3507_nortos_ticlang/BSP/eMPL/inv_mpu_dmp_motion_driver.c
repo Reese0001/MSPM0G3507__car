@@ -24,7 +24,7 @@
 #include "dmpKey.h"
 #include "dmpmap.h"
 
-//定义目标板采用MSP430 Define the target board to use MSP430
+//瀹氫箟鐩爣鏉夸负MSP430 Define the target board to use MSP430
 #define  MOTION_DRIVER_TARGET_MSP430
 
 /* The following functions must be defined for this platform:

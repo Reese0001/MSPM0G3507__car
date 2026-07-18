@@ -7,6 +7,7 @@
 void Motor_Usart_init (void);
 void Send_Motor_U8(uint8_t Data);
 void Send_Motor_ArrayU8(uint8_t *pData, uint16_t Length);
+void Motor_EmergencyStop_FromISR(void);
 
 
 

@@ -25,6 +25,9 @@
 
 # Directory-cleanup working area and raw historical archive
 _organize_staging/
+_integration_staging/
+__pycache__/
+*.pyc
 docs/docs_backup/
 workspace_ccstheia/
 

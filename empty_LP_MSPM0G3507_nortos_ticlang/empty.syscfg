@@ -55,28 +55,28 @@ GPIO2.associatedPins[0].direction   = "INPUT";
 GPIO2.associatedPins[0].$name       = "K1";
 GPIO2.associatedPins[0].pin.$assign = "PA2";
 
-GPIO3.$name                          = "MPU6050";
-GPIO3.associatedPins.create(2);
-GPIO3.associatedPins[0].$name        = "SCL";
-GPIO3.associatedPins[0].initialValue = "SET";
-GPIO3.associatedPins[0].pin.$assign  = "PA1";
-GPIO3.associatedPins[1].$name        = "SDA";
-GPIO3.associatedPins[1].initialValue = "SET";
-GPIO3.associatedPins[1].pin.$assign  = "PA0";
+GPIO3.$name                         = "GRAY_ADDR";
+GPIO3.associatedPins.create(3);
+GPIO3.associatedPins[0].$name       = "AD0";
+GPIO3.associatedPins[0].pin.$assign = "PA15";
+GPIO3.associatedPins[1].$name       = "AD1";
+GPIO3.associatedPins[1].pin.$assign = "PA16";
+GPIO3.associatedPins[2].$name       = "AD2";
+GPIO3.associatedPins[2].pin.$assign = "PA17";
 
-GPIO4.$name                         = "GRAY_ADDR";
-GPIO4.associatedPins.create(3);
-GPIO4.associatedPins[0].$name       = "AD0";
-GPIO4.associatedPins[0].pin.$assign = "PA15";
-GPIO4.associatedPins[1].$name       = "AD1";
-GPIO4.associatedPins[1].pin.$assign = "PA16";
-GPIO4.associatedPins[2].$name       = "AD2";
-GPIO4.associatedPins[2].pin.$assign = "PA17";
+GPIO4.$name                         = "GRAY_DATA";
+GPIO4.associatedPins[0].direction   = "INPUT";
+GPIO4.associatedPins[0].$name       = "OUT";
+GPIO4.associatedPins[0].pin.$assign = "PA18";
 
-GPIO5.$name                         = "GRAY_DATA";
-GPIO5.associatedPins[0].direction   = "INPUT";
-GPIO5.associatedPins[0].$name       = "OUT";
-GPIO5.associatedPins[0].pin.$assign = "PA18";
+GPIO5.$name                          = "MPU6050";
+GPIO5.associatedPins.create(2);
+GPIO5.associatedPins[0].$name        = "SCL";
+GPIO5.associatedPins[0].initialValue = "SET";
+GPIO5.associatedPins[0].pin.$assign  = "PA12";
+GPIO5.associatedPins[1].$name        = "SDA";
+GPIO5.associatedPins[1].initialValue = "SET";
+GPIO5.associatedPins[1].pin.$assign  = "PA13";
 
 PWM1.$name                      = "BUZZER";
 PWM1.pwmMode                    = "EDGE_ALIGN_UP";
