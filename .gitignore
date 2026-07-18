@@ -26,6 +26,7 @@
 # Directory-cleanup working area and raw historical archive
 _organize_staging/
 docs/docs_backup/
+workspace_ccstheia/
 
 # Temporary files
 *.tmp
