@@ -259,25 +259,16 @@ foreach ($mapping in $mappings) {
 
 Expected: each destination contains C/H files and contains no excluded directory.
 
-- [ ] **Step 3: Extract only unique MPU6050 documentation without retaining the ZIP**
+- [ ] **Step 3: Extract only module-level MPU6050 documentation without retaining the ZIP**
 
 Run:
 
-```powershell
-$zip = Get-Item -LiteralPath 'docs\docs_backup\archives\野火小智【姿态传感器_MPU6050】模块_20260206.zip'
-$temp = Join-Path '_organize_staging' 'mpu6050-extract'
-Expand-Archive -LiteralPath $zip.FullName -DestinationPath $temp -Force
-$dest = '_organize_staging\keep\reference\mpu6050'
-Get-ChildItem -LiteralPath $temp -Recurse -File | Where-Object {
-    $_.Extension.ToLowerInvariant() -in '.md','.txt','.pdf','.c','.h' -and
-    $_.Extension.ToLowerInvariant() -notin '.o','.obj','.d'
-} | ForEach-Object {
-    $target = Join-Path $dest $_.Name
-    if (-not (Test-Path -LiteralPath $target)) { New-Item -ItemType Directory -Force -Path $dest | Out-Null; Copy-Item -LiteralPath $_.FullName -Destination $target }
-}
-```
+The ZIP expands to approximately 1.63 GB and contains more than 18,000 mostly STM32 example files. Do not call `Expand-Archive`. Open the ZIP and extract only:
 
-Expected: ZIP remains untouched in the archive; selected documentation/source exists under staging.
+- files under `1-硬件资料_参考资料_模块手册/` with `.pdf`, `.jpg` or `.txt`, excluding `参考资料/` and `例程工具上位机/`;
+- `2-配套例程_接线说明/野火小智MPU6050六轴姿态模块例程说明_20240620.pdf`.
+
+Expected: eight module-level files totaling approximately 1.46 MB. The ZIP remains untouched; STM32 board examples, third-party bundles and host applications are not retained.
 
 - [ ] **Step 4: Retain motor-controller firmware separately**
 
@@ -382,10 +373,10 @@ Include exact counts and bytes from Step 1, retained categories, deleted categor
 Run:
 
 ```powershell
-rg -n 'TBD|TODO|待定|稍后|docs_backup' '_organize_staging\keep' '_organize_staging\deletion-summary.md'
+rg -n 'TBD|TODO|待定|稍后' '_organize_staging\keep' '_organize_staging\deletion-summary.md' -g '*.md'
 ```
 
-Expected: no placeholder matches; `docs_backup` may appear only in `archive-manifest.md` as the former source location.
+Expected: no placeholder matches in Markdown files. Historical source comments are outside this documentation check; `docs_backup` may appear in the audit documents as the former source location.
 
 ---
 

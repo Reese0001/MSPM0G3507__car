@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - SDK：`mspm0_sdk_2_10_00_04`
 - CCS：Theia 版 `css2051`（ccsVersion 70.5.1）
 
-**重要路径提示**：项目最初在 `E:\workspace_ccstheia\...` 构建，现位于 `D:\DevProject\workspace_ccstheia\...`。`.cproject`、`.mcp.json`、`SETUP_GUIDE.md`、构建日志中仍残留 `E:\` 与 `E:\Software\ti\...` 绝对路径。若构建/串口失败，优先检查 SDK/编译器/工作区路径是否需要按新盘符修正。
+**重要路径提示**：项目最初在 `E:\workspace_ccstheia\...` 构建，现位于 `D:\DevProject\MSPM0G3507__car\...`。`.cproject`、`.mcp.json`、`docs/setup/SETUP_GUIDE.md` 和历史构建日志中仍可能残留 `E:\` 与 `E:\Software\ti\...` 绝对路径。若构建/串口失败，优先检查 SDK、编译器和工作区路径。
 
 ## 代码架构
 
@@ -60,7 +60,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **`Key/` `LED/` `Buzzer/` `Timer/`** — 按键、指示灯、蜂鸣器（PWM/TIMA0）、毫秒计时基。
 - **`usart.c` / `delay.c`** — UART0 调试打印（`USART_SendData`，支持 printf 重定向）与延时。
 
-### 引脚分配（见 `SETUP_GUIDE.md`）
+### 引脚分配（见 `docs/setup/SETUP_GUIDE.md`）
 | 外设 | 引脚 | 说明 |
 |------|------|------|
 | UART0 调试 | PA10 TX / PA11 RX | 115200, printf |
@@ -73,6 +73,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 文档与约定
 
-- **参考资料**：`docs_backup/`（PDF 教程、接线图、MPU6050 模块包）。注意：`SETUP_GUIDE.md` 中提到的 `.../docs` 目录当前不存在，实际资料在 `docs_backup/`。这些多为 2024 年前的小车源码/教程，仅供参考，本项目目标基于 2026 赛题。
-- **编码**：现有 C 源码/头文件注释为 **GBK** 编码（Windows 中文），`CLAUDE.md`/`PROJECT_SKILLS.md`/`SETUP_GUIDE.md` 为 UTF-8。编辑 C 文件时保持其原有编码，避免注释乱码。
+- **参考资料**：精选资料位于 `docs/reference/` 和 `docs/hardware/`，保留/删除范围记录在 `docs/archive-manifest.md`。这些多为 2024 年前的小车源码/教程，仅供参考，本项目目标基于 2026 赛题。
+- **编码**：现有 C 源码/头文件注释为 **GBK** 编码（Windows 中文），`CLAUDE.md`、`PROJECT_SKILLS.md` 和 `docs/setup/SETUP_GUIDE.md` 为 UTF-8。编辑 C 文件时保持其原有编码，避免注释乱码。
 - **技能沉淀**：可复用的工程规范/排查流程记录在 `PROJECT_SKILLS.md`（如 Motor-Safety-Layer、Debug-Protocol 排查顺序：SysConfig 引脚冲突 → 共地 → PWM 频率匹配）。
