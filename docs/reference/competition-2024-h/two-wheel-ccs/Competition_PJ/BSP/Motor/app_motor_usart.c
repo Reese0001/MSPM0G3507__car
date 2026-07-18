@@ -12,10 +12,10 @@ uint8_t g_recv_flag;
 uint8_t g_recv_buff[RXBUFF_LEN];
 uint8_t g_recv_buff_deal[RXBUFF_LEN];
 
-//////////********************·¢ËÍ²¿·Ö********************///////////
+//////////********************å‘é€éƒ¨åˆ†********************///////////
 //////////******************Sending part*****************///////////
 
-//·¢ËÍµç»úÀàĞÍ	Transmitter motor type
+//å‘é€ç”µæœºç±»å‹	Transmitter motor type
 void send_motor_type(motor_type_t data)
 {
 	sprintf((char*)send_buff,"$mtype:%d#",data);
@@ -23,49 +23,49 @@ void send_motor_type(motor_type_t data)
 	
 }
 
-//·¢ËÍµç»úËÀÇø	Send motor dead zone
+//å‘é€ç”µæœºæ­»åŒº	Send motor dead zone
 void send_motor_deadzone(uint16_t data)
 {
 	sprintf((char*)send_buff,"$deadzone:%d#",data);
 	Send_Motor_ArrayU8(send_buff, strlen((char*)send_buff));
 }
 
-//·¢ËÍµç»ú´Å»·Âö³å	Send motor magnetic ring pulse
+//å‘é€ç”µæœºç£ç¯è„‰å†²	Send motor magnetic ring pulse
 void send_pulse_line(uint16_t data)
 {
 	sprintf((char*)send_buff,"$mline:%d#",data);
 	Send_Motor_ArrayU8(send_buff, strlen((char*)send_buff));
 }
 
-//·¢ËÍµç»ú¼õËÙ±È	Transmitting motor reduction ratio
+//å‘é€ç”µæœºå‡é€Ÿæ¯”	Transmitting motor reduction ratio
 void send_pulse_phase(uint16_t data)
 {
 	sprintf((char*)send_buff,"$mphase:%d#",data);
 	Send_Motor_ArrayU8(send_buff, strlen((char*)send_buff));
 }
 
-//·¢ËÍÂÖ×ÓÖ±¾¶	Send wheel diameter
+//å‘é€è½®å­ç›´å¾„	Send wheel diameter
 void send_wheel_diameter(float data)
 {
 	sprintf((char*)send_buff,"$wdiameter:%.3f#",data);
 	Send_Motor_ArrayU8(send_buff, strlen((char*)send_buff));
 }
 
-//·¢ËÍPID²ÎÊı	Send PID parameters
+//å‘é€PIDå‚æ•°	Send PID parameters
 void send_motor_PID(float P,float I,float D)
 {
 	sprintf((char*)send_buff,"$mpid:%.3f,%.3f,%.3f#",P,I,D);
 	Send_Motor_ArrayU8(send_buff, strlen((char*)send_buff));
 }
 
-//ĞèÒª½ÓÊÕÊı¾İµÄ¿ª¹Ø	Switch that needs to receive data
+//éœ€è¦æ¥æ”¶æ•°æ®çš„å¼€å…³	Switch that needs to receive data
 void send_upload_data(bool ALLEncoder_Switch,bool TenEncoder_Switch,bool Speed_Switch)
 {
 	sprintf((char*)send_buff,"$upload:%d,%d,%d#",ALLEncoder_Switch,TenEncoder_Switch,Speed_Switch);
 	Send_Motor_ArrayU8(send_buff, strlen((char*)send_buff));
 }
 
-//¿ØÖÆËÙ¶È	Controlling Speed
+//æ§åˆ¶é€Ÿåº¦	Controlling Speed
 void Contrl_Speed(int16_t M1_speed,int16_t M2_speed,int16_t M3_speed,int16_t M4_speed)
 {
 	sprintf((char*)send_buff,"$spd:%d,%d,%d,%d#",M1_speed,M2_speed,M3_speed,M4_speed);
@@ -73,7 +73,7 @@ void Contrl_Speed(int16_t M1_speed,int16_t M2_speed,int16_t M3_speed,int16_t M4_
 }
 
 
-//¿ØÖÆpwm	Control PWM
+//æ§åˆ¶pwm	Control PWM
 void Contrl_Pwm(int16_t M1_pwm,int16_t M2_pwm,int16_t M3_pwm,int16_t M4_pwm)
 {
 	sprintf((char*)send_buff,"$pwm:%d,%d,%d,%d#",M1_pwm,M2_pwm,M3_pwm,M4_pwm);
@@ -81,15 +81,15 @@ void Contrl_Pwm(int16_t M1_pwm,int16_t M2_pwm,int16_t M3_pwm,int16_t M4_pwm)
 }
 
 
-//////////********************½ÓÊÕ²¿·Ö********************///////////
+//////////********************æ¥æ”¶éƒ¨åˆ†********************///////////
 //////////*****************Receiving part****************///////////
 
-//´«Èë²ÎÊı£º±£ÁôµÄ×Ö·û´®(Ö¸ÕëÊı×é)  Ô­Ê¼×Ö·û´®  ·Ö¸ô·ûºÅ
+//ä¼ å…¥å‚æ•°ï¼šä¿ç•™çš„å­—ç¬¦ä¸²(æŒ‡é’ˆæ•°ç»„)  åŸå§‹å­—ç¬¦ä¸²  åˆ†éš”ç¬¦å·
 //Incoming parameters: reserved string (pointer array) original string separator
 void splitString(char* mystrArray[],char *str, const char *delimiter) 
 {
-    char *token = strtok(str, delimiter); //ÕâÊÇµÚÒ»´Î·Ö¸î,µÚÒ»¸ö×Ö·ûÖµ	This is the first split, the first character value
-		mystrArray[0] = token; //±£ÁôµÚÒ»´Î·Ö¸îµÄ×Ö·û		Keep the first split character
+    char *token = strtok(str, delimiter); //è¿™æ˜¯ç¬¬ä¸€æ¬¡åˆ†å‰²,ç¬¬ä¸€ä¸ªå­—ç¬¦å€¼	This is the first split, the first character value
+		mystrArray[0] = token; //ä¿ç•™ç¬¬ä¸€æ¬¡åˆ†å‰²çš„å­—ç¬¦		Keep the first split character
     int i =1;
 	
     while (token != NULL) 
@@ -100,7 +100,7 @@ void splitString(char* mystrArray[],char *str, const char *delimiter)
     }
 }
 
-//¼ìÑé´ÓÇı¶¯°å·¢ËÍ¹ıÀ´µÄÊı¾İ£¬·ûºÏÍ¨Ñ¶Ğ­ÒéµÄÊı¾İÔò±£´æÏÂÀ´
+//æ£€éªŒä»é©±åŠ¨æ¿å‘é€è¿‡æ¥çš„æ•°æ®ï¼Œç¬¦åˆé€šè®¯åè®®çš„æ•°æ®åˆ™ä¿å­˜ä¸‹æ¥
 //Check the data sent from the driver board, and save the data that meets the communication protocol
 void Deal_Control_Rxtemp(uint8_t rxtemp)
 {
@@ -110,7 +110,7 @@ void Deal_Control_Rxtemp(uint8_t rxtemp)
 	if(rxtemp == '$' && 	start_flag == 0)
 	{
 		start_flag = 1;
-		memset(g_recv_buff,0,RXBUFF_LEN);//Çå¿ÕÊı¾İ	Clear data
+		memset(g_recv_buff,0,RXBUFF_LEN);//æ¸…ç©ºæ•°æ®	Clear data
 	}
 	
 	else if(start_flag == 1)
@@ -120,7 +120,7 @@ void Deal_Control_Rxtemp(uint8_t rxtemp)
 				start_flag = 0;
 				step = 0;
 				g_recv_flag = 1;
-				memcpy(g_recv_buff_deal,g_recv_buff,RXBUFF_LEN); //Ö»ÓĞÕıÈ·²Å»á¸³Öµ	Only correct ones will be assigned
+				memcpy(g_recv_buff_deal,g_recv_buff,RXBUFF_LEN); //åªæœ‰æ­£ç¡®æ‰ä¼šèµ‹å€¼	Only correct ones will be assigned
 //                printf("g_recv_buff_deal = %X\r\n",g_recv_buff_deal);
 			}
 			else
@@ -129,7 +129,7 @@ void Deal_Control_Rxtemp(uint8_t rxtemp)
 				{
 					start_flag = 0;
 					step = 0;
-					memset(g_recv_buff,0,RXBUFF_LEN);//Çå¿Õ½ÓÊÕÊı¾İ	Clear received data
+					memset(g_recv_buff,0,RXBUFF_LEN);//æ¸…ç©ºæ¥æ”¶æ•°æ®	Clear received data
 				}
 				else
 				{
@@ -141,27 +141,27 @@ void Deal_Control_Rxtemp(uint8_t rxtemp)
 	
 }
 
-//½«´ÓÇı¶¯°å±£´æµ½µÄÊı¾İ½øĞĞ¸ñÊ½´¦Àí£¬È»ºó×¼±¸´òÓ¡
+//å°†ä»é©±åŠ¨æ¿ä¿å­˜åˆ°çš„æ•°æ®è¿›è¡Œæ ¼å¼å¤„ç†ï¼Œç„¶åå‡†å¤‡æ‰“å°
 //Format the data saved from the driver board and prepare it for printing
 void Deal_data_real(void)
 {
 	static uint8_t data[RXBUFF_LEN];
 	uint8_t  length = 0;
 	
-	//×ÜÌåµÄ±àÂëÆ÷	Overall encoder
+	//æ€»ä½“çš„ç¼–ç å™¨	Overall encoder
 	 if ((strncmp("MAll",(char*)g_recv_buff_deal,4)==0))
     {
         length = strlen((char*)g_recv_buff_deal)-5;
         for (uint8_t i = 0; i < length; i++)
         {
-            data[i] = g_recv_buff_deal[i+5]; //È¥µôÃ°ºÅ	Remove the colon
+            data[i] = g_recv_buff_deal[i+5]; //å»æ‰å†’å·	Remove the colon
         }  
 				data[length] = '\0';	
 
 					
-				char* strArray[10];//Ö¸ÕëÊı×é ³¤¶È¸ù¾İ·Ö¸îºÅ¶¨Òå  char 1×Ö½Ú   char* 4×Ö½Ú	 Pointer array The length is defined by the split number char 1 byte char* 4 bytes
+				char* strArray[10];//æŒ‡é’ˆæ•°ç»„ é•¿åº¦æ ¹æ®åˆ†å‰²å·å®šä¹‰  char 1å­—èŠ‚   char* 4å­—èŠ‚	 Pointer array The length is defined by the split number char 1 byte char* 4 bytes
 				char mystr_temp[4][10] = {'\0'}; 
-				splitString(strArray,(char*)data, ", ");//ÒÔ¶ººÅÇĞ¸î	Split by comma
+				splitString(strArray,(char*)data, ", ");//ä»¥é€—å·åˆ‡å‰²	Split by comma
 				for (int i = 0; i < 4; i++)
 				{
 						strcpy(mystr_temp[i],strArray[i]);
@@ -169,38 +169,38 @@ void Deal_data_real(void)
 				}
 				
 		}
-		//10msµÄÊµÊ±±àÂëÆ÷Êı¾İ	10ms real-time encoder data
+		//10msçš„å®æ—¶ç¼–ç å™¨æ•°æ®	10ms real-time encoder data
 		else if	((strncmp("MTEP",(char*)g_recv_buff_deal,4)==0))
     {
         length = strlen((char*)g_recv_buff_deal)-5;
         for (uint8_t i = 0; i < length; i++)
         {
-            data[i] = g_recv_buff_deal[i+5]; //È¥µôÃ°ºÅ	Remove the colon
+            data[i] = g_recv_buff_deal[i+5]; //å»æ‰å†’å·	Remove the colon
         }  
 				data[length] = '\0';		
 
-				char* strArray[10];//Ö¸ÕëÊı×é ³¤¶È¸ù¾İ·Ö¸îºÅ¶¨Òå  char 1×Ö½Ú   char* 4×Ö½Ú		Pointer array The length is defined by the split number char 1 byte char* 4 bytes
+				char* strArray[10];//æŒ‡é’ˆæ•°ç»„ é•¿åº¦æ ¹æ®åˆ†å‰²å·å®šä¹‰  char 1å­—èŠ‚   char* 4å­—èŠ‚		Pointer array The length is defined by the split number char 1 byte char* 4 bytes
 				char mystr_temp[4][10] = {'\0'}; 
-				splitString(strArray,(char*)data, ", ");//ÒÔ¶ººÅÇĞ¸î	Split by comma
+				splitString(strArray,(char*)data, ", ");//ä»¥é€—å·åˆ‡å‰²	Split by comma
 				for (int i = 0; i < 4; i++)
 				{
 						strcpy(mystr_temp[i],strArray[i]);
 						Encoder_Offset[i] = atoi(mystr_temp[i]);
 				}
 		}
-		//ËÙ¶È	Speed
+		//é€Ÿåº¦	Speed
 		else if	((strncmp("MSPD",(char*)g_recv_buff_deal,4)==0))
     {
         length = strlen((char*)g_recv_buff_deal)-5;
         for (uint8_t i = 0; i < length; i++)
         {
-            data[i] = g_recv_buff_deal[i+5]; //È¥µôÃ°ºÅ	Remove the colon
+            data[i] = g_recv_buff_deal[i+5]; //å»æ‰å†’å·	Remove the colon
         }  
 				data[length] = '\0';	
 				
-				char* strArray[10];//Ö¸ÕëÊı×é ³¤¶È¸ù¾İ·Ö¸îºÅ¶¨Òå  char 1×Ö½Ú   char* 4×Ö½Ú		Pointer array The length is defined by the split number char 1 byte char* 4 bytes
+				char* strArray[10];//æŒ‡é’ˆæ•°ç»„ é•¿åº¦æ ¹æ®åˆ†å‰²å·å®šä¹‰  char 1å­—èŠ‚   char* 4å­—èŠ‚		Pointer array The length is defined by the split number char 1 byte char* 4 bytes
 				char mystr_temp[4][10] = {'\0'}; 
-				splitString(strArray,(char*)data, ", ");//ÒÔ¶ººÅÇĞ¸î	Split by comma
+				splitString(strArray,(char*)data, ", ");//ä»¥é€—å·åˆ‡å‰²	Split by comma
 				for (int i = 0; i < 4; i++)
 				{
 						strcpy(mystr_temp[i],strArray[i]);

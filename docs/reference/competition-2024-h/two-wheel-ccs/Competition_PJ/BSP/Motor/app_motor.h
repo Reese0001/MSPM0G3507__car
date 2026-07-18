@@ -5,7 +5,7 @@
 #include "app_motor_usart.h"
 #include "questions.h"
 
-//Ğ¡³µµ×ÅÌµç»ú¼ä¾àÖ®ºÍµÄÒ»°ë    Half of the sum of the motor spacing between the chassis
+//å°è½¦åº•ç›˜ç”µæœºé—´è·ä¹‹å’Œçš„ä¸€åŠ    Half of the sum of the motor spacing between the chassis
 #define Car_APB          				(188.0f)//  (228+148)/2
 
 void Set_Motor(int MOTOR_TYPE);

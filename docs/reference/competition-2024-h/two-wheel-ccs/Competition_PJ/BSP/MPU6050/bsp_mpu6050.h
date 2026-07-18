@@ -4,39 +4,39 @@
 #include "ti_msp_dl_config.h"
 #include "delay.h"
 
-//ÉèÖÃSDAÊä³öÄ£Ê½ Set SDA output mode
+//è®¾ç½®SDAè¾“å‡ºæ¨¡å¼ Set SDA output mode
 #define SDA_OUT()   {                                                  \
                         DL_GPIO_initDigitalOutput(MPU6050_SDA_IOMUX);     \
                         DL_GPIO_setPins(MPU6050_PORT, MPU6050_SDA_PIN);      \
                         DL_GPIO_enableOutput(MPU6050_PORT, MPU6050_SDA_PIN); \
                     }
-//ÉèÖÃSDAÊäÈëÄ£Ê½ Set SDA input mode
+//è®¾ç½®SDAè¾“å…¥æ¨¡å¼ Set SDA input mode
 #define SDA_IN()    { DL_GPIO_initDigitalInput(MPU6050_SDA_IOMUX); }
 
-//»ñÈ¡SDAÒı½ÅµÄµçÆ½±ä»¯ Get the level change of the SDA pin
+//è·å–SDAå¼•è„šçš„ç”µå¹³å˜åŒ– Get the level change of the SDA pin
 #define SDA_GET()   ( ( ( DL_GPIO_readPins(MPU6050_PORT,MPU6050_SDA_PIN) & MPU6050_SDA_PIN ) > 0 ) ? 1 : 0 )
-//SDAÓëSCLÊä³ö SDA and SCL output
+//SDAä¸SCLè¾“å‡º SDA and SCL output
 #define SDA(x)      ( (x) ? (DL_GPIO_setPins(MPU6050_PORT,MPU6050_SDA_PIN)) : (DL_GPIO_clearPins(MPU6050_PORT,MPU6050_SDA_PIN)) )
 #define SCL(x)      ( (x) ? (DL_GPIO_setPins(MPU6050_PORT,MPU6050_SCL_PIN)) : (DL_GPIO_clearPins(MPU6050_PORT,MPU6050_SCL_PIN)) )
 
 
-//MPU6050µÄAD0ÊÇIICµØÖ·Òı½Å£¬½ÓµØÔòIICµØÖ·Îª0x68,½ÓVCCÔòIICµØÖ·Îª0x69
+//MPU6050çš„AD0æ˜¯IICåœ°å€å¼•è„šï¼Œæ¥åœ°åˆ™IICåœ°å€ä¸º0x68,æ¥VCCåˆ™IICåœ°å€ä¸º0x69
 //AD0 of MPU6050 is the IIC address pin. If it is grounded, the IIC address is 0x68. If it is connected to VCC, the IIC address is 0x69.
 
 
-#define MPU6050_RA_SMPLRT_DIV       0x19        //ÍÓÂİÒÇ²ÉÑùÂÊ µØÖ·  Gyro sampling rate address
-#define MPU6050_RA_CONFIG           0x1A        //ÉèÖÃÊı×ÖµÍÍ¨ÂË²¨Æ÷ µØÖ· Set digital low-pass filter address
-#define MPU6050_RA_GYRO_CONFIG      0x1B        //ÍÓÂİÒÇÅäÖÃ¼Ä´æÆ÷ Gyro configuration register
-#define MPU6050_RA_ACCEL_CONFIG     0x1C        //¼ÓËÙ¶È´«¸ĞÆ÷ÅäÖÃ¼Ä´æÆ÷ Acceleration sensor configuration register
-#define MPU_INT_EN_REG              0X38        //ÖĞ¶ÏÊ¹ÄÜ¼Ä´æÆ÷ Interrupt enable register
-#define MPU_USER_CTRL_REG           0X6A        //ÓÃ»§¿ØÖÆ¼Ä´æÆ÷ User control register
-#define MPU_FIFO_EN_REG             0X23        //FIFOÊ¹ÄÜ¼Ä´æÆ÷ FIFO enable register
-#define MPU_PWR_MGMT2_REG           0X6C        //µçÔ´¹ÜÀí¼Ä´æÆ÷2 Power management register 2
-#define MPU_GYRO_CFG_REG            0X1B        //ÍÓÂİÒÇÅäÖÃ¼Ä´æÆ÷ Gyroscope configuration register
-#define MPU_ACCEL_CFG_REG           0X1C        //¼ÓËÙ¶È¼ÆÅäÖÃ¼Ä´æÆ÷ Accelerometer configuration register
-#define MPU_CFG_REG                 0X1A        //ÅäÖÃ¼Ä´æÆ÷ Configuration register
-#define MPU_SAMPLE_RATE_REG         0X19        //²ÉÑùÆµÂÊ·ÖÆµÆ÷ Sampling frequency divider
-#define MPU_INTBP_CFG_REG           0X37        //ÖĞ¶Ï/ÅÔÂ·ÉèÖÃ¼Ä´æÆ÷ Interrupt/bypass setting register
+#define MPU6050_RA_SMPLRT_DIV       0x19        //é™€èºä»ªé‡‡æ ·ç‡ åœ°å€  Gyro sampling rate address
+#define MPU6050_RA_CONFIG           0x1A        //è®¾ç½®æ•°å­—ä½é€šæ»¤æ³¢å™¨ åœ°å€ Set digital low-pass filter address
+#define MPU6050_RA_GYRO_CONFIG      0x1B        //é™€èºä»ªé…ç½®å¯„å­˜å™¨ Gyro configuration register
+#define MPU6050_RA_ACCEL_CONFIG     0x1C        //åŠ é€Ÿåº¦ä¼ æ„Ÿå™¨é…ç½®å¯„å­˜å™¨ Acceleration sensor configuration register
+#define MPU_INT_EN_REG              0X38        //ä¸­æ–­ä½¿èƒ½å¯„å­˜å™¨ Interrupt enable register
+#define MPU_USER_CTRL_REG           0X6A        //ç”¨æˆ·æ§åˆ¶å¯„å­˜å™¨ User control register
+#define MPU_FIFO_EN_REG             0X23        //FIFOä½¿èƒ½å¯„å­˜å™¨ FIFO enable register
+#define MPU_PWR_MGMT2_REG           0X6C        //ç”µæºç®¡ç†å¯„å­˜å™¨2 Power management register 2
+#define MPU_GYRO_CFG_REG            0X1B        //é™€èºä»ªé…ç½®å¯„å­˜å™¨ Gyroscope configuration register
+#define MPU_ACCEL_CFG_REG           0X1C        //åŠ é€Ÿåº¦è®¡é…ç½®å¯„å­˜å™¨ Accelerometer configuration register
+#define MPU_CFG_REG                 0X1A        //é…ç½®å¯„å­˜å™¨ Configuration register
+#define MPU_SAMPLE_RATE_REG         0X19        //é‡‡æ ·é¢‘ç‡åˆ†é¢‘å™¨ Sampling frequency divider
+#define MPU_INTBP_CFG_REG           0X37        //ä¸­æ–­/æ—è·¯è®¾ç½®å¯„å­˜å™¨ Interrupt/bypass setting register
 
 #define MPU6050_RA_PWR_MGMT_1       0x6B
 #define MPU6050_RA_PWR_MGMT_2       0x6C
@@ -44,28 +44,28 @@
 #define MPU6050_WHO_AM_I            0x75
 #define MPU6050_SMPLRT_DIV          0            //8000Hz  
 #define MPU6050_DLPF_CFG            0        
-#define MPU6050_GYRO_OUT            0x43         //MPU6050ÍÓÂİÒÇÊı¾İ¼Ä´æÆ÷µØÖ· MPU6050 gyroscope data register address
-#define MPU6050_ACC_OUT             0x3B         //MPU6050¼ÓËÙ¶ÈÊı¾İ¼Ä´æÆ÷µØÖ· MPU6050 acceleration data register address
+#define MPU6050_GYRO_OUT            0x43         //MPU6050é™€èºä»ªæ•°æ®å¯„å­˜å™¨åœ°å€ MPU6050 gyroscope data register address
+#define MPU6050_ACC_OUT             0x3B         //MPU6050åŠ é€Ÿåº¦æ•°æ®å¯„å­˜å™¨åœ°å€ MPU6050 acceleration data register address
         
-#define MPU6050_RA_TEMP_OUT_H       0x41        //ÎÂ¶È¸ßÎ» High temperature
-#define MPU6050_RA_TEMP_OUT_L       0x42        //ÎÂ¶ÈµÍÎ» Low temperature
+#define MPU6050_RA_TEMP_OUT_H       0x41        //æ¸©åº¦é«˜ä½ High temperature
+#define MPU6050_RA_TEMP_OUT_L       0x42        //æ¸©åº¦ä½ä½ Low temperature
 
-#define MPU_ACCEL_XOUTH_REG         0X3B        //¼ÓËÙ¶ÈÖµ,XÖá¸ß8Î»¼Ä´æÆ÷ Acceleration value, X-axis high 8-bit register
-#define MPU_ACCEL_XOUTL_REG         0X3C        //¼ÓËÙ¶ÈÖµ,XÖáµÍ8Î»¼Ä´æÆ÷ Acceleration value, X-axis low 8-bit register
-#define MPU_ACCEL_YOUTH_REG         0X3D        //¼ÓËÙ¶ÈÖµ,YÖá¸ß8Î»¼Ä´æÆ÷ Acceleration value, Y-axis high 8-bit register
-#define MPU_ACCEL_YOUTL_REG         0X3E        //¼ÓËÙ¶ÈÖµ,YÖáµÍ8Î»¼Ä´æÆ÷ Acceleration value, Y-axis low 8-bit register
-#define MPU_ACCEL_ZOUTH_REG         0X3F        //¼ÓËÙ¶ÈÖµ,ZÖá¸ß8Î»¼Ä´æÆ÷ Acceleration value, Z-axis high 8-bit register
-#define MPU_ACCEL_ZOUTL_REG         0X40        //¼ÓËÙ¶ÈÖµ,ZÖáµÍ8Î»¼Ä´æÆ÷ Acceleration value, Z-axis low 8-bit register
+#define MPU_ACCEL_XOUTH_REG         0X3B        //åŠ é€Ÿåº¦å€¼,Xè½´é«˜8ä½å¯„å­˜å™¨ Acceleration value, X-axis high 8-bit register
+#define MPU_ACCEL_XOUTL_REG         0X3C        //åŠ é€Ÿåº¦å€¼,Xè½´ä½8ä½å¯„å­˜å™¨ Acceleration value, X-axis low 8-bit register
+#define MPU_ACCEL_YOUTH_REG         0X3D        //åŠ é€Ÿåº¦å€¼,Yè½´é«˜8ä½å¯„å­˜å™¨ Acceleration value, Y-axis high 8-bit register
+#define MPU_ACCEL_YOUTL_REG         0X3E        //åŠ é€Ÿåº¦å€¼,Yè½´ä½8ä½å¯„å­˜å™¨ Acceleration value, Y-axis low 8-bit register
+#define MPU_ACCEL_ZOUTH_REG         0X3F        //åŠ é€Ÿåº¦å€¼,Zè½´é«˜8ä½å¯„å­˜å™¨ Acceleration value, Z-axis high 8-bit register
+#define MPU_ACCEL_ZOUTL_REG         0X40        //åŠ é€Ÿåº¦å€¼,Zè½´ä½8ä½å¯„å­˜å™¨ Acceleration value, Z-axis low 8-bit register
 
-#define MPU_TEMP_OUTH_REG           0X41        //ÎÂ¶ÈÖµ¸ß°ËÎ»¼Ä´æÆ÷ Temperature value high eight bits register
-#define MPU_TEMP_OUTL_REG           0X42        //ÎÂ¶ÈÖµµÍ8Î»¼Ä´æÆ÷ Temperature value lower 8 bits register
+#define MPU_TEMP_OUTH_REG           0X41        //æ¸©åº¦å€¼é«˜å…«ä½å¯„å­˜å™¨ Temperature value high eight bits register
+#define MPU_TEMP_OUTL_REG           0X42        //æ¸©åº¦å€¼ä½8ä½å¯„å­˜å™¨ Temperature value lower 8 bits register
 
-#define MPU_GYRO_XOUTH_REG          0X43        //ÍÓÂİÒÇÖµ,XÖá¸ß8Î»¼Ä´æÆ÷ Gyroscope value, X-axis high 8-bit register
-#define MPU_GYRO_XOUTL_REG          0X44        //ÍÓÂİÒÇÖµ,XÖáµÍ8Î»¼Ä´æÆ÷ Gyroscope value, X-axis low 8-bit register
-#define MPU_GYRO_YOUTH_REG          0X45        //ÍÓÂİÒÇÖµ,YÖá¸ß8Î»¼Ä´æÆ÷ Gyroscope value, Y-axis high 8-bit register
-#define MPU_GYRO_YOUTL_REG          0X46        //ÍÓÂİÒÇÖµ,YÖáµÍ8Î»¼Ä´æÆ÷ Gyroscope value, Y-axis low 8-bit register
-#define MPU_GYRO_ZOUTH_REG          0X47        //ÍÓÂİÒÇÖµ,ZÖá¸ß8Î»¼Ä´æÆ÷ Gyroscope value, Z-axis high 8-bit register
-#define MPU_GYRO_ZOUTL_REG          0X48        //ÍÓÂİÒÇÖµ,ZÖáµÍ8Î»¼Ä´æÆ÷ Gyroscope value, Z-axis low 8-bit register
+#define MPU_GYRO_XOUTH_REG          0X43        //é™€èºä»ªå€¼,Xè½´é«˜8ä½å¯„å­˜å™¨ Gyroscope value, X-axis high 8-bit register
+#define MPU_GYRO_XOUTL_REG          0X44        //é™€èºä»ªå€¼,Xè½´ä½8ä½å¯„å­˜å™¨ Gyroscope value, X-axis low 8-bit register
+#define MPU_GYRO_YOUTH_REG          0X45        //é™€èºä»ªå€¼,Yè½´é«˜8ä½å¯„å­˜å™¨ Gyroscope value, Y-axis high 8-bit register
+#define MPU_GYRO_YOUTL_REG          0X46        //é™€èºä»ªå€¼,Yè½´ä½8ä½å¯„å­˜å™¨ Gyroscope value, Y-axis low 8-bit register
+#define MPU_GYRO_ZOUTH_REG          0X47        //é™€èºä»ªå€¼,Zè½´é«˜8ä½å¯„å­˜å™¨ Gyroscope value, Z-axis high 8-bit register
+#define MPU_GYRO_ZOUTL_REG          0X48        //é™€èºä»ªå€¼,Zè½´ä½8ä½å¯„å­˜å™¨ Gyroscope value, Z-axis low 8-bit register
 
 
 char MPU6050_WriteReg(uint8_t addr,uint8_t regaddr,uint8_t num,uint8_t *regdata);

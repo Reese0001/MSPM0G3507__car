@@ -12,21 +12,21 @@
 #define u32 uint32_t
 
 
-//Íâ²¿ÉùÃ÷Çø	External declaration area
-typedef enum _motor_type  //´ËÀàĞÍÓÃ×öÅĞ¶ÏËÀÇø	This type is used to determine the dead zone
+//å¤–éƒ¨å£°æ˜åŒº	External declaration area
+typedef enum _motor_type  //æ­¤ç±»å‹ç”¨åšåˆ¤æ–­æ­»åŒº	This type is used to determine the dead zone
 {
-	MOTOR_TYPE_NONE = 0x00,       // ±£Áô	reserve
-	MOTOR_520 ,       //520µç»ú °üº¬LĞÍ	520 motor including L type
-	MOTOR_310 ,       //310µç»ú	310 motor
-	MOTOR_TT_Encoder ,//ttµç»ú,´ø±àÂëÆ÷	tt motor with encoder
-	MOTOR_TT , 		  // ttµç»ú,²»´ø±àÂëÆ÷	tt motor, without encoder
+	MOTOR_TYPE_NONE = 0x00,       // ä¿ç•™	reserve
+	MOTOR_520 ,       //520ç”µæœº åŒ…å«Lå‹	520 motor including L type
+	MOTOR_310 ,       //310ç”µæœº	310 motor
+	MOTOR_TT_Encoder ,//ttç”µæœº,å¸¦ç¼–ç å™¨	tt motor with encoder
+	MOTOR_TT , 		  // ttç”µæœº,ä¸å¸¦ç¼–ç å™¨	tt motor, without encoder
 
-	Motor_TYPE_MAX    // ×îºóÒ»¸öµç»úÀàĞÍ£¬½ö×÷ÎªÅĞ¶Ï	The last motor type is for judgment only
+	Motor_TYPE_MAX    // æœ€åä¸€ä¸ªç”µæœºç±»å‹ï¼Œä»…ä½œä¸ºåˆ¤æ–­	The last motor type is for judgment only
 } motor_type_t;
 
 
 
-//Òı³ö±àÂëÆ÷±äÁ¿£¬¹©Íâ²¿Ê¹ÓÃ	Lead out encoder variables for external use
+//å¼•å‡ºç¼–ç å™¨å˜é‡ï¼Œä¾›å¤–éƒ¨ä½¿ç”¨	Lead out encoder variables for external use
 extern int Encoder_Offset[4];
 extern int Encoder_Now[4];
 extern float g_Speed[4];

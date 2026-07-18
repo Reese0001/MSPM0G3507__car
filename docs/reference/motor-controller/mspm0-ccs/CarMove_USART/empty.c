@@ -3,10 +3,10 @@
 #include "usart.h"
 #include "app_motor_usart.h"
 
-#define UPLOAD_DATA 3  //0:²»½ÓÊÜÊı¾İ 1:½ÓÊÕ×ÜµÄ±àÂëÆ÷Êı¾İ 2:½ÓÊÕÊµÊ±µÄ±àÂëÆ÷ 3:½ÓÊÕµç»úµ±Ç°ËÙ¶È mm/s
+#define UPLOAD_DATA 3  //0:ä¸æ¥å—æ•°æ® 1:æ¥æ”¶æ€»çš„ç¼–ç å™¨æ•°æ® 2:æ¥æ”¶å®æ—¶çš„ç¼–ç å™¨ 3:æ¥æ”¶ç”µæœºå½“å‰é€Ÿåº¦ mm/s
 					   //0: Do not receive data 1: Receive total encoder data 2: Receive real-time encoder 3: Receive current motor speed mm/s
 
-#define MOTOR_TYPE 2   //1:520µç»ú 2:310µç»ú 3:²âËÙÂëÅÌTTµç»ú 4:TTÖ±Á÷¼õËÙµç»ú 5:LĞÍ520µç»ú
+#define MOTOR_TYPE 2   //1:520ç”µæœº 2:310ç”µæœº 3:æµ‹é€Ÿç ç›˜TTç”µæœº 4:TTç›´æµå‡é€Ÿç”µæœº 5:Lå‹520ç”µæœº
                        //1:520 motor 2:310 motor 3:speed code disc TT motor 4:TT DC reduction motor 5:L type 520 motor
 
 uint8_t times = 0;
@@ -17,23 +17,23 @@ void Car_Move(void)
 	switch(state)
 	{
 		case 0:
-		Contrl_Speed(300,300,300,300);//Ç°½ø Forward
+		Contrl_Speed(300,300,300,300);//å‰è¿› Forward
 		break;
 		
 		case 1:
-		Contrl_Speed(-300,-300,-300,-300);//ºóÍË Back
+		Contrl_Speed(-300,-300,-300,-300);//åé€€ Back
 		break;
 		
 		case 2:
-		Contrl_Speed(600,600,-400,-400);//ÓÒĞı	Rotate right
+		Contrl_Speed(600,600,-400,-400);//å³æ—‹	Rotate right
 		break;
 		
 		case 3:
-		Contrl_Speed(-400,-400,600,600);//×óĞı	Rotate left		
+		Contrl_Speed(-400,-400,600,600);//å·¦æ—‹	Rotate left		
 		break;
 		
 		case 4:
-		Contrl_Speed(0,0,0,0);//Í£³µ	Stop
+		Contrl_Speed(0,0,0,0);//åœè½¦	Stop
 		break;
 	}
 	state++;
@@ -46,23 +46,23 @@ void Car_Move_PWM(void)
 	switch(state)
 	{
 		case 0:
-		Contrl_Pwm(1500,1500,1500,1500);//Ç°½ø Forward
+		Contrl_Pwm(1500,1500,1500,1500);//å‰è¿› Forward
 		break;
 		
 		case 1:
-		Contrl_Pwm(-1500,-1500,-1500,-1500);//ºóÍË Back
+		Contrl_Pwm(-1500,-1500,-1500,-1500);//åé€€ Back
 		break;
 		
 		case 2:
-		Contrl_Pwm(1200,1200,-1500,-1500);//ÓÒĞı	Rotate right
+		Contrl_Pwm(1200,1200,-1500,-1500);//å³æ—‹	Rotate right
 		break;
 		
 		case 3:
-		Contrl_Pwm(-1500,-1500,1200,1200);//×óĞı	Rotate left
+		Contrl_Pwm(-1500,-1500,1200,1200);//å·¦æ—‹	Rotate left
 		break;
 		
 		case 4:
-		Contrl_Pwm(0,0,0,0);//Í£³µ	Stop
+		Contrl_Pwm(0,0,0,0);//åœè½¦	Stop
 		break;
 	}
 	state++;
@@ -76,20 +76,20 @@ int main(void)
 	printf("pelase wait...\r\n");
 	Contrl_Pwm(0,0,0,0);
 	delay_ms(100);
-	//ÏÈ¹Ø±ÕÉÏ±¨	Close the report first
+	//å…ˆå…³é—­ä¸ŠæŠ¥	Close the report first
 	send_upload_data(false,false,false);
 	delay_ms(10);
 	
     #if MOTOR_TYPE == 1
-	send_motor_type(1);//ÅäÖÃµç»úÀàĞÍ	Configure motor type
+	send_motor_type(1);//é…ç½®ç”µæœºç±»å‹	Configure motor type
 	delay_ms(100);
-	send_pulse_phase(30);//ÅäÖÃ¼õËÙ±È ²éµç»úÊÖ²áµÃ³ö	Configure the reduction ratio. Check the motor manual to find out
+	send_pulse_phase(30);//é…ç½®å‡é€Ÿæ¯” æŸ¥ç”µæœºæ‰‹å†Œå¾—å‡º	Configure the reduction ratio. Check the motor manual to find out
 	delay_ms(100);
-	send_pulse_line(11);//ÅäÖÃ´Å»·Ïß ²éµç»úÊÖ²áµÃ³ö	Configure the magnetic ring wire. Check the motor manual to get the result.
+	send_pulse_line(11);//é…ç½®ç£ç¯çº¿ æŸ¥ç”µæœºæ‰‹å†Œå¾—å‡º	Configure the magnetic ring wire. Check the motor manual to get the result.
 	delay_ms(100);
-	send_wheel_diameter(67.00);//ÅäÖÃÂÖ×ÓÖ±¾¶,²âÁ¿µÃ³ö		Configure the wheel diameter and measure it
+	send_wheel_diameter(67.00);//é…ç½®è½®å­ç›´å¾„,æµ‹é‡å¾—å‡º		Configure the wheel diameter and measure it
 	delay_ms(100);
-	send_motor_deadzone(1900);//ÅäÖÃµç»úËÀÇø,ÊµÑéµÃ³ö	Configure the motor dead zone, and the experiment shows
+	send_motor_deadzone(1900);//é…ç½®ç”µæœºæ­»åŒº,å®éªŒå¾—å‡º	Configure the motor dead zone, and the experiment shows
 	delay_ms(100);
     
     #elif MOTOR_TYPE == 2
@@ -137,7 +137,7 @@ int main(void)
 	delay_ms(100);
     #endif
 	
-	//¸øµç»úÄ£¿é·¢ËÍĞèÒªÉÏ±¨µÄÊı¾İ	Send the data that needs to be reported to the motor module
+	//ç»™ç”µæœºæ¨¡å—å‘é€éœ€è¦ä¸ŠæŠ¥çš„æ•°æ®	Send the data that needs to be reported to the motor module
 	#if UPLOAD_DATA == 1
 	send_upload_data(true,false,false);delay_ms(10);
 	#elif UPLOAD_DATA == 2
@@ -146,14 +146,14 @@ int main(void)
 	send_upload_data(false,false,true);delay_ms(10);
 	#endif
 	
-	//Çå³ı¶¨Ê±Æ÷ÖĞ¶Ï±êÖ¾	Clear the timer interrupt flag
+	//æ¸…é™¤å®šæ—¶å™¨ä¸­æ–­æ ‡å¿—	Clear the timer interrupt flag
     NVIC_ClearPendingIRQ(TIMER_0_INST_INT_IRQN);
-    //Ê¹ÄÜ¶¨Ê±Æ÷ÖĞ¶Ï	Enable timer interrupt
+    //ä½¿èƒ½å®šæ—¶å™¨ä¸­æ–­	Enable timer interrupt
     NVIC_EnableIRQ(TIMER_0_INST_INT_IRQN);
 	
 	while(1)
 	{
-		if(times>=25)//¶¨Ê±Æ÷Ã¿100msÀÛ¼ÓÒ»´Î£¬µ±´ïµ½25´Î£¬¼´2.5ÃëµÄÊ±ºò×ª»»Ò»´ÎĞ¡³µµÄ×´Ì¬	The timer accumulates every 100ms, and when it reaches 25 times, that is, every 2.5 seconds, the state of the car is changed.
+		if(times>=25)//å®šæ—¶å™¨æ¯100msç´¯åŠ ä¸€æ¬¡ï¼Œå½“è¾¾åˆ°25æ¬¡ï¼Œå³2.5ç§’çš„æ—¶å€™è½¬æ¢ä¸€æ¬¡å°è½¦çš„çŠ¶æ€	The timer accumulates every 100ms, and when it reaches 25 times, that is, every 2.5 seconds, the state of the car is changed.
 		{
 			#if MOTOR_TYPE == 4
             Car_Move_PWM();
@@ -181,14 +181,14 @@ int main(void)
 	
 }
 
-//¶¨Ê±Æ÷µÄÖĞ¶Ï·şÎñº¯Êı,Ã¿100ms¶ÁÈ¡Êı¾İ²¢´òÓ¡
+//å®šæ—¶å™¨çš„ä¸­æ–­æœåŠ¡å‡½æ•°,æ¯100msè¯»å–æ•°æ®å¹¶æ‰“å°
 //The timer interrupt service function reads and prints data every 100ms
 void TIMER_0_INST_IRQHandler(void)
 {
-    //Èç¹û²úÉúÁË¶¨Ê±Æ÷ÖĞ¶Ï	If a timer interrupt occurs
+    //å¦‚æœäº§ç”Ÿäº†å®šæ—¶å™¨ä¸­æ–­	If a timer interrupt occurs
     switch( DL_TimerG_getPendingInterrupt(TIMER_0_INST) )
     {
-        case DL_TIMER_IIDX_ZERO://Èç¹ûÊÇ0Òç³öÖĞ¶Ï	If it is 0 overflow interrupt
+        case DL_TIMER_IIDX_ZERO://å¦‚æœæ˜¯0æº¢å‡ºä¸­æ–­	If it is 0 overflow interrupt
 			times++;
 			break;
 

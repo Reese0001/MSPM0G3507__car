@@ -4,14 +4,14 @@ int Encoder_Offset[4];
 int Encoder_Now[4];
 
   
-//¸¡µãĞÍ×ªbytesÎ» //bytes 4¸ö³¤¶È ÒòÎªfloatÊÇ4×Ö½Ú	Convert float to bytes //bytes 4 in length because float is 4 bytes
+//æµ®ç‚¹å‹è½¬bytesä½ //bytes 4ä¸ªé•¿åº¦ å› ä¸ºfloatæ˜¯4å­—èŠ‚	Convert float to bytes //bytes 4 in length because float is 4 bytes
 void float_to_bytes(float f, uint8_t *bytes) 
 {
     memcpy(bytes, &f, sizeof(float));
 }
 
 
-//bytesÎ»×ª³É¸¡µãĞÍ	Convert bytes to floating point
+//bytesä½è½¬æˆæµ®ç‚¹å‹	Convert bytes to floating point
 float char2float(char *p)
 {
   float *p_Int;
@@ -23,13 +23,13 @@ float char2float(char *p)
 }
 
 
-//ÅäÖÃµç»ú	Configure the motor
+//é…ç½®ç”µæœº	Configure the motor
 void Set_motor_type(uint8_t data)
 {
 	i2cWrite(Motor_model_ADDR,MOTOR_TYPE_REG,1,&data);
 }
 
-//ÅäÖÃËÀÇø	Configuring Dead Zone
+//é…ç½®æ­»åŒº	Configuring Dead Zone
 void Set_motor_deadzone(uint16_t data)
 {
 	static uint8_t buf_tempzone[2];
@@ -40,7 +40,7 @@ void Set_motor_deadzone(uint16_t data)
 	i2cWrite(Motor_model_ADDR,MOTOR_DeadZONE_REG,2,buf_tempzone);
 }
 
-//ÅäÖÃ´Å»·Ïß	Configuring magnetic loop
+//é…ç½®ç£ç¯çº¿	Configuring magnetic loop
 void Set_Pluse_line(uint16_t data)
 {
 	static uint8_t buf_templine[2];
@@ -51,7 +51,7 @@ void Set_Pluse_line(uint16_t data)
 	i2cWrite(Motor_model_ADDR,MOTOR_PluseLine_REG,2,buf_templine);
 }
 
-//ÅäÖÃ¼õËÙ±È	Configure the reduction ratio
+//é…ç½®å‡é€Ÿæ¯”	Configure the reduction ratio
 void Set_Pluse_Phase(uint16_t data)
 {
 	static uint8_t buf_tempPhase[2];
@@ -62,7 +62,7 @@ void Set_Pluse_Phase(uint16_t data)
 	i2cWrite(Motor_model_ADDR,MOTOR_PlusePhase_REG,2,buf_tempPhase);
 }
 
-//ÅäÖÃÖ±¾¶	Configuration Diameter
+//é…ç½®ç›´å¾„	Configuration Diameter
 void Set_Wheel_dis(float data)
 {
 	static uint8_t bytes[4];
@@ -72,8 +72,8 @@ void Set_Wheel_dis(float data)
 	i2cWrite(Motor_model_ADDR,WHEEL_DIA_REG,4,bytes);
 }
 
-//Ö»ÄÜ¿ØÖÆ´ø±àÂëÆ÷ÀàĞÍµÄµç»ú	Can only control motors with encoders
-//´«Èë²ÎÊı:4¸öµç»úµÄËÙ¶È		Input parameters: speed of 4 motors
+//åªèƒ½æ§åˆ¶å¸¦ç¼–ç å™¨ç±»å‹çš„ç”µæœº	Can only control motors with encoders
+//ä¼ å…¥å‚æ•°:4ä¸ªç”µæœºçš„é€Ÿåº¦		Input parameters: speed of 4 motors
 void control_speed(int16_t m1,int16_t m2 ,int16_t m3,int16_t m4)
 {
 	static uint8_t speed[8];
@@ -95,9 +95,9 @@ void control_speed(int16_t m1,int16_t m2 ,int16_t m3,int16_t m4)
 }
 
 
-//¿ØÖÆ´ø±àÂëÆ÷ÀàĞÍµÄµç»ú	Control the motor with encoder type
-//´«Èë²ÎÊı:4¸öµç»úµÄpwm	PWM of 4 motors
-//´Ëº¯Êı¿ÉÒÔ½áºÏÊµÊ±±àÂëÆ÷µÄÊı¾İ£¬À´ÊµÏÖcontrol_speedµÄ¹¦ÄÜ	This function can combine the data of real-time encoder to realize the function of control_speed
+//æ§åˆ¶å¸¦ç¼–ç å™¨ç±»å‹çš„ç”µæœº	Control the motor with encoder type
+//ä¼ å…¥å‚æ•°:4ä¸ªç”µæœºçš„pwm	PWM of 4 motors
+//æ­¤å‡½æ•°å¯ä»¥ç»“åˆå®æ—¶ç¼–ç å™¨çš„æ•°æ®ï¼Œæ¥å®ç°control_speedçš„åŠŸèƒ½	This function can combine the data of real-time encoder to realize the function of control_speed
 void control_pwm(int16_t m1,int16_t m2 ,int16_t m3,int16_t m4)
 {
 	static uint8_t pwm[8];
@@ -119,52 +119,52 @@ void control_pwm(int16_t m1,int16_t m2 ,int16_t m3,int16_t m4)
 }
 
 
-//¶ÁÈ¡Ïà¶ÔÊ±¼äµÄ±àÂëÆ÷µÄÊı¾İ 10msµÄ	Read the data of the encoder of relative time 10ms
-//´Ëº¯Êı¿ÉÒÔ½áºÏcontrol_pwmµÄÊı¾İ£¬À´ÊµÏÖcontrol_speedµÄ¹¦ÄÜ ĞèÒªÔö¼Ópid¿ØÖÆ	This function can be combined with the data of control_pwm to realize the function of control_speed. It is necessary to add pid control
+//è¯»å–ç›¸å¯¹æ—¶é—´çš„ç¼–ç å™¨çš„æ•°æ® 10msçš„	Read the data of the encoder of relative time 10ms
+//æ­¤å‡½æ•°å¯ä»¥ç»“åˆcontrol_pwmçš„æ•°æ®ï¼Œæ¥å®ç°control_speedçš„åŠŸèƒ½ éœ€è¦å¢åŠ pidæ§åˆ¶	This function can be combined with the data of control_pwm to realize the function of control_speed. It is necessary to add pid control
 void Read_10_Enconder(void)
 {
 	static int8_t buf[2];
 		
-	//M1µç»ú±àÂëÆ÷µÄÊı¾İ	M1 motor encoder data
+	//M1ç”µæœºç¼–ç å™¨çš„æ•°æ®	M1 motor encoder data
 	i2cRead(Motor_model_ADDR, READ_TEN_M1Enconer_REG, 2, buf);
 	Encoder_Offset[0] = buf[0]<<8|buf[1]; 
 	
-	//M2µç»ú±àÂëÆ÷µÄÊı¾İ	M2 motor encoder data
+	//M2ç”µæœºç¼–ç å™¨çš„æ•°æ®	M2 motor encoder data
 	i2cRead(Motor_model_ADDR, READ_TEN_M2Enconer_REG, 2, buf);
 	Encoder_Offset[1] = buf[0]<<8|buf[1];
 	
-	//M3µç»ú±àÂëÆ÷µÄÊı¾İ	M3 motor encoder data
+	//M3ç”µæœºç¼–ç å™¨çš„æ•°æ®	M3 motor encoder data
 	i2cRead(Motor_model_ADDR, READ_TEN_M3Enconer_REG, 2, buf);
 	Encoder_Offset[2] = buf[0]<<8|buf[1];
 	
-	//M4µç»ú±àÂëÆ÷µÄÊı¾İ	M4 motor encoder data
+	//M4ç”µæœºç¼–ç å™¨çš„æ•°æ®	M4 motor encoder data
 	i2cRead(Motor_model_ADDR, READ_TEN_M4Enconer_REG, 2, buf);
 	Encoder_Offset[3] = buf[0]<<8|buf[1];
 	
 }
 
-//¶ÁÈ¡µç»ú×ª¶¯µÄ±àÂëÆ÷Êı¾İ	Read the encoder data of the motor rotation
+//è¯»å–ç”µæœºè½¬åŠ¨çš„ç¼–ç å™¨æ•°æ®	Read the encoder data of the motor rotation
 void Read_ALL_Enconder(void)
 {
 	static uint8_t buf[2];
 	static uint8_t buf2[2];
 
-	//M1µç»ú±àÂëÆ÷µÄÊı¾İ	M1 motor encoder data
+	//M1ç”µæœºç¼–ç å™¨çš„æ•°æ®	M1 motor encoder data
 	i2cRead(Motor_model_ADDR, READ_ALLHigh_M1_REG, 2, buf);
 	i2cRead(Motor_model_ADDR, READ_ALLLOW_M1_REG, 2, buf2);
 	Encoder_Now[0] = buf[0]<<24|buf[1]<<16|buf2[0]<<8|buf2[1]; 
 	
-	//M2µç»ú±àÂëÆ÷µÄÊı¾İ	M2 motor encoder data
+	//M2ç”µæœºç¼–ç å™¨çš„æ•°æ®	M2 motor encoder data
 	i2cRead(Motor_model_ADDR, READ_ALLHigh_M2_REG, 2, buf);
 	i2cRead(Motor_model_ADDR, READ_ALLLOW_M2_REG, 2, buf2);
 	Encoder_Now[1] = buf[0]<<24|buf[1]<<16|buf2[0]<<8|buf2[1];
 	
-	//M3µç»ú±àÂëÆ÷µÄÊı¾İ	M3 motor encoder data
+	//M3ç”µæœºç¼–ç å™¨çš„æ•°æ®	M3 motor encoder data
 	i2cRead(Motor_model_ADDR, READ_ALLHigh_M3_REG, 2, buf);
 	i2cRead(Motor_model_ADDR, READ_ALLLOW_M3_REG, 2, buf2);
 	Encoder_Now[2] = buf[0]<<24|buf[1]<<16|buf2[0]<<8|buf2[1];
 	
-	//M4µç»ú±àÂëÆ÷µÄÊı¾İ	M4 motor encoder data
+	//M4ç”µæœºç¼–ç å™¨çš„æ•°æ®	M4 motor encoder data
 	i2cRead(Motor_model_ADDR, READ_ALLHigh_M4_REG, 2, buf);
 	i2cRead(Motor_model_ADDR, READ_ALLLOW_M4_REG, 2, buf2);
 	Encoder_Now[3] = buf[0]<<24|buf[1]<<16|buf2[0]<<8|buf2[1];

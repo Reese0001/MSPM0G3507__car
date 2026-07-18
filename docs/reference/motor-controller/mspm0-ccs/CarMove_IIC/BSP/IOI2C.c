@@ -4,9 +4,9 @@
 Function: Simulate IIC start signal
 Input   : none
 Output  : 1
-º¯Êı¹¦ÄÜ£ºÄ£ÄâIICÆğÊ¼ĞÅºÅ
-Èë¿Ú²ÎÊı£ºÎŞ
-·µ»Ø  Öµ£º1
+å‡½æ•°åŠŸèƒ½ï¼šæ¨¡æ‹ŸIICèµ·å§‹ä¿¡å·
+å…¥å£å‚æ•°ï¼šæ— 
+è¿”å›  å€¼ï¼š1
 **************************************************************************/
 int IIC_Start(void)
 {
@@ -23,9 +23,9 @@ int IIC_Start(void)
 Function: Analog IIC end signal
 Input   : none
 Output  : none
-º¯Êı¹¦ÄÜ£ºÄ£ÄâIIC½áÊøĞÅºÅ
-Èë¿Ú²ÎÊı£ºÎŞ
-·µ»Ø  Öµ£ºÎŞ
+å‡½æ•°åŠŸèƒ½ï¼šæ¨¡æ‹ŸIICç»“æŸä¿¡å·
+å…¥å£å‚æ•°ï¼šæ— 
+è¿”å›  å€¼ï¼šæ— 
 **************************************************************************/	  
 void IIC_Stop(void)
 {
@@ -42,10 +42,10 @@ void IIC_Stop(void)
 /**************************************************************************
 Function: IIC wait the response signal
 Input   : none
-Output  : 0£ºNo response received£»1£ºResponse received
-º¯Êı¹¦ÄÜ£ºIICµÈ´ıÓ¦´ğĞÅºÅ
-Èë¿Ú²ÎÊı£ºÎŞ
-·µ»Ø  Öµ£º0£ºÃ»ÓĞÊÕµ½Ó¦´ğ£»1£ºÊÕµ½Ó¦´ğ
+Output  : 0ï¼šNo response receivedï¼›1ï¼šResponse received
+å‡½æ•°åŠŸèƒ½ï¼šIICç­‰å¾…åº”ç­”ä¿¡å·
+å…¥å£å‚æ•°ï¼šæ— 
+è¿”å›  å€¼ï¼š0ï¼šæ²¡æœ‰æ”¶åˆ°åº”ç­”ï¼›1ï¼šæ”¶åˆ°åº”ç­”
 **************************************************************************/
 int IIC_Wait_Ack(void)
 {
@@ -76,11 +76,11 @@ int IIC_Wait_Ack(void)
 } 
 
 /******************************************************************
- * º¯ Êı Ãû ³Æ£ºIIC_Send_Ack
- * º¯ Êı Ëµ Ã÷£ºÖ÷»ú·¢ËÍÓ¦´ğ»òÕß·ÇÓ¦´ğĞÅºÅ
- * º¯ Êı ĞÎ ²Î£º0·¢ËÍÓ¦´ğ  1·¢ËÍ·ÇÓ¦´ğ
- * º¯ Êı ·µ »Ø£ºÎŞ
- * ±¸       ×¢£ºÎŞ
+ * å‡½ æ•° å ç§°ï¼šIIC_Send_Ack
+ * å‡½ æ•° è¯´ æ˜ï¼šä¸»æœºå‘é€åº”ç­”æˆ–è€…éåº”ç­”ä¿¡å·
+ * å‡½ æ•° å½¢ å‚ï¼š0å‘é€åº”ç­”  1å‘é€éåº”ç­”
+ * å‡½ æ•° è¿” å›ï¼šæ— 
+ * å¤‡       æ³¨ï¼šæ— 
  * Function: IIC_Send_Ack
  * Description: The host sends a response or non-response signal
  * Pparameter: 0 sends a response 1 sends a non-response
@@ -103,17 +103,17 @@ void IIC_Send_Ack(unsigned char ack)
 
 /**************************************************************************
 Function: IIC sends a byte
-Input   : txd£ºByte data sent
+Input   : txdï¼šByte data sent
 Output  : none
-º¯Êı¹¦ÄÜ£ºIIC·¢ËÍÒ»¸ö×Ö½Ú
-Èë¿Ú²ÎÊı£ºtxd£º·¢ËÍµÄ×Ö½ÚÊı¾İ
-·µ»Ø  Öµ£ºÎŞ
+å‡½æ•°åŠŸèƒ½ï¼šIICå‘é€ä¸€ä¸ªå­—èŠ‚
+å…¥å£å‚æ•°ï¼štxdï¼šå‘é€çš„å­—èŠ‚æ•°æ®
+è¿”å›  å€¼ï¼šæ— 
 **************************************************************************/	  
 void IIC_Send_Byte(u8 txd)
 {                        
 	int i = 0;
 	SDA_OUT();
-	SCL(0);//À­µÍÊ±ÖÓ¿ªÊ¼Êı¾İ´«Êä Pull the clock low to start data transmission
+	SCL(0);//æ‹‰ä½æ—¶é’Ÿå¼€å§‹æ•°æ®ä¼ è¾“ Pull the clock low to start data transmission
 	
 	for( i = 0; i < 8; i++ )
 	{
@@ -129,11 +129,11 @@ void IIC_Send_Byte(u8 txd)
   
 /**************************************************************************
 Function: IIC write data to register
-Input   : addr£ºDevice address£»reg£ºRegister address£»len;Number of bytes£»data£ºData
-Output  : 0£ºWrite successfully£»1£ºFailed to write
-º¯Êı¹¦ÄÜ£ºIICĞ´Êı¾İµ½¼Ä´æÆ÷
-Èë¿Ú²ÎÊı£ºaddr£ºÉè±¸µØÖ·£»reg£º¼Ä´æÆ÷µØÖ·£»len;×Ö½ÚÊı£»data£ºÊı¾İ
-·µ»Ø  Öµ£º0£º³É¹¦Ğ´Èë£»1£ºÃ»ÓĞ³É¹¦Ğ´Èë
+Input   : addrï¼šDevice addressï¼›regï¼šRegister addressï¼›len;Number of bytesï¼›dataï¼šData
+Output  : 0ï¼šWrite successfullyï¼›1ï¼šFailed to write
+å‡½æ•°åŠŸèƒ½ï¼šIICå†™æ•°æ®åˆ°å¯„å­˜å™¨
+å…¥å£å‚æ•°ï¼šaddrï¼šè®¾å¤‡åœ°å€ï¼›regï¼šå¯„å­˜å™¨åœ°å€ï¼›len;å­—èŠ‚æ•°ï¼›dataï¼šæ•°æ®
+è¿”å›  å€¼ï¼š0ï¼šæˆåŠŸå†™å…¥ï¼›1ï¼šæ²¡æœ‰æˆåŠŸå†™å…¥
 **************************************************************************/
 int i2cWrite(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *data)
 {
@@ -154,11 +154,11 @@ int i2cWrite(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *data)
 }
 /**************************************************************************
 Function: IIC read register data
-Input   : addr£ºDevice address£»reg£ºRegister address£»len;Number of bytes£»*buf£ºData read out
-Output  : 0£ºRead successfully£»1£ºFailed to read
-º¯Êı¹¦ÄÜ£ºIIC¶Á¼Ä´æÆ÷µÄÊı¾İ
-Èë¿Ú²ÎÊı£ºaddr£ºÉè±¸µØÖ·£»reg£º¼Ä´æÆ÷µØÖ·£»len;×Ö½ÚÊı£»*buf£º¶Á³öÊı¾İ»º´æ
-·µ»Ø  Öµ£º0£º³É¹¦¶Á³ö£»1£ºÃ»ÓĞ³É¹¦¶Á³ö
+Input   : addrï¼šDevice addressï¼›regï¼šRegister addressï¼›len;Number of bytesï¼›*bufï¼šData read out
+Output  : 0ï¼šRead successfullyï¼›1ï¼šFailed to read
+å‡½æ•°åŠŸèƒ½ï¼šIICè¯»å¯„å­˜å™¨çš„æ•°æ®
+å…¥å£å‚æ•°ï¼šaddrï¼šè®¾å¤‡åœ°å€ï¼›regï¼šå¯„å­˜å™¨åœ°å€ï¼›len;å­—èŠ‚æ•°ï¼›*bufï¼šè¯»å‡ºæ•°æ®ç¼“å­˜
+è¿”å›  å€¼ï¼š0ï¼šæˆåŠŸè¯»å‡ºï¼›1ï¼šæ²¡æœ‰æˆåŠŸè¯»å‡º
 **************************************************************************/
 
 int i2cRead(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *buf)
@@ -186,16 +186,16 @@ int i2cRead(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *buf)
 
 /**************************************************************************
 Function: IIC reads a byte
-Input   : ack£ºSend response signal or not£»1£ºSend£»0£ºDo not send
-Output  : receive£ºData read
-º¯Êı¹¦ÄÜ£ºIIC¶ÁÈ¡Ò»¸öÎ»
-Èë¿Ú²ÎÊı£ºack£ºÊÇ·ñ·¢ËÍÓ¦´ğĞÅºÅ£»1£º·¢ËÍ£»0£º²»·¢ËÍ
-·µ»Ø  Öµ£ºreceive£º¶ÁÈ¡µÄÊı¾İ
+Input   : ackï¼šSend response signal or notï¼›1ï¼šSendï¼›0ï¼šDo not send
+Output  : receiveï¼šData read
+å‡½æ•°åŠŸèƒ½ï¼šIICè¯»å–ä¸€ä¸ªä½
+å…¥å£å‚æ•°ï¼šackï¼šæ˜¯å¦å‘é€åº”ç­”ä¿¡å·ï¼›1ï¼šå‘é€ï¼›0ï¼šä¸å‘é€
+è¿”å›  å€¼ï¼šreceiveï¼šè¯»å–çš„æ•°æ®
 **************************************************************************/ 
 u8 IIC_Read_Byte(void)
 {
 	unsigned char i,receive=0;
-	SDA_IN();//SDAÉèÖÃÎªÊäÈë SDA is set as input
+	SDA_IN();//SDAè®¾ç½®ä¸ºè¾“å…¥ SDA is set as input
     for(i=0;i<8;i++ )
         {
         SCL(0);

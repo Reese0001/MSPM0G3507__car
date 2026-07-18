@@ -4,10 +4,10 @@ volatile bool  gConsoleTxDMATransmitted = false;
 volatile bool  gConsoleTxTransmitted = true;
 
 /************************************************
-º¯ÊıÃû³Æ £º Send_Motor_U8		Function name: Send_Motor_U8
-¹¦    ÄÜ £º USART1·¢ËÍÒ»¸ö×Ö·û	Function: USART1 sends a character
-²Î    Êı £º Data --- Êı¾İ		Parameter: Data --- data
-·µ »Ø Öµ £º ÎŞ					Return value: None
+å‡½æ•°åç§° ï¼š Send_Motor_U8		Function name: Send_Motor_U8
+åŠŸ    èƒ½ ï¼š USART1å‘é€ä¸€ä¸ªå­—ç¬¦	Function: USART1 sends a character
+å‚    æ•° ï¼š Data --- æ•°æ®		Parameter: Data --- data
+è¿” å› å€¼ ï¼š æ— 					Return value: None
 *************************************************/
 void Send_Motor_U8(uint8_t Data)
 {
@@ -16,11 +16,11 @@ void Send_Motor_U8(uint8_t Data)
 }
 
 /************************************************
-º¯ÊıÃû³Æ £º Send_Motor_ArrayU8	Function name: Send_Motor_ArrayU8
-¹¦    ÄÜ £º ´®¿Ú1·¢ËÍN¸ö×Ö·û		Function: Serial port 1 sends N characters
-²Î    Êı £º pData ---- ×Ö·û´®	Parameter: pData ---- string
-            Length --- ³¤¶È		Length --- length
-·µ »Ø Öµ £º ÎŞ					Return value: None
+å‡½æ•°åç§° ï¼š Send_Motor_ArrayU8	Function name: Send_Motor_ArrayU8
+åŠŸ    èƒ½ ï¼š ä¸²å£1å‘é€Nä¸ªå­—ç¬¦		Function: Serial port 1 sends N characters
+å‚    æ•° ï¼š pData ---- å­—ç¬¦ä¸²	Parameter: pData ---- string
+            Length --- é•¿åº¦		Length --- length
+è¿” å› å€¼ ï¼š æ— 					Return value: None
 *************************************************/
 void Send_Motor_ArrayU8(uint8_t *pData, uint16_t Length)
 {
@@ -33,19 +33,19 @@ void Send_Motor_ArrayU8(uint8_t *pData, uint16_t Length)
 
 void UART_Console_write(uint8_t *data, uint16_t size)
 {
-    //µ±´®¿Ú·¢ËÍÍê±Ïºó£¬²Å¿ÉÔÙ´Î·¢ËÍ   When the serial port has finished sending, it can only send again
+    //å½“ä¸²å£å‘é€å®Œæ¯•åï¼Œæ‰å¯å†æ¬¡å‘é€   When the serial port has finished sending, it can only send again
     if(gConsoleTxTransmitted)
     {
-        //ÉèÖÃÔ´µØÖ· Setting the source address
+        //è®¾ç½®æºåœ°å€ Setting the source address
         DL_DMA_setSrcAddr(DMA, DMA_CH0_CHAN_ID, (uint32_t)(data));
     
-        //ÉèÖÃÄ¿±êµØÖ·    Setting the destination address
+        //è®¾ç½®ç›®æ ‡åœ°å€    Setting the destination address
         DL_DMA_setDestAddr(DMA, DMA_CH0_CHAN_ID, (uint32_t)(&UART_1_INST->TXDATA));
     
-        //ÉèÖÃÒª°áÔËµÄ×Ö½ÚÊı Set the number of bytes to be carried
+        //è®¾ç½®è¦æ¬è¿çš„å­—èŠ‚æ•° Set the number of bytes to be carried
         DL_DMA_setTransferSize(DMA, DMA_CH0_CHAN_ID, size);
     
-        //Ê¹ÄÜDMAÍ¨µÀ   Enable DMA Channel
+        //ä½¿èƒ½DMAé€šé“   Enable DMA Channel
         DL_DMA_enableChannel(DMA, DMA_CH0_CHAN_ID);
     
         gConsoleTxTransmitted    = false;
@@ -54,7 +54,7 @@ void UART_Console_write(uint8_t *data, uint16_t size)
  
 }
 
-/*  ´®¿ÚÖĞ¶Ï½ÓÊÕ´¦Àí */
+/*  ä¸²å£ä¸­æ–­æ¥æ”¶å¤„ç† */
 /* Serial port interrupt reception processing */
 void UART_1_INST_IRQHandler(void)
 {
@@ -62,24 +62,24 @@ void UART_1_INST_IRQHandler(void)
 	
 	switch( DL_UART_getPendingInterrupt(UART_1_INST) )
 	{
-//		case DL_UART_IIDX_RX://Èç¹ûÊÇ½ÓÊÕÖĞ¶Ï	If it is a receive interrupt
+//		case DL_UART_IIDX_RX://å¦‚æœæ˜¯æ¥æ”¶ä¸­æ–­	If it is a receive interrupt
 //			
-//			// ½ÓÊÕ·¢ËÍ¹ıÀ´µÄÊı¾İ±£´æ	Receive and save the data sent
+//			// æ¥æ”¶å‘é€è¿‡æ¥çš„æ•°æ®ä¿å­˜	Receive and save the data sent
 //			Rx2_Temp = DL_UART_Main_receiveData(UART_1_INST);
-//			//´¦Àí	deal with
+//			//å¤„ç†	deal with
 //			Deal_Control_Rxtemp(Rx2_Temp);
 //			break;
 		
-        case DL_UART_MAIN_IIDX_EOT_DONE:    //´®¿Ú·¢ËÍÍê³É    Serial port send complete
+        case DL_UART_MAIN_IIDX_EOT_DONE:    //ä¸²å£å‘é€å®Œæˆ    Serial port send complete
             gConsoleTxTransmitted = true;
             break;
         
-        case DL_UART_MAIN_IIDX_DMA_DONE_TX: //DMA°áÔËÍê³É   DMA handling complete
+        case DL_UART_MAIN_IIDX_DMA_DONE_TX: //DMAæ¬è¿å®Œæˆ   DMA handling complete
             gConsoleTxDMATransmitted = true;
             break;
         
         
-		default://ÆäËûµÄ´®¿ÚÖĞ¶Ï	Other serial port interrupts
+		default://å…¶ä»–çš„ä¸²å£ä¸­æ–­	Other serial port interrupts
 			break;
 	}	
     

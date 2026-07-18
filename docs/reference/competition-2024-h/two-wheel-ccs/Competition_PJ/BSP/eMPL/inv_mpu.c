@@ -27,8 +27,8 @@
 #include "bsp_mpu6050.h"
 
 
-#define MPU6050												//¶¨ÒåÎÒÃÇÊ¹ÓÃµÄ´«¸ĞÆ÷ÎªMPU6050 Define the sensor we use as MPU6050
-#define MOTION_DRIVER_TARGET_MSP430		//¶¨ÒåÇı¶¯²¿·Ö,²ÉÓÃMSP430µÄÇı¶¯(ÒÆÖ²µ½STM32F4) Define the driver part, using the MSP430 driver (ported to STM32F4)
+#define MPU6050												//å®šä¹‰æˆ‘ä»¬ä½¿ç”¨çš„ä¼ æ„Ÿå™¨ä¸ºMPU6050 Define the sensor we use as MPU6050
+#define MOTION_DRIVER_TARGET_MSP430		//å®šä¹‰é©±åŠ¨éƒ¨åˆ†,é‡‡ç”¨MSP430çš„é©±åŠ¨(ç§»æ¤åˆ°STM32F4) Define the driver part, using the MSP430 driver (ported to STM32F4)
 
 /* The following functions must be defined for this platform:
  * i2c_write(unsigned char slave_addr, unsigned char reg_addr,
@@ -56,8 +56,8 @@
 //    return msp430_reg_int_cb(int_param->cb, int_param->pin, int_param->lp_exit,
 //        int_param->active_low);
 //}
-#define log_i 	printf	//´òÓ¡ĞÅÏ¢ Print information
-#define log_e  	printf	//´òÓ¡ĞÅÏ¢ Print information
+#define log_i 	printf	//æ‰“å°ä¿¡æ¯ Print information
+#define log_e  	printf	//æ‰“å°ä¿¡æ¯ Print information
 /* labs is already defined by TI's toolchain. */
 /* fabs is for doubles. fabsf is for floats. */
 #define fabs        fabsf
@@ -2848,16 +2848,16 @@ lp_int_restore:
     return 0;
 }
 
-//q30¸ñÊ½,long×ªfloatÊ±µÄ³ıÊı. q30 format, divisor when converting long to float.
+//q30æ ¼å¼,longè½¬floatæ—¶çš„é™¤æ•°. q30 format, divisor when converting long to float.
 #define q30  1073741824.0f
 
-//ÍÓÂİÒÇ·½ÏòÉèÖÃ Gyroscope direction setting
+//é™€èºä»ªæ–¹å‘è®¾ç½® Gyroscope direction setting
 static signed char gyro_orientation[9] = { 1, 0, 0,
                                            0, 1, 0,
                                            0, 0, 1};
-//MPU6050×Ô²âÊÔ
-//·µ»ØÖµ:0,Õı³£
-//    ÆäËû,Ê§°Ü
+//MPU6050è‡ªæµ‹è¯•
+//è¿”å›å€¼:0,æ­£å¸¸
+//    å…¶ä»–,å¤±è´¥
 //MPU6050 self-test
 //Return value: 0, normal
 //							Others, failed
@@ -2887,7 +2887,7 @@ u8 run_self_test(void)
 		return 0;
 	}else return 1;
 }
-//ÍÓÂİÒÇ·½Ïò¿ØÖÆ Gyro direction control
+//é™€èºä»ªæ–¹å‘æ§åˆ¶ Gyro direction control
 unsigned short inv_orientation_matrix_to_scalar(
     const signed char *mtx)
 {
@@ -2908,7 +2908,7 @@ unsigned short inv_orientation_matrix_to_scalar(
 
     return scalar;
 }
-//·½Ïò×ª»» Direction conversion
+//æ–¹å‘è½¬æ¢ Direction conversion
 unsigned short inv_row_2_scale(const signed char *row)
 {
     unsigned short b;
@@ -2929,14 +2929,14 @@ unsigned short inv_row_2_scale(const signed char *row)
         b = 7;      // error
     return b;
 }
-//¿Õº¯Êı,Î´ÓÃµ½. Empty function, not used.
+//ç©ºå‡½æ•°,æœªç”¨åˆ°. Empty function, not used.
 void mget_ms(unsigned long *time)
 {
 
 }
-//mpu6050,dmp³õÊ¼»¯
-//·µ»ØÖµ:0,Õı³£
-//    ÆäËû,Ê§°Ü
+//mpu6050,dmpåˆå§‹åŒ–
+//è¿”å›å€¼:0,æ­£å¸¸
+//    å…¶ä»–,å¤±è´¥
 //mpu6050, dmp initialization
 //Return value: 0, normal
 //							Other, failed
@@ -2946,42 +2946,42 @@ u8 mpu_dmp_init(void)
     
     res = mpu_init();
 //    printf("res = %d\r\n",res);
-	if(res==0)	//³õÊ¼»¯MPU6050  Initialize MPU6050
+	if(res==0)	//åˆå§‹åŒ–MPU6050  Initialize MPU6050
 	{	 
-		res=mpu_set_sensors(INV_XYZ_GYRO|INV_XYZ_ACCEL);//ÉèÖÃËùĞèÒªµÄ´«¸ĞÆ÷ Set up the required sensors
+		res=mpu_set_sensors(INV_XYZ_GYRO|INV_XYZ_ACCEL);//è®¾ç½®æ‰€éœ€è¦çš„ä¼ æ„Ÿå™¨ Set up the required sensors
 		if(res)return 1; 
-		res=mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL);//ÉèÖÃFIFO Setting up FIFO
+		res=mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL);//è®¾ç½®FIFO Setting up FIFO
 		if(res)return 2; 
-		res=mpu_set_sample_rate(DEFAULT_MPU_HZ);	//ÉèÖÃ²ÉÑùÂÊ Setting the Sample Rate
+		res=mpu_set_sample_rate(DEFAULT_MPU_HZ);	//è®¾ç½®é‡‡æ ·ç‡ Setting the Sample Rate
 		if(res)return 3; 
-		res=dmp_load_motion_driver_firmware();		//¼ÓÔØdmp¹Ì¼ş Load dmp firmware
+		res=dmp_load_motion_driver_firmware();		//åŠ è½½dmpå›ºä»¶ Load dmp firmware
 		if(res)return 4; 
-		res=dmp_set_orientation(inv_orientation_matrix_to_scalar(gyro_orientation));//ÉèÖÃÍÓÂİÒÇ·½Ïò Set gyroscope orientation
+		res=dmp_set_orientation(inv_orientation_matrix_to_scalar(gyro_orientation));//è®¾ç½®é™€èºä»ªæ–¹å‘ Set gyroscope orientation
 		if(res)return 5; 
-		res=dmp_enable_feature(DMP_FEATURE_6X_LP_QUAT|DMP_FEATURE_TAP|	//ÉèÖÃdmp¹¦ÄÜ Setting the dmp function
+		res=dmp_enable_feature(DMP_FEATURE_6X_LP_QUAT|DMP_FEATURE_TAP|	//è®¾ç½®dmpåŠŸèƒ½ Setting the dmp function
 		    DMP_FEATURE_ANDROID_ORIENT|DMP_FEATURE_SEND_RAW_ACCEL|DMP_FEATURE_SEND_CAL_GYRO|
 		    DMP_FEATURE_GYRO_CAL);
 		if(res)return 6; 
-		res=dmp_set_fifo_rate(DEFAULT_MPU_HZ);	//ÉèÖÃDMPÊä³öËÙÂÊ(×î´ó²»³¬¹ı200Hz) Set the DMP output rate (maximum 200Hz)
+		res=dmp_set_fifo_rate(DEFAULT_MPU_HZ);	//è®¾ç½®DMPè¾“å‡ºé€Ÿç‡(æœ€å¤§ä¸è¶…è¿‡200Hz) Set the DMP output rate (maximum 200Hz)
 		if(res)return 7;           
-		res=run_self_test();		//×Ô¼ì Self-Test
+		res=run_self_test();		//è‡ªæ£€ Self-Test
 		if(res)return 8;           
-		res=mpu_set_dmp_state(1);	//Ê¹ÄÜDMP Enabling DMP
+		res=mpu_set_dmp_state(1);	//ä½¿èƒ½DMP Enabling DMP
 		if(res)return 9;     
 	}
     
 	return 0;
 }
-//µÃµ½dmp´¦ÀíºóµÄÊı¾İ(×¢Òâ,±¾º¯ÊıĞèÒª±È½Ï¶à¶ÑÕ»,¾Ö²¿±äÁ¿ÓĞµã¶à)
-//pitch:¸©Ñö½Ç ¾«¶È:0.1¡ã   ·¶Î§:-90.0¡ã <---> +90.0¡ã
-//roll:ºá¹ö½Ç  ¾«¶È:0.1¡ã   ·¶Î§:-180.0¡ã<---> +180.0¡ã
-//yaw:º½Ïò½Ç   ¾«¶È:0.1¡ã   ·¶Î§:-180.0¡ã<---> +180.0¡ã
-//·µ»ØÖµ:0,Õı³£
-//    ÆäËû,Ê§°Ü
+//å¾—åˆ°dmpå¤„ç†åçš„æ•°æ®(æ³¨æ„,æœ¬å‡½æ•°éœ€è¦æ¯”è¾ƒå¤šå †æ ˆ,å±€éƒ¨å˜é‡æœ‰ç‚¹å¤š)
+//pitch:ä¿¯ä»°è§’ ç²¾åº¦:0.1Â°   èŒƒå›´:-90.0Â° <---> +90.0Â°
+//roll:æ¨ªæ»šè§’  ç²¾åº¦:0.1Â°   èŒƒå›´:-180.0Â°<---> +180.0Â°
+//yaw:èˆªå‘è§’   ç²¾åº¦:0.1Â°   èŒƒå›´:-180.0Â°<---> +180.0Â°
+//è¿”å›å€¼:0,æ­£å¸¸
+//    å…¶ä»–,å¤±è´¥
 //Get the data after dmp processing (note that this function requires a lot of stacks and a lot of local variables)
-//pitch: pitch angle 	accuracy: 0.1¡ã 	range: -90.0¡ã <---> +90.0¡ã
-//roll: roll angle 		accuracy: 0.1¡ã	 range: -180.0¡ã <---> +180.0¡ã
-//yaw: heading angle 	accuracy: 0.1¡ã	 range: -180.0¡ã <---> +180.0¡ã
+//pitch: pitch angle 	accuracy: 0.1Â° 	range: -90.0Â° <---> +90.0Â°
+//roll: roll angle 		accuracy: 0.1Â°	 range: -180.0Â° <---> +180.0Â°
+//yaw: heading angle 	accuracy: 0.1Â°	 range: -180.0Â° <---> +180.0Â°
 //Return value: 0, normal
 // 							Others, failed
 u8 mpu_dmp_get_data(float *pitch,float *roll,float *yaw)
@@ -3004,11 +3004,11 @@ u8 mpu_dmp_get_data(float *pitch,float *roll,float *yaw)
 	**/
 	if(sensors&INV_WXYZ_QUAT) 
 	{
-		q0 = quat[0] / q30;	//q30¸ñÊ½×ª»»Îª¸¡µãÊı Convert q30 format to floating point number
+		q0 = quat[0] / q30;	//q30æ ¼å¼è½¬æ¢ä¸ºæµ®ç‚¹æ•° Convert q30 format to floating point number
 		q1 = quat[1] / q30;
 		q2 = quat[2] / q30;
 		q3 = quat[3] / q30; 
-		//¼ÆËãµÃµ½¸©Ñö½Ç/ºá¹ö½Ç/º½Ïò½Ç
+		//è®¡ç®—å¾—åˆ°ä¿¯ä»°è§’/æ¨ªæ»šè§’/èˆªå‘è§’
 		// Calculate the pitch angle/roll angle/heading angle
 		*pitch = asin(-2 * q1 * q3 + 2 * q0* q2)* 57.3;	// pitch
 		*roll  = atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2* q2 + 1)* 57.3;	// roll

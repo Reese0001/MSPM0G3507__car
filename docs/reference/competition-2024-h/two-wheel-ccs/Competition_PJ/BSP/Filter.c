@@ -1,38 +1,38 @@
 #include "Filter.h"
 /**************************************************************************
 Function: Simple Kalman filter
-Input   : acceleration¡¢angular velocity
+Input   : accelerationã€angular velocity
 Output  : none
-º¯Êı¹¦ÄÜ£º»ñÈ¡xÖá½Ç¶È¼òÒ×¿¨¶ûÂüÂË²¨
-Èë¿Ú²ÎÊı£º¼ÓËÙ¶È»ñÈ¡µÄ½Ç¶È¡¢½ÇËÙ¶È
-·µ»Ø  Öµ£ºxÖá½ÇËÙ¶È
+å‡½æ•°åŠŸèƒ½ï¼šè·å–xè½´è§’åº¦ç®€æ˜“å¡å°”æ›¼æ»¤æ³¢
+å…¥å£å‚æ•°ï¼šåŠ é€Ÿåº¦è·å–çš„è§’åº¦ã€è§’é€Ÿåº¦
+è¿”å›  å€¼ï¼šxè½´è§’é€Ÿåº¦
 **************************************************************************/
-float dt=0.060;		  //Ã¿15ms½øĞĞÒ»´ÎÂË²¨                
+float dt=0.060;		  //æ¯15msè¿›è¡Œä¸€æ¬¡æ»¤æ³¢                
 float Kalman_Filter_x(float Accel,float Gyro)		
 {
 	static float angle_dot;
 	static float angle;
-	float Q_angle=0.001; // ¹ı³ÌÔëÉùµÄĞ­·½²î
-	float Q_gyro=0.003;	//0.003 ¹ı³ÌÔëÉùµÄĞ­·½²î ¹ı³ÌÔëÉùµÄĞ­·½²îÎªÒ»¸öÒ»ĞĞÁ½ÁĞ¾ØÕó
-	float R_angle=0.5;		// ²âÁ¿ÔëÉùµÄĞ­·½²î ¼È²âÁ¿Æ«²î
+	float Q_angle=0.001; // è¿‡ç¨‹å™ªå£°çš„åæ–¹å·®
+	float Q_gyro=0.003;	//0.003 è¿‡ç¨‹å™ªå£°çš„åæ–¹å·® è¿‡ç¨‹å™ªå£°çš„åæ–¹å·®ä¸ºä¸€ä¸ªä¸€è¡Œä¸¤åˆ—çŸ©é˜µ
+	float R_angle=0.5;		// æµ‹é‡å™ªå£°çš„åæ–¹å·® æ—¢æµ‹é‡åå·®
 	char  C_0 = 1;
 	static float Q_bias, Angle_err;
 	static float PCt_0, PCt_1, E;
 	static float K_0, K_1, t_0, t_1;
 	static float Pdot[4] ={0,0,0,0};
 	static float PP[2][2] = { { 1, 0 },{ 0, 1 } };
-	angle+=(Gyro - Q_bias) * dt; //ÏÈÑé¹À¼Æ
-	Pdot[0]=Q_angle - PP[0][1] - PP[1][0]; // Pk-ÏÈÑé¹À¼ÆÎó²îĞ­·½²îµÄÎ¢·Ö
+	angle+=(Gyro - Q_bias) * dt; //å…ˆéªŒä¼°è®¡
+	Pdot[0]=Q_angle - PP[0][1] - PP[1][0]; // Pk-å…ˆéªŒä¼°è®¡è¯¯å·®åæ–¹å·®çš„å¾®åˆ†
 
 	Pdot[1]=-PP[1][1];
 	Pdot[2]=-PP[1][1];
 	Pdot[3]=Q_gyro;
-	PP[0][0] += Pdot[0] * dt;   // Pk-ÏÈÑé¹À¼ÆÎó²îĞ­·½²îÎ¢·ÖµÄ»ı·Ö
-	PP[0][1] += Pdot[1] * dt;   // =ÏÈÑé¹À¼ÆÎó²îĞ­·½²î
+	PP[0][0] += Pdot[0] * dt;   // Pk-å…ˆéªŒä¼°è®¡è¯¯å·®åæ–¹å·®å¾®åˆ†çš„ç§¯åˆ†
+	PP[0][1] += Pdot[1] * dt;   // =å…ˆéªŒä¼°è®¡è¯¯å·®åæ–¹å·®
 	PP[1][0] += Pdot[2] * dt;
 	PP[1][1] += Pdot[3] * dt;
 		
-	Angle_err = Accel - angle;	//zk-ÏÈÑé¹À¼Æ
+	Angle_err = Accel - angle;	//zk-å…ˆéªŒä¼°è®¡
 	
 	PCt_0 = C_0 * PP[0][0];
 	PCt_1 = C_0 * PP[1][0];
@@ -45,23 +45,23 @@ float Kalman_Filter_x(float Accel,float Gyro)
 	t_0 = PCt_0;
 	t_1 = C_0 * PP[0][1];
 
-	PP[0][0] -= K_0 * t_0;		 //ºóÑé¹À¼ÆÎó²îĞ­·½²î
+	PP[0][0] -= K_0 * t_0;		 //åéªŒä¼°è®¡è¯¯å·®åæ–¹å·®
 	PP[0][1] -= K_0 * t_1;
 	PP[1][0] -= K_1 * t_0;
 	PP[1][1] -= K_1 * t_1;
 		
-	angle	+= K_0 * Angle_err;	 //ºóÑé¹À¼Æ
-	Q_bias	+= K_1 * Angle_err;	 //ºóÑé¹À¼Æ
-	angle_dot   = Gyro - Q_bias;	 //Êä³öÖµ(ºóÑé¹À¼Æ)µÄÎ¢·Ö=½ÇËÙ¶È
+	angle	+= K_0 * Angle_err;	 //åéªŒä¼°è®¡
+	Q_bias	+= K_1 * Angle_err;	 //åéªŒä¼°è®¡
+	angle_dot   = Gyro - Q_bias;	 //è¾“å‡ºå€¼(åéªŒä¼°è®¡)çš„å¾®åˆ†=è§’é€Ÿåº¦
 	return angle;
 }
 /**************************************************************************
 Function: First order complementary filtering
-Input   : acceleration¡¢angular velocity
+Input   : accelerationã€angular velocity
 Output  : none
-º¯Êı¹¦ÄÜ£ºÒ»½×»¥²¹ÂË²¨
-Èë¿Ú²ÎÊı£º¼ÓËÙ¶È»ñÈ¡µÄ½Ç¶È¡¢½ÇËÙ¶È
-·µ»Ø  Öµ£ºxÖá½ÇËÙ¶È
+å‡½æ•°åŠŸèƒ½ï¼šä¸€é˜¶äº’è¡¥æ»¤æ³¢
+å…¥å£å‚æ•°ï¼šåŠ é€Ÿåº¦è·å–çš„è§’åº¦ã€è§’é€Ÿåº¦
+è¿”å›  å€¼ï¼šxè½´è§’é€Ÿåº¦
 **************************************************************************/
 float Complementary_Filter_x(float angle_m, float gyro_m)
 {
@@ -72,35 +72,35 @@ float Complementary_Filter_x(float angle_m, float gyro_m)
 }
 /**************************************************************************
 Function: Simple Kalman filter
-Input   : acceleration¡¢angular velocity
+Input   : accelerationã€angular velocity
 Output  : none
-º¯Êı¹¦ÄÜ£º»ñÈ¡yÖá½Ç¶È¼òÒ×¿¨¶ûÂüÂË²¨
-Èë¿Ú²ÎÊı£º¼ÓËÙ¶È»ñÈ¡µÄ½Ç¶È¡¢½ÇËÙ¶È
-·µ»Ø  Öµ£ºyÖá½ÇËÙ¶È
+å‡½æ•°åŠŸèƒ½ï¼šè·å–yè½´è§’åº¦ç®€æ˜“å¡å°”æ›¼æ»¤æ³¢
+å…¥å£å‚æ•°ï¼šåŠ é€Ÿåº¦è·å–çš„è§’åº¦ã€è§’é€Ÿåº¦
+è¿”å›  å€¼ï¼šyè½´è§’é€Ÿåº¦
 **************************************************************************/
 float Kalman_Filter_y(float Accel,float Gyro)		
 {
 	static float angle_dot;
 	static float angle;
-	float Q_angle=0.001; // ¹ı³ÌÔëÉùµÄĞ­·½²î
-	float Q_gyro=0.003;	//0.003 ¹ı³ÌÔëÉùµÄĞ­·½²î ¹ı³ÌÔëÉùµÄĞ­·½²îÎªÒ»¸öÒ»ĞĞÁ½ÁĞ¾ØÕó
-	float R_angle=0.5;		// ²âÁ¿ÔëÉùµÄĞ­·½²î ¼È²âÁ¿Æ«²î
+	float Q_angle=0.001; // è¿‡ç¨‹å™ªå£°çš„åæ–¹å·®
+	float Q_gyro=0.003;	//0.003 è¿‡ç¨‹å™ªå£°çš„åæ–¹å·® è¿‡ç¨‹å™ªå£°çš„åæ–¹å·®ä¸ºä¸€ä¸ªä¸€è¡Œä¸¤åˆ—çŸ©é˜µ
+	float R_angle=0.5;		// æµ‹é‡å™ªå£°çš„åæ–¹å·® æ—¢æµ‹é‡åå·®
 	char  C_0 = 1;
 	static float Q_bias, Angle_err;
 	static float PCt_0, PCt_1, E;
 	static float K_0, K_1, t_0, t_1;
 	static float Pdot[4] ={0,0,0,0};
 	static float PP[2][2] = { { 1, 0 },{ 0, 1 } };
-	angle+=(Gyro - Q_bias) * dt; //ÏÈÑé¹À¼Æ
-	Pdot[0]=Q_angle - PP[0][1] - PP[1][0]; // Pk-ÏÈÑé¹À¼ÆÎó²îĞ­·½²îµÄÎ¢·Ö
+	angle+=(Gyro - Q_bias) * dt; //å…ˆéªŒä¼°è®¡
+	Pdot[0]=Q_angle - PP[0][1] - PP[1][0]; // Pk-å…ˆéªŒä¼°è®¡è¯¯å·®åæ–¹å·®çš„å¾®åˆ†
 	Pdot[1]=-PP[1][1];
 	Pdot[2]=-PP[1][1];
 	Pdot[3]=Q_gyro;
-	PP[0][0] += Pdot[0] * dt;   // Pk-ÏÈÑé¹À¼ÆÎó²îĞ­·½²îÎ¢·ÖµÄ»ı·Ö
-	PP[0][1] += Pdot[1] * dt;   // =ÏÈÑé¹À¼ÆÎó²îĞ­·½²î
+	PP[0][0] += Pdot[0] * dt;   // Pk-å…ˆéªŒä¼°è®¡è¯¯å·®åæ–¹å·®å¾®åˆ†çš„ç§¯åˆ†
+	PP[0][1] += Pdot[1] * dt;   // =å…ˆéªŒä¼°è®¡è¯¯å·®åæ–¹å·®
 	PP[1][0] += Pdot[2] * dt;
 	PP[1][1] += Pdot[3] * dt;
-	Angle_err = Accel - angle;	//zk-ÏÈÑé¹À¼Æ
+	Angle_err = Accel - angle;	//zk-å…ˆéªŒä¼°è®¡
 	
 	PCt_0 = C_0 * PP[0][0];
 	PCt_1 = C_0 * PP[1][0];
@@ -113,23 +113,23 @@ float Kalman_Filter_y(float Accel,float Gyro)
 	t_0 = PCt_0;
 	t_1 = C_0 * PP[0][1];
 
-	PP[0][0] -= K_0 * t_0;		 //ºóÑé¹À¼ÆÎó²îĞ­·½²î
+	PP[0][0] -= K_0 * t_0;		 //åéªŒä¼°è®¡è¯¯å·®åæ–¹å·®
 	PP[0][1] -= K_0 * t_1;
 	PP[1][0] -= K_1 * t_0;
 	PP[1][1] -= K_1 * t_1;
 		
-	angle	+= K_0 * Angle_err;	   //ºóÑé¹À¼Æ
-	Q_bias	+= K_1 * Angle_err;	 //ºóÑé¹À¼Æ
-	angle_dot   = Gyro - Q_bias;	//Êä³öÖµ(ºóÑé¹À¼Æ)µÄÎ¢·Ö=½ÇËÙ¶È
+	angle	+= K_0 * Angle_err;	   //åéªŒä¼°è®¡
+	Q_bias	+= K_1 * Angle_err;	 //åéªŒä¼°è®¡
+	angle_dot   = Gyro - Q_bias;	//è¾“å‡ºå€¼(åéªŒä¼°è®¡)çš„å¾®åˆ†=è§’é€Ÿåº¦
 	return angle;
 }
 /**************************************************************************
 Function: First order complementary filtering
-Input   : acceleration¡¢angular velocity
+Input   : accelerationã€angular velocity
 Output  : none
-º¯Êı¹¦ÄÜ£ºÒ»½×»¥²¹ÂË²¨
-Èë¿Ú²ÎÊı£º¼ÓËÙ¶È»ñÈ¡µÄ½Ç¶È¡¢½ÇËÙ¶È
-·µ»Ø  Öµ£ºyÖá½ÇËÙ¶È
+å‡½æ•°åŠŸèƒ½ï¼šä¸€é˜¶äº’è¡¥æ»¤æ³¢
+å…¥å£å‚æ•°ï¼šåŠ é€Ÿåº¦è·å–çš„è§’åº¦ã€è§’é€Ÿåº¦
+è¿”å›  å€¼ï¼šyè½´è§’é€Ÿåº¦
 **************************************************************************/
 float Complementary_Filter_y(float angle_m, float gyro_m)
 {

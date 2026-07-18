@@ -7,12 +7,12 @@ void LED_Toggle(void)
 
 void LED_ON(void)
 {
-    DL_GPIO_setPins(LED_PORT,LED_D1_PIN);  //LED¿ØÖÆÊä³ö¸ßµçÆ½  LED control output high level
+    DL_GPIO_setPins(LED_PORT,LED_D1_PIN);  //LEDæŽ§åˆ¶è¾“å‡ºé«˜ç”µå¹³  LED control output high level
 }
 
 void LED_OFF(void)
 {
-    DL_GPIO_clearPins(LED_PORT,LED_D1_PIN);//LED¿ØÖÆÊä³öµÍµçÆ½  LED control output low level
+    DL_GPIO_clearPins(LED_PORT,LED_D1_PIN);//LEDæŽ§åˆ¶è¾“å‡ºä½Žç”µå¹³  LED control output low level
 }
 
 void LED2_Toggle(void)

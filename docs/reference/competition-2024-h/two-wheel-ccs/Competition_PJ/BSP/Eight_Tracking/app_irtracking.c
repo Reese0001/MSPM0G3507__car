@@ -3,14 +3,14 @@
 #define IRTrack_Trun_KP (250)
 #define IRTrack_Trun_KI (0.2) 
 #define IRTrack_Trun_KD (2) 
-#define IRR_SPEED 			  300  //Ñ²ÏßËÙ¶È   Patrol speed
+#define IRR_SPEED 			  300  //å·¡çº¿é€Ÿåº¦   Patrol speed
 #define CHANGE_THRESHOLD 3
 const float pid_out_max = 5000.0f; 
-const float Integral_max = 500.0f; // »ı·ÖÏŞ·ùÖµ 
+const float Integral_max = 500.0f; // ç§¯åˆ†é™å¹…å€¼ 
 int pid_output_IRR = 0;
 u8 trun_flag = 0;
 static int8_t err = 0;
-// ´æ´¢ÉÏÒ»´ÎµÄ´«¸ĞÆ÷Êı¾İ×éºÏ
+// å­˜å‚¨ä¸Šä¸€æ¬¡çš„ä¼ æ„Ÿå™¨æ•°æ®ç»„åˆ
 static uint8_t prev_sensor_data = 0;
 
 
@@ -18,26 +18,26 @@ float PID_IR_Calc(int16_t actual_value)
 {
     float pid_out = 0;
     int16_t error; 
-    static int16_t error_last = 0; //ÉÏ´ÎµÄÎó²î³õÊ¼Îª0  Last error
-    static float Integral = 0; // ³õÊ¼»¯»ı·ÖÏî Initialize integral term
+    static int16_t error_last = 0; //ä¸Šæ¬¡çš„è¯¯å·®åˆå§‹ä¸º0  Last error
+    static float Integral = 0; // åˆå§‹åŒ–ç§¯åˆ†é¡¹ Initialize integral term
 
     error = actual_value;
 //    if(err == 0)          
 //    {
-//        Integral = 0;          //»ı·ÖÇåÁã   Integral cleared
+//        Integral = 0;          //ç§¯åˆ†æ¸…é›¶   Integral cleared
 //    }
-    Integral += error;           // ¸üĞÂ»ı·ÖÏî£¬²¢½øĞĞÏŞ·ù Update the integral term and limit it
-    if (Integral > Integral_max) Integral = Integral_max;               //»ı·ÖÏŞ·ù Integral limiting
-    if (Integral < -Integral_max) Integral = -Integral_max;             //»ı·ÖÏŞ·ù Integral limiting
+    Integral += error;           // æ›´æ–°ç§¯åˆ†é¡¹ï¼Œå¹¶è¿›è¡Œé™å¹… Update the integral term and limit it
+    if (Integral > Integral_max) Integral = Integral_max;               //ç§¯åˆ†é™å¹… Integral limiting
+    if (Integral < -Integral_max) Integral = -Integral_max;             //ç§¯åˆ†é™å¹… Integral limiting
 
-    // Î»ÖÃÊ½ PID
+    // ä½ç½®å¼ PID
     pid_out = error * IRTrack_Trun_KP
               + IRTrack_Trun_KI * Integral
               + (error - error_last) * IRTrack_Trun_KD;
 
-    error_last = error;       // ¸üĞÂ»ı·ÖÏî£¬²¢½øĞĞÏŞ·ù Update the integral term and limit it
+    error_last = error;       // æ›´æ–°ç§¯åˆ†é¡¹ï¼Œå¹¶è¿›è¡Œé™å¹… Update the integral term and limit it
 
-    // ¶ÔÊä³ö½øĞĞÏŞ·ùOutput limiting value
+    // å¯¹è¾“å‡ºè¿›è¡Œé™å¹…Output limiting value
     if (pid_out > pid_out_max) pid_out = pid_out_max;  
     if (pid_out < -pid_out_max) pid_out = -pid_out_max;
 
@@ -110,49 +110,49 @@ void printf_i2c_data(void)
 //    
 //    deal_IRdata(&x1,&x2,&x3,&x4,&x5,&x6,&x7,&x8);
 //    
-//    // ¼±Íä¼ì²â - ÓÅÏÈ´¦Àí
+//    // æ€¥å¼¯æ£€æµ‹ - ä¼˜å…ˆå¤„ç†
 //    if(x1 == 0 && x2 == 0 && x3 == 0) {
-//        err = -4;  // ×ó¼±Íä
+//        err = -4;  // å·¦æ€¥å¼¯
 //    }
 //    else if(x6 == 0 && x7 == 0 && x8 == 0) {
-//        err = 4;   // ÓÒ¼±Íä
+//        err = 4;   // å³æ€¥å¼¯
 //    }
-//    // ´ó½Ç¶È×ªÍä¼ì²â
+//    // å¤§è§’åº¦è½¬å¼¯æ£€æµ‹
 //    else if(x1 == 0 && x2 == 0) {
-//        err = -3;  // ×ó´óÍä
+//        err = -3;  // å·¦å¤§å¼¯
 //    }
 //    else if(x7 == 0 && x8 == 0) {
-//        err = 3;   // ÓÒ´óÍä
+//        err = 3;   // å³å¤§å¼¯
 //    }
-//    // ÖĞÏß¼ì²â
+//    // ä¸­çº¿æ£€æµ‹
 //    else if(x4 == 0 || x5 == 0) {
-//        err = 0;   // Ö±ĞĞ
+//        err = 0;   // ç›´è¡Œ
 //    }
-//    // ÇáÎ¢Æ«×ó
+//    // è½»å¾®åå·¦
 //    else if(x3 == 0) {
 //        err = -1;
 //    }
-//    // ÇáÎ¢Æ«ÓÒ
+//    // è½»å¾®åå³
 //    else if(x6 == 0) {
 //        err = 1;
 //    }
-//    // ÖĞ¶ÈÆ«×ó
+//    // ä¸­åº¦åå·¦
 //    else if(x2 == 0) {
 //        err = -2;
 //    }
-//    // ÖĞ¶ÈÆ«ÓÒ
+//    // ä¸­åº¦åå³
 //    else if(x7 == 0) {
 //        err = 2;
 //    }
-//    // ¼«¶ËÆ«×ó
+//    // æç«¯åå·¦
 //    else if(x1 == 0) {
 //        err = -3;
 //    }
-//    // ¼«¶ËÆ«ÓÒ
+//    // æç«¯åå³
 //    else if(x8 == 0) {
 //        err = 3;
 //    }
-//    // ¶ªÊ§ºÚÏß - Ô­µØĞı×ªËÑË÷
+//    // ä¸¢å¤±é»‘çº¿ - åŸåœ°æ—‹è½¬æœç´¢
 //    else {
 //     err =0;
 //    }
@@ -172,13 +172,13 @@ void LineWalking(void)
 //	sprintf(bufbuf,"%d\t %d\t %d\t %d\t %d\t %d\t %d\t %d\t \r\n",x1,x2,x3,x4,x5,x6,x7,x8);
 //	uart0_send_string((char*)bufbuf);
 	
-    //ÓÅÏÈÅĞ¶Ï	Priority judgment
+    //ä¼˜å…ˆåˆ¤æ–­	Priority judgment
 //	if((x1 == 0 && x2 == 0 && x3 == 0) || 
 //	(x6 == 0 && x7 == 0 && x8 == 0)) {
-//	 err = (x1 == 0) ? -4 : 4;  // ¸ù¾İ¼±Íä·½Ïòµ÷ÕûÆ«²îÖµ
+//	 err = (x1 == 0) ? -4 : 4;  // æ ¹æ®æ€¥å¼¯æ–¹å‘è°ƒæ•´åå·®å€¼
 // }
 	if(x4 == 0||x5 == 0) {
-		err = 0;  // ÖĞÏß´«¸ĞÆ÷¼ì²âµ½ºÚÏß£¬Ö±ĞĞ
+		err = 0;  // ä¸­çº¿ä¼ æ„Ÿå™¨æ£€æµ‹åˆ°é»‘çº¿ï¼Œç›´è¡Œ
 	}
   	else if(x1 == 1 && x2 == 1  && x3 == 1&& x4 == 0 && x5 == 1 && x6 == 1  && x7 == 1 && x8 == 1) // 1110 1111
 	{
@@ -214,29 +214,29 @@ void LineWalking(void)
 		err = 3;
 	}
 	else if(x3 == 0) {
-		err = -1;  // ×óÆ«
+		err = -1;  // å·¦å
 	}
 	else if(x2 == 0) {
-		err = -2;  // ¸ü×óÆ«
+		err = -2;  // æ›´å·¦å
 	}
 	else if(x7 == 0) {
-		err = 4;   // ¸üÓÒÆ«
+		err = 4;   // æ›´å³å
 	}
 
-	//Ê£ÏÂµÄ¾Í±£³ÖÉÏÒ»¸ö×´Ì¬	The rest will remain in the previous state
+	//å‰©ä¸‹çš„å°±ä¿æŒä¸Šä¸€ä¸ªçŠ¶æ€	The rest will remain in the previous state
 	pid_output_IRR = (int)(PID_IR_Calc(err));
 
 	Motion_Car_Control(IRR_SPEED, 0, pid_output_IRR);
 
 }
 
-//¼ì²âÏÖÔÚÎ»ÓÚºÚÏß»¹ÊÇÔÚ°×ÏßÉÏ	Detection is now on the black line or on the white line
+//æ£€æµ‹ç°åœ¨ä½äºé»‘çº¿è¿˜æ˜¯åœ¨ç™½çº¿ä¸Š	Detection is now on the black line or on the white line
 int LineCheck(void)
 {
     static u8 x1,x2,x3,x4,x5,x6,x7,x8;
 	deal_IRdata(&x1,&x2,&x3,&x4,&x5,&x6,&x7,&x8);
 	
-	// Ö»ÓĞµ±ËùÓĞ´«¸ĞÆ÷¶¼Îª1£¨Î´¼ì²âµ½ºÚÏß£©Ê±£¬if_have²ÅÎª0
+	// åªæœ‰å½“æ‰€æœ‰ä¼ æ„Ÿå™¨éƒ½ä¸º1ï¼ˆæœªæ£€æµ‹åˆ°é»‘çº¿ï¼‰æ—¶ï¼Œif_haveæ‰ä¸º0
 	if(x1 && x2 && x3 && x4 && x5 && x6 && x7 && x8)
 	{
 		return WHITE;

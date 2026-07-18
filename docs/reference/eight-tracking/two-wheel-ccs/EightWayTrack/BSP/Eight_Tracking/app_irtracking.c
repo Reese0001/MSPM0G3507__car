@@ -44,7 +44,7 @@ float PID_IR_Calc(int16_t actual_value)
 
     return pid_out;
 }
-//I2Cд����    I2C Write Data
+//I2C  I2C Write Data
 void IRI2C_WriteByte(uint8_t addr, uint8_t dat) {
     uint8_t temp[2];
     temp[0] = addr;
@@ -59,7 +59,7 @@ void IRI2C_WriteByte(uint8_t addr, uint8_t dat) {
     DL_I2C_flushControllerTXFIFO(I2C_1_INST);
 }
 
-//I2C������    I2C Read Data
+//I2C  I2C Read Data
 uint8_t IRI2C_ReadByte(uint8_t addr) {
     uint8_t data;
  
@@ -81,7 +81,7 @@ uint8_t IRI2C_ReadByte(uint8_t addr) {
     return data;
 }
 
-//��ȡ��·Ѳ��ģ��������   Getting data from the 8-way patrol module
+//  Getting data from the 8-way patrol module
 void deal_IRdata(u8 *x1,u8 *x2,u8 *x3,u8 *x4,u8 *x5,u8 *x6,u8 *x7,u8 *x8)
 {
 	u8 IRbuf = 0xFF;
@@ -245,25 +245,25 @@ void LineWalking(void)
 	
 // 	deal_IRdata(&x1,&x2,&x3,&x4,&x5,&x6,&x7,&x8);
 	
-// 	///L1ΪX1���׵�����ʱΪ1��������ʱΪ0     L1 is X1, 1 when the white background is off, 0 when the black line is on///
+// 	///L1X110  L1 is X1, 1 when the white background is off, 0 when the black line is on///
 	
-// //�����ж�  Priority judgment
+// //  Priority judgment
 //     //1100 0011
-// //	if(x1 == 1 && x2 == 1 &&x3 == 0 &&  x4 == 0  && x5 == 0 && x6  == 0 && x7 == 1 && x8 == 1 ) //������   transverse acute angle
+// //	if(x1 == 1 && x2 == 1 &&x3 == 0 &&  x4 == 0  && x5 == 0 && x6  == 0 && x7 == 1 && x8 == 1 ) //  transverse acute angle
 // //	{
 // //		err = 15; 
 // //	}
-// //	else if(x1 == 1 && x2 == 1 &&x3 == 1 &&  x4 == 1  && x5 == 1 && x6  == 1 && x7 == 1 && x8 == 1 ) //������  transverse acute angle
+// //	else if(x1 == 1 && x2 == 1 &&x3 == 1 &&  x4 == 1  && x5 == 1 && x6  == 1 && x7 == 1 && x8 == 1 ) //  transverse acute angle
 // //	{
-// //		if(trun_flag == 0) //������    out of the line
+// //		if(trun_flag == 0) //  out of the line
 // //		{
 // //			err = 15; 
 // //			trun_flag = 1;
 // //		}
-// //		//�������������ϸ�״̬    Otherwise, the situation remains the same as before.
+// //		//  Otherwise, the situation remains the same as before.
 // //	}
 
-// //�����ж��Ƿ���ֱ�ǻ�����  Prioritize whether to right angles or acute angles
+// //  Prioritize whether to right angles or acute angles
 // 	 if(x1 == 0 && x2 == 0  && x3 == 0&& x4 == 0 && x5 == 0 && x6 == 1  && x7 == 1 && x8 == 1) // 0000 0111
 // 	{
 // 		err = -15;
@@ -275,12 +275,12 @@ void LineWalking(void)
 //         delay_ms(100);
 // 	}
 
-//   else if(x1 == 0 &&  x2 == 0  && x7 == 0 && x8 == 0 ) //���߶�����ֱ��    Both sides are lit. Run straight.
+//  else if(x1 == 0 &&  x2 == 0  && x7 == 0 && x8 == 0 ) //  Both sides are lit. Run straight.
 // 	{
 // 		err = 0;
 // 		if(trun_flag == 1)
 // 		{
-// 			trun_flag = 0;//�ߵ�Ȧ��    Walking in circles.
+// 			trun_flag = 0;//  Walking in circles.
 // 		}
 // 	}
 	
@@ -288,12 +288,12 @@ void LineWalking(void)
 // //	{
 // //		err = 0;
 // //	}
-// //	//����ֱ��  Add Right Angle
+// //	//  Add Right Angle
 // //	else if((x1 == 0 || x2 == 0 ) && x8 == 1) 
 // //	{
 // //		err = -15; 
 // //	}
-// //	//����ֱ��  Add Right Angle
+// //	//  Add Right Angle
 // //	else if((x7 == 0 ||  x8 == 0) && x1 == 1) 
 // //	{
 // //		err = 15 ;
@@ -325,7 +325,7 @@ void LineWalking(void)
     
 // //		else if(x1 == 0 && x2 == 0  && x3 == 1&& x4 == 1 && x5 == 1 && x6 == 1  && x7 == 1 && x8 == 1) // 0011 1111
 // //	{
-// //		err = -4;   //ע�ͣ�����ֱ�Ǵ��� Note, when treated as a right angle
+// //		err = -4;  // Note, when treated as a right angle
 // //	}
 // 	else if(x1 == 0 && x2 == 1  && x3 == 1&& x4 == 1 && x5 == 1 && x6 == 1  && x7 == 1 && x8 == 1) // 0111 1111
 // 	{
@@ -360,7 +360,7 @@ void LineWalking(void)
 // //	}
 // //	else if(x1 == 1 && x2 == 1  && x3 == 1&& x4 == 1 && x5 == 1 && x6 == 1  && x7 == 0 && x8 == 0) // 1111 1100
 // //	{
-// //		err = 4; ///����ֱ�Ǵ���  treat as a right angle
+// //		err = 4; ///  treat as a right angle
 // //	}
 // 		else if(x1 == 1 && x2 == 1  && x3 == 1&& x4 == 1 && x5 == 1 && x6 == 1  && x7 == 1 && x8 == 0) // 1111 1110
 // 	{
@@ -370,12 +370,12 @@ void LineWalking(void)
 
 	
  
-// 	else if(x1 == 1 &&x2 == 1 &&x3 == 1 && x4 == 0 && x5 == 0 && x6 == 1 && x7 == 1&& x8 == 1) //ֱ�� go straight
+// 	else if(x1 == 1 &&x2 == 1 &&x3 == 1 && x4 == 0 && x5 == 0 && x6 == 1 && x7 == 1&& x8 == 1) // go straight
 // 	{
 // 		err = 0;
 // 	}
     
-// 	//ʣ�µľͱ�����һ��״̬	    The rest will stay the same.
+// 	//	  The rest will stay the same.
     
     
 // 	pid_output_IRR = (int)(PID_IR_Calc(err));

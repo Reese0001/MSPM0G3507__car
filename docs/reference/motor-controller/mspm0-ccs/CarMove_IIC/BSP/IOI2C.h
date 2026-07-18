@@ -7,7 +7,7 @@
 
 #define u8 uint8_t
 
-//IO·½ÏòÉèÖÃ	IO direction setting
+//IOæ–¹å‘è®¾ç½®	IO direction setting
 #define SDA_IN()  { DL_GPIO_initDigitalInput(I2C_SDA_IOMUX); }
 #define SDA_OUT() {                                                \
                         DL_GPIO_initDigitalOutput(I2C_SDA_IOMUX);    \
@@ -15,20 +15,20 @@
                         DL_GPIO_enableOutput(I2C_PORT, I2C_SDA_PIN); \
                   }
 
-//IO²Ù×÷º¯Êı	 IO operation function
+//IOæ“ä½œå‡½æ•°	 IO operation function
 #define SCL(x)    ( (x) ? DL_GPIO_setPins(I2C_PORT,I2C_SCL_PIN) : DL_GPIO_clearPins(I2C_PORT,I2C_SCL_PIN) ) //SCL
 #define SDA(x)    ( (x) ? DL_GPIO_setPins(I2C_PORT,I2C_SDA_PIN) : DL_GPIO_clearPins(I2C_PORT,I2C_SDA_PIN) ) //SDA	 
-#define SDA_GET() ( ( ( DL_GPIO_readPins(I2C_PORT,I2C_SDA_PIN) & I2C_SDA_PIN ) > 0 ) ? 1 : 0 )  //ÊäÈëSDA	Input SDA
+#define SDA_GET() ( ( ( DL_GPIO_readPins(I2C_PORT,I2C_SDA_PIN) & I2C_SDA_PIN ) > 0 ) ? 1 : 0 )  //è¾“å…¥SDA	Input SDA
 
 
-//IICËùÓĞ²Ù×÷º¯Êı	IIC all operation functions
-int IIC_Start(void);			//·¢ËÍIIC¿ªÊ¼ĞÅºÅ	Send IIC start signal
-void IIC_Stop(void);	  		//·¢ËÍIICÍ£Ö¹ĞÅºÅ	Send IIC stop signal
-void IIC_Send_Byte(u8 txd);		//IIC·¢ËÍÒ»¸ö×Ö½Ú	IIC sends a byte
-u8 IIC_Read_Byte(void);			//IIC¶ÁÈ¡Ò»¸ö×Ö½Ú	IIC reads a byte
-int IIC_Wait_Ack(void); 		//IICµÈ´ıACKĞÅºÅ		IIC waits for ACK signal
-void IIC_Ack(void);				//IIC·¢ËÍACKĞÅºÅ		IIC sends ACK signal
-void IIC_NAck(void);			//IIC²»·¢ËÍACKĞÅºÅ	IIC does not send ACK signal
+//IICæ‰€æœ‰æ“ä½œå‡½æ•°	IIC all operation functions
+int IIC_Start(void);			//å‘é€IICå¼€å§‹ä¿¡å·	Send IIC start signal
+void IIC_Stop(void);	  		//å‘é€IICåœæ­¢ä¿¡å·	Send IIC stop signal
+void IIC_Send_Byte(u8 txd);		//IICå‘é€ä¸€ä¸ªå­—èŠ‚	IIC sends a byte
+u8 IIC_Read_Byte(void);			//IICè¯»å–ä¸€ä¸ªå­—èŠ‚	IIC reads a byte
+int IIC_Wait_Ack(void); 		//IICç­‰å¾…ACKä¿¡å·		IIC waits for ACK signal
+void IIC_Ack(void);				//IICå‘é€ACKä¿¡å·		IIC sends ACK signal
+void IIC_NAck(void);			//IICä¸å‘é€ACKä¿¡å·	IIC does not send ACK signal
 
 
 int i2cWrite(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *data);

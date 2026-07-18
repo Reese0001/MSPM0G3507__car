@@ -13,40 +13,40 @@
 typedef enum __Motor_IIC_ADDR_
 {
 	//Wirte Reg
-	MOTOR_TYPE_REG = 0x01, //µç»úÀàĞÍ	Motor Type
-	MOTOR_DeadZONE_REG = 0x02, //ËÀÇøÅäÖÃ	Dead zone configuration
-	MOTOR_PluseLine_REG = 0x03, //´Å»·ÏßÊı	Magnetic loop number
-	MOTOR_PlusePhase_REG = 0x04, //¼õËÙ±È	Reduction ratio
-	WHEEL_DIA_REG = 0x05, //ÂÖ×ÓÖ±¾¶	Wheel diameter
-	SPEED_Control_REG = 0x06, //ËÙ¶È¿ØÖÆ	Speed control
-	PWM_Control_REG = 0x07, //pwm¿ØÖÆ	PWM control
+	MOTOR_TYPE_REG = 0x01, //ç”µæœºç±»å‹	Motor Type
+	MOTOR_DeadZONE_REG = 0x02, //æ­»åŒºé…ç½®	Dead zone configuration
+	MOTOR_PluseLine_REG = 0x03, //ç£ç¯çº¿æ•°	Magnetic loop number
+	MOTOR_PlusePhase_REG = 0x04, //å‡é€Ÿæ¯”	Reduction ratio
+	WHEEL_DIA_REG = 0x05, //è½®å­ç›´å¾„	Wheel diameter
+	SPEED_Control_REG = 0x06, //é€Ÿåº¦æ§åˆ¶	Speed control
+	PWM_Control_REG = 0x07, //pwmæ§åˆ¶	PWM control
 	
 	
 	//Read Reg
-	READ_TEN_M1Enconer_REG = 0x10, //10msÊµÊ±±àÂëÆ÷¶ÁÈ¡M1	10ms real-time encoder reading M1
-	READ_TEN_M2Enconer_REG = 0x11, //10msÊµÊ±±àÂëÆ÷¶ÁÈ¡M2	10ms real-time encoder reading M2
-	READ_TEN_M3Enconer_REG = 0x12, //10msÊµÊ±±àÂëÆ÷¶ÁÈ¡M3	10ms real-time encoder reading M3
-	READ_TEN_M4Enconer_REG = 0x13, //10msÊµÊ±±àÂëÆ÷¶ÁÈ¡M4	10ms real-time encoder reading M4
+	READ_TEN_M1Enconer_REG = 0x10, //10mså®æ—¶ç¼–ç å™¨è¯»å–M1	10ms real-time encoder reading M1
+	READ_TEN_M2Enconer_REG = 0x11, //10mså®æ—¶ç¼–ç å™¨è¯»å–M2	10ms real-time encoder reading M2
+	READ_TEN_M3Enconer_REG = 0x12, //10mså®æ—¶ç¼–ç å™¨è¯»å–M3	10ms real-time encoder reading M3
+	READ_TEN_M4Enconer_REG = 0x13, //10mså®æ—¶ç¼–ç å™¨è¯»å–M4	10ms real-time encoder reading M4
 	
-	READ_ALLHigh_M1_REG = 0x20, //¶ÁÈ¡M1×ÜµÄÂö³åÊı ¸ßÎ»	Read the total number of pulses of M1 High
-	READ_ALLLOW_M1_REG = 0x21, //¶ÁÈ¡M1×ÜµÄÂö³åÊı µÍÎ»	Read the total number of pulses of M1 low
+	READ_ALLHigh_M1_REG = 0x20, //è¯»å–M1æ€»çš„è„‰å†²æ•° é«˜ä½	Read the total number of pulses of M1 High
+	READ_ALLLOW_M1_REG = 0x21, //è¯»å–M1æ€»çš„è„‰å†²æ•° ä½ä½	Read the total number of pulses of M1 low
 	
-	READ_ALLHigh_M2_REG = 0x22, //¶ÁÈ¡M2×ÜµÄÂö³åÊı ¸ßÎ»	Read the total number of pulses of M2 High
-	READ_ALLLOW_M2_REG = 0x23,  //¶ÁÈ¡M2×ÜµÄÂö³åÊı µÍÎ»	Read the total number of pulses of M2 low
+	READ_ALLHigh_M2_REG = 0x22, //è¯»å–M2æ€»çš„è„‰å†²æ•° é«˜ä½	Read the total number of pulses of M2 High
+	READ_ALLLOW_M2_REG = 0x23,  //è¯»å–M2æ€»çš„è„‰å†²æ•° ä½ä½	Read the total number of pulses of M2 low
 	
-	READ_ALLHigh_M3_REG = 0x24, //¶ÁÈ¡M3×ÜµÄÂö³åÊı ¸ßÎ»	Read the total number of pulses of M3 High
-	READ_ALLLOW_M3_REG = 0x25, //¶ÁÈ¡M3×ÜµÄÂö³åÊı µÍÎ»	Read the total number of pulses of M3 low
+	READ_ALLHigh_M3_REG = 0x24, //è¯»å–M3æ€»çš„è„‰å†²æ•° é«˜ä½	Read the total number of pulses of M3 High
+	READ_ALLLOW_M3_REG = 0x25, //è¯»å–M3æ€»çš„è„‰å†²æ•° ä½ä½	Read the total number of pulses of M3 low
 	
-	READ_ALLHigh_M4_REG = 0x26, //¶ÁÈ¡M4×ÜµÄÂö³åÊı ¸ßÎ»	Read the total number of pulses of M4 High
-	READ_ALLLOW_M4_REG = 0x27, //¶ÁÈ¡M4×ÜµÄÂö³åÊı µÍÎ»	Read the total number of pulses of M4 low
+	READ_ALLHigh_M4_REG = 0x26, //è¯»å–M4æ€»çš„è„‰å†²æ•° é«˜ä½	Read the total number of pulses of M4 High
+	READ_ALLLOW_M4_REG = 0x27, //è¯»å–M4æ€»çš„è„‰å†²æ•° ä½ä½	Read the total number of pulses of M4 low
 	
-	IIC_REG_MAX //×î´óµÄ	The largest
+	IIC_REG_MAX //æœ€å¤§çš„	The largest
 	
 
 }Motor_IIC_ADDR_t;
 
 
-//Òı³ö±àÂëÆ÷±äÁ¿£¬¹©Íâ²¿Ê¹ÓÃ	Lead out encoder variables for external use
+//å¼•å‡ºç¼–ç å™¨å˜é‡ï¼Œä¾›å¤–éƒ¨ä½¿ç”¨	Lead out encoder variables for external use
 extern int Encoder_Offset[4];
 extern int Encoder_Now[4];
 

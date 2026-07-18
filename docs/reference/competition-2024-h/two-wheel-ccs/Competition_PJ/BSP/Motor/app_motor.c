@@ -8,7 +8,7 @@ static int speed_L2_setup = 0;
 static int speed_R1_setup = 0;
 static int speed_R2_setup = 0;
 
-// ·µ»Øµ±Ç°Ğ¡³µÂÖ×ÓÖá¼ä¾àºÍµÄÒ»°ë   Returns half of the current small wheel axle spacing
+// è¿”å›å½“å‰å°è½¦è½®å­è½´é—´è·å’Œçš„ä¸€åŠ   Returns half of the current small wheel axle spacing
 static float Motion_Get_APB(void)
 {
     return Car_APB;
@@ -18,15 +18,15 @@ void Set_Motor(int MOTOR_TYPE)
 {
     if(MOTOR_TYPE == 1)
     {
-        send_motor_type(1);//ÅäÖÃµç»úÀàĞÍ	Configure motor type
+        send_motor_type(1);//é…ç½®ç”µæœºç±»å‹	Configure motor type
         delay_ms(100);
-        send_pulse_phase(30);//ÅäÖÃ¼õËÙ±È ²éµç»úÊÖ²áµÃ³ö	Configure the reduction ratio. Check the motor manual to find out
+        send_pulse_phase(30);//é…ç½®å‡é€Ÿæ¯” æŸ¥ç”µæœºæ‰‹å†Œå¾—å‡º	Configure the reduction ratio. Check the motor manual to find out
         delay_ms(100);
-        send_pulse_line(11);//ÅäÖÃ´Å»·Ïß ²éµç»úÊÖ²áµÃ³ö	Configure the magnetic ring wire. Check the motor manual to get the result.
+        send_pulse_line(11);//é…ç½®ç£ç¯çº¿ æŸ¥ç”µæœºæ‰‹å†Œå¾—å‡º	Configure the magnetic ring wire. Check the motor manual to get the result.
         delay_ms(100);
-        send_wheel_diameter(67.00);//ÅäÖÃÂÖ×ÓÖ±¾¶,²âÁ¿µÃ³ö		Configure the wheel diameter and measure it
+        send_wheel_diameter(67.00);//é…ç½®è½®å­ç›´å¾„,æµ‹é‡å¾—å‡º		Configure the wheel diameter and measure it
         delay_ms(100);
-        send_motor_deadzone(1900);//ÅäÖÃµç»úËÀÇø,ÊµÑéµÃ³ö	Configure the motor dead zone, and the experiment shows
+        send_motor_deadzone(1900);//é…ç½®ç”µæœºæ­»åŒº,å®éªŒå¾—å‡º	Configure the motor dead zone, and the experiment shows
         delay_ms(100);
     }
     
@@ -83,7 +83,7 @@ void Set_Motor(int MOTOR_TYPE)
     }
 }
 
-//¿ØÖÆĞ¡³µµÄÔË¶¯    Control the movement of the car
+//æ§åˆ¶å°è½¦çš„è¿åŠ¨    Control the movement of the car
 void Motion_Car_Control(int16_t V_x, int16_t V_y, int16_t V_z)
 {
 	float robot_APB = Motion_Get_APB();
@@ -116,11 +116,11 @@ void Motion_Car_Control(int16_t V_x, int16_t V_y, int16_t V_z)
 		
 }
 
-// Í¨¹ıÆ«º½½Ç¼ÆËãµ±Ç°µÄÆ«²îÖµ£¬Ğ£×¼Ğ¡³µÔË¶¯·½Ïò¡£   Calculate the current deviation value by yaw angle and calibrate the direction of the carriage movement.
+// é€šè¿‡åèˆªè§’è®¡ç®—å½“å‰çš„åå·®å€¼ï¼Œæ ¡å‡†å°è½¦è¿åŠ¨æ–¹å‘ã€‚   Calculate the current deviation value by yaw angle and calibrate the direction of the carriage movement.
 void Motion_Yaw_Calc(float offset_yaw)
 {
     //int speed_L1 = speed_L1_setup - (int)offset_yaw;
-    int speed_L2 = speed_L2_setup + (int)offset_yaw;  //yawÎª¸º ÓÒ×ª
+    int speed_L2 = speed_L2_setup + (int)offset_yaw;  //yawä¸ºè´Ÿ å³è½¬
     //int speed_R1 = speed_R1_setup + (int)offset_yaw;
     int speed_R2 = speed_R2_setup - (int)offset_yaw;
         
@@ -135,7 +135,7 @@ void Motion_Yaw_Calc(float offset_yaw)
     Contrl_Speed(0, speed_L2, 0, speed_R2);
 }
 
-//»ñÈ¡Á½¸ö¸öµç»úµÄÆ½¾ùµÄ10msµÄ±àÂëÆ÷Êı¾İ£¬ÀÛ¼ÆÔö¼ÓÀ´»ñÈ¡Àï³ÌÖµ
+//è·å–ä¸¤ä¸ªä¸ªç”µæœºçš„å¹³å‡çš„10msçš„ç¼–ç å™¨æ•°æ®ï¼Œç´¯è®¡å¢åŠ æ¥è·å–é‡Œç¨‹å€¼
 //Get the average encoder data of four motors and add the cumulatively to get the mileage value
 void Get_Odometry(void)
 {

@@ -5,29 +5,29 @@
 #include "app_irtracking.h"
 #include "app_motor.h"
                     
-#define MOTOR_TYPE 5   //1:520µç»ú 2:310µç»ú 3:²âËÙÂëÅÌTTµç»ú 4:TTÖ±Á÷¼õËÙµç»ú 5:LĞÍ520µç»ú
+#define MOTOR_TYPE 5   //1:520ç”µæœº 2:310ç”µæœº 3:æµ‹é€Ÿç ç›˜TTç”µæœº 4:TTç›´æµå‡é€Ÿç”µæœº 5:Lå‹520ç”µæœº
                        //1:520 motor 2:310 motor 3:speed code disc TT motor 4:TT DC reduction motor 5:L type 520 motor
 
 int main(void)
 {
-    USART_Init();//´òÓ¡´®¿Ú³õÊ¼»¯ Print serial port initialization
+    USART_Init();//æ‰“å°ä¸²å£åˆå§‹åŒ– Print serial port initialization
     printf("please wait...\r\n");
 
-	 //Ê¹ÄÜDMAÍ¨µÀ  Enable DMA Channel
+	 //ä½¿èƒ½DMAé€šé“  Enable DMA Channel
     NVIC_ClearPendingIRQ(UART_1_INST_INT_IRQN);
     DL_DMA_enableChannel(DMA, DMA_CH0_CHAN_ID);
     NVIC_EnableIRQ(UART_1_INST_INT_IRQN);
     
-//    /*°ËÂ·Ñ²ÏßÄ£¿é³õÊ¼»¯ Initialization of the eight-way patrol module */
-//    IRI2C_WriteByte(0x01,1);//¿ØÖÆ½øÈëĞ£×¼    Control Access Calibration
+//    /*å…«è·¯å·¡çº¿æ¨¡å—åˆå§‹åŒ– Initialization of the eight-way patrol module */
+//    IRI2C_WriteByte(0x01,1);//æ§åˆ¶è¿›å…¥æ ¡å‡†    Control Access Calibration
 //    delay_ms(200);	
-//    IRI2C_WriteByte(0x01,0);//¿ØÖÆÍË³öĞ£×¼    Control exit calibration
+//    IRI2C_WriteByte(0x01,0);//æ§åˆ¶é€€å‡ºæ ¡å‡†    Control exit calibration
 //    delay_ms(200);
     
-    //ÉèÖÃµç»úÀàĞÍ    Set motor type
+    //è®¾ç½®ç”µæœºç±»å‹    Set motor type
     Set_Motor(MOTOR_TYPE);
     
-    //ĞŞ¸Äµç»úPID£¬ÕâÀïµÄ²ÎÊıÊÇÎªË«Çı520Lµ×ÅÌÅäÖÃµÄ£¬ÆäËûµ×ÅÌĞèÒª×Ô¼º²âÊÔĞŞ¸Ä
+    //ä¿®æ”¹ç”µæœºPIDï¼Œè¿™é‡Œçš„å‚æ•°æ˜¯ä¸ºåŒé©±520Låº•ç›˜é…ç½®çš„ï¼Œå…¶ä»–åº•ç›˜éœ€è¦è‡ªå·±æµ‹è¯•ä¿®æ”¹
     //Modify the motor PID, the parameters here are configured for the 2WD 520L chassis, other chassis need to test and modify their own!
 	send_motor_PID(1.9,0.2,0.8);
 
@@ -35,7 +35,7 @@ int main(void)
     
 	while(1)
 	{
-        LineWalking();//¿ªÊ¼°ËÂ·Ñ²Ïß  Starting eight-way patrols.
+        LineWalking();//å¼€å§‹å…«è·¯å·¡çº¿  Starting eight-way patrols.
     }
 	
 }

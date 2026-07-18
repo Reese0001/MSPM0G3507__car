@@ -8,7 +8,7 @@ static int speed_L2_setup = 0;
 static int speed_R1_setup = 0;
 static int speed_R2_setup = 0;
 
-// ���ص�ǰС����������͵�һ��  Returns half of the sum of the axle spacings of the current trolley wheels.
+//  Returns half of the sum of the axle spacings of the current trolley wheels.
 static float Motion_Get_APB(void)
 {
     return Car_APB;
@@ -18,15 +18,15 @@ void Set_Motor(int MOTOR_TYPE)
 {
     if(MOTOR_TYPE == 1)
     {
-        send_motor_type(1);//���õ������	Configure motor type
+        send_motor_type(1);//	Configure motor type
         delay_ms(100);
-        send_pulse_phase(30);//���ü��ٱ� �����ֲ�ó�	Configure the reduction ratio. Check the motor manual to find out
+        send_pulse_phase(30);// 	Configure the reduction ratio. Check the motor manual to find out
         delay_ms(100);
-        send_pulse_line(11);//���ôŻ��� �����ֲ�ó�	Configure the magnetic ring wire. Check the motor manual to get the result.
+        send_pulse_line(11);// 	Configure the magnetic ring wire. Check the motor manual to get the result.
         delay_ms(100);
-        send_wheel_diameter(67.00);//��������ֱ��,�����ó�		Configure the wheel diameter and measure it
+        send_wheel_diameter(67.00);//,		Configure the wheel diameter and measure it
         delay_ms(100);
-        send_motor_deadzone(1900);//���õ������,ʵ��ó�	Configure the motor dead zone, and the experiment shows
+        send_motor_deadzone(1900);//,	Configure the motor dead zone, and the experiment shows
         delay_ms(100);
     }
     
@@ -83,7 +83,7 @@ void Set_Motor(int MOTOR_TYPE)
     }
 }
 
-//ֱ�ӿ���pwm
+//pwm
 
 void Motion_Car_Control(int16_t V_x, int16_t V_y, int16_t V_z)             
 {	

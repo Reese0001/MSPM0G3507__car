@@ -1,20 +1,20 @@
 #include "task.h"
 
-//ÔÚ´Ë´´½¨ÈÎÎñ  Create a task here
+//åœ¨æ­¤åˆ›å»ºä»»åŠ¡  Create a task here
 Task tasks[] = {
-    {100, 0, Key_Handle},           // Ã¿100msÖ´ĞĞ°´¼ü¼ì²â  Perform key detection every 100ms
-    {10, 0, Get_EulerAngles},        // Ã¿5ms»ñÈ¡½Ç¶ÈÊı¾İ   Perform key detection every 5ms
-    {30, 0, Get_CalibratedAngles},  //Ã¿30ms»ñÈ¡Ğ£×¼ºóµÄ½Ç¶È  Get the calibrated angle every 30ms
-    {1000, 0, Get_Odometry},          //Ã¿1s»ñÈ¡Ò»´ÎÀï³Ì¼ÆÊıÖµ    Get the calibrated angle every 30ms
+    {100, 0, Key_Handle},           // æ¯100msæ‰§è¡ŒæŒ‰é”®æ£€æµ‹  Perform key detection every 100ms
+    {10, 0, Get_EulerAngles},        // æ¯5msè·å–è§’åº¦æ•°æ®   Perform key detection every 5ms
+    {30, 0, Get_CalibratedAngles},  //æ¯30msè·å–æ ¡å‡†åçš„è§’åº¦  Get the calibrated angle every 30ms
+    {1000, 0, Get_Odometry},          //æ¯1sè·å–ä¸€æ¬¡é‡Œç¨‹è®¡æ•°å€¼    Get the calibrated angle every 30ms
 };
 
 void Scheduler_Run(void) {
-    uint32_t now = Get_Time();  // »ñÈ¡µ±Ç°Ê±¼ä´Á   Get the current timestamp
+    uint32_t now = Get_Time();  // è·å–å½“å‰æ—¶é—´æˆ³   Get the current timestamp
     for(int i=0; i<sizeof(tasks)/sizeof(Task); i++) {
-        // ¼ÆËãÊ±¼ä²î£¨×Ô¶¯´¦Àí32Î»Òç³ö£©   Calculate the time difference (automatically handle 32-bit overflow)
+        // è®¡ç®—æ—¶é—´å·®ï¼ˆè‡ªåŠ¨å¤„ç†32ä½æº¢å‡ºï¼‰   Calculate the time difference (automatically handle 32-bit overflow)
         if(now - tasks[i].last_call >= tasks[i].interval) {
-            tasks[i].task();          // Ö´ĞĞÈÎÎñ   Perform tasks
-            tasks[i].last_call = now; // ¸üĞÂÊ±¼ä´Á Update time stamp
+            tasks[i].task();          // æ‰§è¡Œä»»åŠ¡   Perform tasks
+            tasks[i].last_call = now; // æ›´æ–°æ—¶é—´æˆ³ Update time stamp
         }
     }
 }
