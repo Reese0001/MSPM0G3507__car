@@ -1,7 +1,7 @@
 #ifndef _APP_IRTRACKING_H_
 #define _APP_IRTRACKING_H_
 
-
+#include <stdbool.h>
 #include "ti_msp_dl_config.h"
 #include "app_motor.h"
 #include "usart.h"
@@ -31,6 +31,7 @@ void Gray_SelectChannel(uint8_t channel);
 uint8_t Gray_ReadChannel(uint8_t channel);
 void Gray_ReadAll(uint8_t *x1, uint8_t *x2, uint8_t *x3, uint8_t *x4,
                   uint8_t *x5, uint8_t *x6, uint8_t *x7, uint8_t *x8);
+bool Tracking_ComputeWeightedError(uint8_t sensor_bits, float *error);
 void printf_gray_data(void);
 void LineWalking(void);
 int LineCheck(void);
