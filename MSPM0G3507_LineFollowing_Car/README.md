@@ -1,41 +1,36 @@
-## Example Summary
+# MSPM0G3507_LineFollowing_Car CCS 工程
 
-Empty project using DriverLib.
-This example shows a basic empty project using DriverLib with just main file
-and SysConfig initialization.
+这是仓库的唯一活动固件工程，可作为 Existing Project 直接导入 CCS Theia。
 
-## Peripherals & Pin Assignments
+## 入口文件
 
-| Peripheral | Pin | Function |
-| --- | --- | --- |
-| SYSCTL |  |  |
-| DEBUGSS | PA20 | Debug Clock |
-| DEBUGSS | PA19 | Debug Data In Out |
+- `empty.c`：初始化、L 型 520 电机选择、循迹循环和安全服务。
+- `empty.syscfg`：引脚与外设配置的唯一真实来源。
+- `BSP/Eight_Tracking/`：PA15～PA18 灰度采样和循迹决策。
+- `BSP/Motor/`：两轮运动学、UART 驱动协议和电机安全层。
+- `BSP/Timer/`：1 ms 时间基和 200 ms 电机看门狗计时。
 
-## BoosterPacks, Board Resources & Jumper Settings
+## 构建
 
-Visit [LP_MSPM0G3507](https://www.ti.com/tool/LP-MSPM0G3507) for LaunchPad information, including user guide and hardware files.
+要求：
 
-| Pin | Peripheral | Function | LaunchPad Pin | LaunchPad Settings |
-| --- | --- | --- | --- | --- |
-| PA20 | DEBUGSS | SWCLK | N/A | <ul><li>PA20 is used by SWD during debugging<br><ul><li>`J101 15:16 ON` Connect to XDS-110 SWCLK while debugging<br><li>`J101 15:16 OFF` Disconnect from XDS-110 SWCLK if using pin in application</ul></ul> |
-| PA19 | DEBUGSS | SWDIO | N/A | <ul><li>PA19 is used by SWD during debugging<br><ul><li>`J101 13:14 ON` Connect to XDS-110 SWDIO while debugging<br><li>`J101 13:14 OFF` Disconnect from XDS-110 SWDIO if using pin in application</ul></ul> |
+- CCS Theia
+- TI Arm Clang 4.0.4 LTS
+- MSPM0 SDK 2.10.00.04
+- SysConfig 1.26 或兼容版本
 
-### Device Migration Recommendations
-This project was developed for a superset device included in the LP_MSPM0G3507 LaunchPad. Please
-visit the [CCS User's Guide](https://software-dl.ti.com/msp430/esd/MSPM0-SDK/latest/docs/english/tools/ccs_ide_guide/doc_guide/doc_guide-srcs/ccs_ide_guide.html#sysconfig-project-migration)
-for information about migrating to other MSPM0 devices.
+在 CCS 中执行 **Project → Clean**，再执行 **Build Project**。输出文件名应为 `MSPM0G3507_LineFollowing_Car.out`。
 
-### Low-Power Recommendations
-TI recommends to terminate unused pins by setting the corresponding functions to
-GPIO and configure the pins to output low or input with internal
-pullup/pulldown resistor.
+如果 CCS 仍显示旧工程名，请从工作区移除旧项目但不要删除磁盘文件，然后重新导入本目录。`.project`、`.cproject` 和 `.theia/launch.json` 已使用新名称。
 
-SysConfig allows developers to easily configure unused pins by selecting **Board**→**Configure Unused Pins**.
+## 灰度输入约定
 
-For more information about jumper configuration to achieve low-power using the
-MSPM0 LaunchPad, please visit the [LP-MSPM0G3507 User's Guide](https://www.ti.com/lit/slau873).
+PA15=AD0、PA16=AD1、PA17=AD2 选择通道，PA18=OUT 读取数字电平。代码将低电平转换为黑线有效位，再用八路对称权重计算位置误差。
 
-## Example Usage
+首次上车前必须实测确认：
 
-Compile, load and run the example.
+1. X1 是否为车体最左侧、X8 是否为最右侧。
+2. 白底是否确实为高电平，黑线是否确实为低电平。
+3. M2/M4 正速度是否都对应车辆前进。
+
+未确认这三项前，只允许离线构建和断电/架空轮检查。

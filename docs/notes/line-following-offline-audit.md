@@ -39,3 +39,17 @@
 - M2/M4 正速度对应的实际车轮前进方向。
 
 在这三项确认前，不调整转向正负号。
+
+## 2026-07-18 控制修复后复验
+
+- CCS 工程目录和工程名已改为 `MSPM0G3507_LineFollowing_Car`。
+- 八路误差改为 `-7,-5,-3,-1,+1,+3,+5,+7` 对称加权平均。
+- PD 每周期更新上一误差，普通循迹修正量受基础速度 80% 限制。
+- 丢线前两周期低速恢复，第三周期仍丢线时请求 `Motion_Car_Control(0, 0, 0)`。
+- `LineWalking()` 的活动路径不再包含 `delay_ms(100)`。
+- Python 离线合同共 21 项通过。
+- TI Arm Clang 4.0.4 重新编译 20 个生产源文件并成功链接：
+  `_integration_staging/line-following-audit/build/MSPM0G3507_LineFollowing_Car.out`，149376 字节。
+- 符号表已确认包含 `main`、`LineWalking`、`Tracking_ComputeWeightedError`、`Motor_Safety_Service` 和 `Motor_Safety_Tick1ms`。
+
+以上仍只证明离线可编译、可链接，不代表已完成烧录或实车循迹验证。
