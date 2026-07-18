@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2026 电赛小车平台：基于 **TI MSPM0G3507**（Cortex-M0+）的裸机（no-RTOS）嵌入式工程，使用 **TI Arm Clang** 工具链，在 **CCS Theia** 中开发。
 硬件构成：MSPM0G3507 核心板 + MSPMO 扩展板 + L 型 520 减速电机 ×2（两驱）+ MPU6050 姿态传感器 + 八路灰度循迹传感器 + 12.6V 电源（电机驱动板 12V，MCU/传感器 3.3V）。
 
-工程主体在 `empty_LP_MSPM0G3507_nortos_ticlang/`，由 TI 的 `empty` DriverLib 示例改造而来。
+工程主体在 `MSPM0G3507_LineFollowing_Car/`，由 TI 的 `empty` DriverLib 示例改造而来；旧目录名 `empty_LP_MSPM0G3507_nortos_ticlang` 仅保留在历史记录中。
 
 ## 行为准则（务必遵守）
 
@@ -52,7 +52,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 任务状态机（`BSP/Questions/`）
 `questions.c` 用嵌套状态机（`struct state_machine`：`Main_State` + `Q1..Q4_State`）实现比赛各题流程。按键切换题目（`STOP_STATE`/`QUESTION_1..4`），短按启动、长按切题。这是比赛逻辑的顶层编排。
 
-### BSP 模块（`empty_LP_MSPM0G3507_nortos_ticlang/BSP/`）
+### BSP 模块（`MSPM0G3507_LineFollowing_Car/BSP/`）
 - **`Motor/`** — 两驱电机控制。`app_motor.c` 高层运动学（`Motion_Car_Control`、里程计 `Get_Odometry`，`Car_APB` 轴距常数）；`app_motor_usart.c`/`bsp_motor_usart.c` 通过 **UART 向电机驱动板发协议帧**（非直接 PWM）。`Set_Motor(MOTOR_TYPE)` 选电机型号，本项目 `MOTOR_TYPE=5`（L 型 520）。M2/M4 为驱动轮，M1/M3 为万向轮（空）。
 - **`MPU6050/`** — 姿态传感器。`bsp_mpu6050.c` 软件 I2C 底层读写（`MPU6050_ReadData`）；`app_mpu6050.c` 上层角度/PID（`Dir_PID`、`dir_kp/dir_kd`）。
 - **`eMPL/`** — InvenSense DMP 库（`inv_mpu.c` + DMP 固件），MPU6050 硬件姿态解算，勿随意改。

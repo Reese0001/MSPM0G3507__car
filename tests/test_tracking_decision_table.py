@@ -6,7 +6,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (
     ROOT
-    / "empty_LP_MSPM0G3507_nortos_ticlang"
+    / "MSPM0G3507_LineFollowing_Car"
     / "BSP/Eight_Tracking/app_irtracking.c"
 ).read_text(encoding="utf-8")
 

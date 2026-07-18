@@ -15,7 +15,8 @@
 |------|------|------|
 | UART0 (调试) | PA10(TX)/PA11(RX) | 115200, printf |
 | UART1 (电机) | PB6(TX)/PB7(RX) | 115200, 电机驱动板 |
-| I2C1 (灰度) | PA15(SCL)/PA16(SDA) | 八路灰度传感器 |
+| 八路灰度选通 | PA15(AD0)/PA16(AD1)/PA17(AD2) | 选择 X1～X8 |
+| 八路灰度输出 | PA18(OUT) | 读取当前通道数字电平 |
 | MPU6050 | PA12(SCL)/PA13(SDA) | 软件I2C |
 | LED D1 | PB2 | GPIO |
 | LED D2 | PB3 | GPIO |
@@ -41,7 +42,7 @@
    - SDK路径应该类似于: `C:\ti\mspm0_sdk_2_02_00_05`
 3. **导入项目**:
    - 菜单: File → Import → Existing Projects into Workspace
-   - 选择 `E:\workspace_ccstheia\empty_LP_MSPM0G3507_nortos_ticlang` 目录
+   - 选择仓库中的 `MSPM0G3507_LineFollowing_Car` 目录
 4. **测试编译**:
    - 右键项目 → Build Project
    - 确保编译成功，无错误
@@ -104,9 +105,10 @@
 - 检查电机接线 (M2和M4)
 
 ### 4. 灰度传感器不工作
-- 检查I2C接线 (PA15/PA16)
-- 确认传感器地址为0x12
-- 检查传感器供电
+- 检查选通接线：PA15=AD0、PA16=AD1、PA17=AD2
+- 检查数字输出接线：PA18=OUT
+- 依次覆盖 X1～X8，确认通道顺序和黑白电平极性
+- 检查传感器 3.3V 供电与共地
 
 ---
 

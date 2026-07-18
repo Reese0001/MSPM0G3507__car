@@ -13,7 +13,7 @@ SPECIAL_NAMES = {".project", ".cproject", ".ccsproject", ".clangd"}
 
 class TextEncodingTests(unittest.TestCase):
     def test_maintained_text_is_valid_utf8(self):
-        roots = [ROOT / "empty_LP_MSPM0G3507_nortos_ticlang", ROOT / "docs"]
+        roots = [ROOT / "MSPM0G3507_LineFollowing_Car", ROOT / "docs"]
         invalid = []
         damaged = []
         for base in roots:

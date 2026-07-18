@@ -6,4 +6,4 @@
 - [项目记录](notes/)：交接和历史构建记录。
 - [历史资料整理清单](archive-manifest.md)：保留与删除范围及统计数据。
 
-当前固件的唯一有效来源仍是 `empty_LP_MSPM0G3507_nortos_ticlang/` 下的 `empty.syscfg`、`empty.c` 和 `BSP/`。
+当前固件的唯一有效来源是 `MSPM0G3507_LineFollowing_Car/` 下的 `empty.syscfg`、`empty.c` 和 `BSP/`。旧工程名只出现在历史计划和构建记录中。

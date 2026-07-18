@@ -4,7 +4,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PROJECT = ROOT / "empty_LP_MSPM0G3507_nortos_ticlang"
+PROJECT = ROOT / "MSPM0G3507_LineFollowing_Car"
 
 
 def read(relative: str) -> str:
