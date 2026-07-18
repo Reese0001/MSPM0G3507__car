@@ -108,7 +108,7 @@ $spd:0,0,0,0#
 最新版主程序的控制流程调整为：
 
 1. `SYSCFG_DL_init()`；
-2. UART/定时器中断等必要初始化；
+2. `USART_Init()` 和新增的 `Timer_Init()`；`Timer_Init()` 必须清除待处理中断、使能 `TIMER_0_INST_INT_IRQN` 并启动 `TIMER_0_INST`；
 3. `Motor_Safety_Init()`，立即零速；
 4. `Set_Motor(5)`，只执行一次经过确认的L型520配置，不再每秒重复配置；
 5. `Motor_Safety_Arm()`；
@@ -153,6 +153,7 @@ $spd:0,0,0,0#
 - `Motion_Car_Control()` 和 `Motion_Yaw_Calc()` 不直接发送非零速度；
 - 主循环调用 `Motor_Safety_Service()`；
 - 定时器ISR调用 `Motor_Safety_Tick1ms()`；
+- 主程序在 `Motor_Safety_Arm()` 前调用 `Timer_Init()`，且 `Timer_Init()` 同时使能NVIC和启动计数器；
 - 超时常量固定为200 ms；
 - 软启动常量固定为1000 ms和10级；
 - 紧急路径只发送固定零速帧。
