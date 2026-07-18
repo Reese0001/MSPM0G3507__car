@@ -5,6 +5,8 @@
 #define IRR_SPEED (120)
 #define TRACKING_RECOVERY_SPEED (36)
 #define TRACKING_LOST_STOP_CYCLES (3U)
+/* 实车验证：控制器计算方向与底盘实际角速度方向相反。 */
+#define TRACKING_STEERING_POLARITY (-1)
 
 static const int8_t TRACKING_WEIGHTS[8] = {-7, -5, -3, -1, 1, 3, 5, 7};
 
@@ -159,7 +161,8 @@ void LineWalking(void)
             return;
         }
 
-        turn = Tracking_LimitTurn(last_valid_error * IRTrack_Trun_KP,
+        turn = Tracking_LimitTurn(TRACKING_STEERING_POLARITY *
+                                      last_valid_error * IRTrack_Trun_KP,
                                   TRACKING_RECOVERY_SPEED);
         Motion_Car_Control(TRACKING_RECOVERY_SPEED, 0, turn);
         return;
@@ -176,7 +179,9 @@ void LineWalking(void)
         base_speed = IRR_SPEED;
     }
 
-    turn = Tracking_LimitTurn(APP_ELE_PID_Calc(error), base_speed);
+    turn = Tracking_LimitTurn(TRACKING_STEERING_POLARITY *
+                                  APP_ELE_PID_Calc(error),
+                              base_speed);
     pid_output_IRR = turn;
     Motion_Car_Control(base_speed, 0, turn);
 }

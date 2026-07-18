@@ -17,6 +17,19 @@ HEADER = (
 
 
 class TrackingDecisionTests(unittest.TestCase):
+    def test_physical_steering_polarity_is_inverted_at_controller_boundary(self):
+        self.assertRegex(SOURCE, r"TRACKING_STEERING_POLARITY\s+\(-1\)")
+        applications = re.findall(
+            r"Tracking_LimitTurn\s*\(\s*"
+            r"TRACKING_STEERING_POLARITY\s*\*",
+            SOURCE,
+        )
+        self.assertEqual(
+            2,
+            len(applications),
+            "正常循迹和丢线恢复必须使用相同的实车转向极性",
+        )
+
     def test_weighted_error_api_and_symmetric_weights_exist(self):
         self.assertIn("Tracking_ComputeWeightedError", HEADER)
         self.assertRegex(
