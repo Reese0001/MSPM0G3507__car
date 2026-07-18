@@ -28,6 +28,7 @@ _organize_staging/
 _integration_staging/
 __pycache__/
 *.pyc
+.worktrees/
 docs/docs_backup/
 workspace_ccstheia/
 
