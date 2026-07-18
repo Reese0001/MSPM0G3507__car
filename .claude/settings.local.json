@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(iconv -f GBK -t UTF-8 CLAUDE.md)",
+      "Bash(iconv -f GB18030 -t UTF-8 CLAUDE.md)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(mkdir -p docs_backup/pdf docs_backup/images docs_backup/archives)",
+      "Bash(mv docs_backup/*.pdf docs_backup/pdf/)",
+      "Bash(mv docs_backup/*.png docs_backup/*.jpg docs_backup/images/)",
+      "Bash(mv docs_backup/*.zip docs_backup/archives/)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "ccs-debug",
+    "ccs-project",
+    "ccs-sysconfig",
+    "ccs-serial"
+  ]
+}

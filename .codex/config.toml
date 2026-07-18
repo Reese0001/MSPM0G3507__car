@@ -1,0 +1,6 @@
+[mcp_servers.ccs-serial]
+command = 'E:\Software\ti\css2051\ccs\tools\node\node'
+args = [
+    'E:\Software\ti\css2051\ccs\theia\resources\app\plugins\ccs-ai\extension\dist\mcp-server-proxy.js',
+    "serial",
+]

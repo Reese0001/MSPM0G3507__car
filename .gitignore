@@ -1,0 +1,35 @@
+# Local secrets and environment
+.env
+.env.*
+!.env.example
+
+# IDE user state
+.vscode/
+*.uvguix.*
+
+# Generated build outputs
+**/Debug/
+**/Release/
+**/build/
+**/OBJ/
+**/Objects/
+**/Listings/
+*.o
+*.obj
+*.d
+*.crf
+*.map
+*.axf
+*.elf
+*.a
+
+# Directory-cleanup working area and raw historical archive
+_organize_staging/
+docs/docs_backup/
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+Thumbs.db
+.DS_Store
