@@ -61,8 +61,15 @@ class CarMotionContractTests(unittest.TestCase):
 
     def test_start_step_handles_inactive_actions(self):
         source = read("BSP/CarControl/car_motion.c")
-        self.assertIn("if (motion_action == CAR_MOTION_ACTION_NONE)", source)
-        self.assertIn("CarMotion_Stop();", source)
+        inactive_blocks = re.findall(
+            r"if \(motion_action == CAR_MOTION_ACTION_NONE\) \{(.*?)\}",
+            source,
+            re.DOTALL,
+        )
+        self.assertEqual(2, len(inactive_blocks))
+        for block in inactive_blocks:
+            self.assertIn("CarMotion_Stop();", block)
+            self.assertIn("return false;", block)
 
 
 if __name__ == "__main__":

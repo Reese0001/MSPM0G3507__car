@@ -8,7 +8,10 @@
  * Encoder feedback is deliberately reported as raw driver values for now.
  * The field names retain the planned units for API stability, but
  * units_valid remains false until pulses/rev, gear ratio, effective 65 mm
- * wheel diameter and the driver's conversion have all been measured.
+ * wheel diameter and the driver's conversion have all been measured.  M2 is
+ * left and M4 is right; signs are preserved exactly as reported by the motor
+ * driver (the application command convention treats positive on both as
+ * forward), with no feedback polarity correction in this layer.
  */
 typedef struct {
     int32_t left_ticks;

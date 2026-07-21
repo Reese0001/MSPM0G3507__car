@@ -88,6 +88,7 @@ bool CarMotion_DriveDistanceStart(int32_t distance_mm, int16_t speed)
 bool CarMotion_DriveDistanceStep(void)
 {
     if (motion_action == CAR_MOTION_ACTION_NONE) {
+        CarMotion_Stop();
         return false;
     }
 
@@ -128,6 +129,7 @@ bool CarMotion_TurnAngleStart(float angle_deg, int16_t speed)
 bool CarMotion_TurnAngleStep(void)
 {
     if (motion_action == CAR_MOTION_ACTION_NONE) {
+        CarMotion_Stop();
         return false;
     }
 
