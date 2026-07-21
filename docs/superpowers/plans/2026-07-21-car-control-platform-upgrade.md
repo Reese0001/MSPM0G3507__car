@@ -57,7 +57,7 @@
 
 - [x] **Step 4: 复核并提交**
 
-Run: `rg -n "\[PROJECT_NAME\]|67mm|67 mm" my-project/.specify/memory/constitution.md openspec`
+Run: `rg -n "\[PROJECT_NAME\]|67mm|67 mm" my-project/.specify/memory/constitution.md openspec/specs openspec/config.yaml`
 
 Expected: 项目宪章无模板占位符，运动规格不再使用未经确认的 67 mm；提交时不得把 `.superpowers/` 或构建产物加入 Git。
 
