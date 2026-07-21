@@ -11,8 +11,6 @@ extern uint32_t Get_Time(void);
  * measured.  In particular, the advertised 65 mm wheel diameter is not yet
  * an effective rolling diameter and must not be used to label raw counts. */
 #define CAR_MOTION_UNITS_CONFIRMED 0
-#define CAR_MOTION_FEEDBACK_MAX_AGE_MS 200U
-
 typedef enum {
     CAR_MOTION_ACTION_NONE = 0,
     CAR_MOTION_ACTION_DISTANCE,

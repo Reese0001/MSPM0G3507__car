@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/* Shared freshness boundary for every consumer of motor feedback. */
+#define CAR_MOTION_FEEDBACK_MAX_AGE_MS (200U)
+
 /*
  * Encoder feedback is deliberately reported as raw driver values for now.
  * The field names retain the planned units for API stability, but
