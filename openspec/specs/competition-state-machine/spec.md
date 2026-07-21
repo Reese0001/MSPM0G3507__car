@@ -2,7 +2,7 @@
 
 ## Purpose
 
-比赛题目流程的状态机管理，支持按键切换题目 (Q1~Q4) 和启动/停止控制。
+比赛题目流程的状态机管理，支持按键切换题目 (Q1~Q4) 和启动/停止控制。旧 `questions.c` 的接口保持兼容；实际运动流程由新的 `CarRoute` 状态机承载。
 
 ## Requirements
 
@@ -41,9 +41,9 @@
 主状态机 (Main_State) 包含子状态机 (Q1~Q4_State)。
 
 #### Scenario: 状态机结构
-- **GIVEN** `struct state_machine` 包含 Main_State + Q1_State~Q4_State
-- **WHEN** 主循环调用 `Question_Task_N()`
-- **THEN** 根据 Main_State 分发到对应子状态机执行
+- **GIVEN** `struct state_machine` 包含 Main_State + Q1_State~Q4_State，且 `CarRoute` 负责实际运动步骤
+- **WHEN** 主循环调用兼容的 `Question_Task_N()` 或新的 `CarRoute_Run()`
+- **THEN** 按 Main_State/CarRoute 状态分发任务，旧接口不得绕过电机安全层
 
 ### Requirement: 蜂鸣器反馈
 操作按键时蜂鸣器给出声音反馈。

@@ -32,6 +32,37 @@
 
 ---
 
+### Task 0: 对齐 OpenSpec 与项目宪章
+
+**Files:**
+- Modify: `openspec/config.yaml`
+- Modify: `openspec/specs/motor-control/spec.md`
+- Modify: `openspec/specs/competition-state-machine/spec.md`
+- Modify: `my-project/.specify/memory/constitution.md`（当前为未跟踪的 Spec Kit 工具目录，需单独保留其变更）
+
+**Interfaces:**
+- Produces: 与已购 65 mm 两驱平台、电源安全门槛、摄像头未购买边界和 `CarRoute`/旧 `questions.c` 兼容策略一致的规范基线。
+
+- [x] **Step 1: 解决已确认冲突**
+
+以购买资料中的 65 mm 作为初始轮径，编码器换算保持未标定；保留旧 `questions.c` 接口兼容，由 `CarRoute` 承担实际运动流程。
+
+- [x] **Step 2: 移除项目宪章占位符**
+
+将 `my-project/.specify/memory/constitution.md` 替换为 MSPM0 小车项目规则；Spec Kit 模板和脚本不修改、不删除。
+
+- [x] **Step 3: 记录规范变更**
+
+在 OpenSpec 配置中记录 5–12 V 板卡与 12.6 V 电池的硬件验收门槛、65 mm 初始轮径和摄像头后置策略。
+
+- [x] **Step 4: 复核并提交**
+
+Run: `rg -n "\[PROJECT_NAME\]|67mm|67 mm" my-project/.specify/memory/constitution.md openspec`
+
+Expected: 项目宪章无模板占位符，运动规格不再使用未经确认的 67 mm；提交时不得把 `.superpowers/` 或构建产物加入 Git。
+
+---
+
 ### Task 1: 固化已购平台与电源验收基线
 
 **Files:**
