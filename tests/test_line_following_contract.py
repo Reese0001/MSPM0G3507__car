@@ -44,6 +44,15 @@ class LineFollowingContractTests(unittest.TestCase):
     def test_l520_configuration_is_selected(self):
         self.assertIn("Set_Motor(5);", read("empty.c"))
 
+    def test_active_build_has_no_removed_legacy_gate_and_declares_delays(self):
+        key = read("BSP/Key/key.c")
+        tracking = read("BSP/Eight_Tracking/app_irtracking.c")
+        self.assertNotIn("g_LinePortal_flag", key)
+        self.assertTrue(
+            '#include "delay.h"' in tracking
+            or '#include "../delay.h"' in tracking
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

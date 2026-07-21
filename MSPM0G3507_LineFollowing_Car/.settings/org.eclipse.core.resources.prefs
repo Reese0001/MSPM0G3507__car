@@ -1,6 +1,8 @@
 eclipse.preferences.version=1
 encoding//Debug/BSP/Buzzer/subdir_rules.mk=UTF-8
 encoding//Debug/BSP/Buzzer/subdir_vars.mk=UTF-8
+encoding//Debug/BSP/CarControl/subdir_rules.mk=UTF-8
+encoding//Debug/BSP/CarControl/subdir_vars.mk=UTF-8
 encoding//Debug/BSP/Eight_Tracking/subdir_rules.mk=UTF-8
 encoding//Debug/BSP/Eight_Tracking/subdir_vars.mk=UTF-8
 encoding//Debug/BSP/Key/subdir_rules.mk=UTF-8

@@ -1,7 +1,5 @@
 #include "key.h"
 
-extern int g_LinePortal_flag;
-
 // 定义按键句柄 - Define key handle
 Key_t key1 = {
     .GPIOx = KEY_PORT,
@@ -92,12 +90,10 @@ void Key_Handle(void)
             case KEY_EVENT_SHORT:
                 // 处理短按 Handle short press
 //                printf("short press\r\n");
-                g_LinePortal_flag = 1;
                 bee_time = 500;
                 break;
             case KEY_EVENT_LONG:
                 Contrl_Pwm(0,0,0,0);
-                g_LinePortal_flag = 0;
                 // 处理长按 Handle long press
                 switch(task_flag)
                 {

@@ -1,4 +1,5 @@
 #include "app_irtracking.h"
+#include "../delay.h"
 
 #define IRTrack_Trun_KP (40.0f)
 #define IRTrack_Trun_KD (10.0f)
