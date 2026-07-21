@@ -108,6 +108,24 @@ void Gray_ReadAll(uint8_t *x1, uint8_t *x2, uint8_t *x3, uint8_t *x4,
     *x8 = Gray_ReadChannel(7);  // 通道8
 }
 
+uint8_t Tracking_PackBlackSensors(uint8_t x1, uint8_t x2, uint8_t x3,
+                                  uint8_t x4, uint8_t x5, uint8_t x6,
+                                  uint8_t x7, uint8_t x8)
+{
+    uint8_t sensor_bits = 0U;
+
+    sensor_bits |= (x1 == 0U) ? (1U << 0) : 0U;
+    sensor_bits |= (x2 == 0U) ? (1U << 1) : 0U;
+    sensor_bits |= (x3 == 0U) ? (1U << 2) : 0U;
+    sensor_bits |= (x4 == 0U) ? (1U << 3) : 0U;
+    sensor_bits |= (x5 == 0U) ? (1U << 4) : 0U;
+    sensor_bits |= (x6 == 0U) ? (1U << 5) : 0U;
+    sensor_bits |= (x7 == 0U) ? (1U << 6) : 0U;
+    sensor_bits |= (x8 == 0U) ? (1U << 7) : 0U;
+
+    return sensor_bits;
+}
+
 void printf_gray_data(void)
 {
     static uint8_t ir_x1, ir_x2, ir_x3, ir_x4, ir_x5, ir_x6, ir_x7, ir_x8;
@@ -135,7 +153,7 @@ void LineWalking(void)
     static uint8_t lost_count = 0U;
     static float last_valid_error = 0.0f;
     uint8_t x1, x2, x3, x4, x5, x6, x7, x8;
-    uint8_t sensor_bits = 0U;
+    uint8_t sensor_bits;
     float error = 0.0f;
     int16_t base_speed;
     int16_t turn;
@@ -143,14 +161,8 @@ void LineWalking(void)
     Gray_ReadAll(&x1, &x2, &x3, &x4, &x5, &x6, &x7, &x8);
 
     /* Gray_ReadChannel 返回 0 表示黑线；转换后 bit0..bit7 对应 X1..X8。 */
-    sensor_bits |= (x1 == 0U) ? (1U << 0) : 0U;
-    sensor_bits |= (x2 == 0U) ? (1U << 1) : 0U;
-    sensor_bits |= (x3 == 0U) ? (1U << 2) : 0U;
-    sensor_bits |= (x4 == 0U) ? (1U << 3) : 0U;
-    sensor_bits |= (x5 == 0U) ? (1U << 4) : 0U;
-    sensor_bits |= (x6 == 0U) ? (1U << 5) : 0U;
-    sensor_bits |= (x7 == 0U) ? (1U << 6) : 0U;
-    sensor_bits |= (x8 == 0U) ? (1U << 7) : 0U;
+    sensor_bits = Tracking_PackBlackSensors(x1, x2, x3, x4,
+                                            x5, x6, x7, x8);
 
     if (!Tracking_ComputeWeightedError(sensor_bits, &error)) {
         if (lost_count < UINT8_MAX) {
