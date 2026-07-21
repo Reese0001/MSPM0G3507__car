@@ -10,6 +10,30 @@ EVENT_SOURCE_PATH = PROJECT / "BSP/CarControl/car_sensor_events.c"
 TRACKING_HEADER_PATH = PROJECT / "BSP/Eight_Tracking/app_irtracking.h"
 TRACKING_SOURCE_PATH = PROJECT / "BSP/Eight_Tracking/app_irtracking.c"
 
+CAR_LINE_NONE = 0
+CAR_LINE_CENTER = 1
+CAR_LINE_LEFT_EDGE = 2
+CAR_LINE_RIGHT_EDGE = 3
+CAR_LINE_CROSS = 4
+CAR_LINE_STOP_MARKER = 5
+
+
+def classify_reference(sensor_bits: int, weighted_error: float, line_valid: bool) -> int:
+    """Host-side reference for the pure CarSensor_Classify decision table."""
+    if not line_valid:
+        return CAR_LINE_NONE
+    if sensor_bits == 0xFF:
+        return CAR_LINE_STOP_MARKER
+
+    active_count = sensor_bits.bit_count()
+    if ((sensor_bits & 0x81) == 0x81) or active_count >= 4:
+        return CAR_LINE_CROSS
+    if weighted_error <= -3.0:
+        return CAR_LINE_LEFT_EDGE
+    if weighted_error >= 3.0:
+        return CAR_LINE_RIGHT_EDGE
+    return CAR_LINE_CENTER
+
 
 def function_body(source: str, name: str) -> str:
     match = re.search(
@@ -87,6 +111,26 @@ class CarSensorEventsTests(unittest.TestCase):
             body.index("CAR_LINE_CROSS"),
             "all-black must be checked before broad-cross classification",
         )
+
+    def test_executable_classification_reference_decision_table(self):
+        cases = (
+            ("center", 0x18, 0.0, True, CAR_LINE_CENTER),
+            ("left edge", 0x03, -6.0, True, CAR_LINE_LEFT_EDGE),
+            ("right edge", 0xC0, 6.0, True, CAR_LINE_RIGHT_EDGE),
+            ("all white", 0x00, 0.0, False, CAR_LINE_NONE),
+            ("broad cross", 0x3C, 0.0, True, CAR_LINE_CROSS),
+            ("all-black stop candidate", 0xFF, 0.0, True,
+             CAR_LINE_STOP_MARKER),
+            ("invalid frame overrides bits", 0xFF, 0.0, False,
+             CAR_LINE_NONE),
+        )
+
+        for name, sensor_bits, weighted_error, line_valid, expected in cases:
+            with self.subTest(name=name):
+                self.assertEqual(
+                    expected,
+                    classify_reference(sensor_bits, weighted_error, line_valid),
+                )
 
     def test_event_layer_has_no_motor_command_or_blocking_delay(self):
         forbidden = (
