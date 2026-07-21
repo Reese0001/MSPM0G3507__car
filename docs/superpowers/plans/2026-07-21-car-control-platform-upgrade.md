@@ -2,16 +2,20 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 在现有 MSPM0G3507 两驱 L 型 520 小车工程上，建立可覆盖循迹、定距直行、定角转向、识别/避障和比赛路线状态机的安全控制平台。
+**Goal:** 基于已购买的 228 mm×148 mm 两驱 L 型 520 霍尔编码器底盘、MSPM0G3507、MSPM0 扩展板和四路编码器驱动板，建立先不依赖摄像头、可覆盖循迹、定距直行、定角转向和比赛路线状态机的安全控制平台。
 
-**Architecture:** 保留现有 `Eight_Tracking`、`Motor`、`MPU6050` 和 `motor_safety` 底层驱动，在其上新增统一的 `CarControl` 运动与路线层。主循环只负责调度传感器、路线状态机和安全服务；所有电机请求继续经过 `Motor_Safety_RequestSpeed()`。摄像头和避障模块先用抽象输入接口接入，只有硬件型号和 SysConfig 引脚确认后才启用具体驱动。
+**Architecture:** 保留现有 `Eight_Tracking`、`Motor`、`MPU6050` 和 `motor_safety` 底层驱动，在其上新增统一的 `CarControl` 运动与路线层。主循环先完成灰度、编码器和 IMU 三闭环；摄像头和避障属于后置可选阶段，目前不购买、不改 SysConfig、不阻塞基础小车开发。
 
 **Tech Stack:** MSPM0G3507、TI DriverLib、TI Arm Clang 4.0.4、MSPM0 SDK 2.10.00.04、CCS Theia、C 裸机、Python `unittest`。
 
 ## Global Constraints
 
-- `empty.syscfg` 是引脚与外设配置的唯一真实来源；未确认摄像头/测距模块型号和引脚前，不新增 UART、I2C 或 GPIO 配置。
+- `empty.syscfg` 是引脚与外设配置的唯一真实来源；摄像头尚未购买，未确认型号和引脚前，不新增 UART、I2C 或 GPIO 配置。
 - 当前底盘保持 M2=左驱动轮、M4=右驱动轮、M1/M3=0；不改为履带或麦克纳姆轮。
+- 已购底盘尺寸为 228 mm×148 mm×102.15 mm，满足当前已知 35 cm×25 cm 长宽限制；正式题目若增加高度限制，重新复核含传感器后的整车高度。
+- 已购电机为 12 V L 型 520、11 线 AB 相增量编码器，减速后标称约 300 rpm；编码器接口电平和驱动板协议必须以实测/手册为准。
+- 图片标注驱动板和扩展板输入范围为 5–12 V，而电池满电最高 12.6 V；在确认绝对最大额定电压前，禁止把满电电池直接接入板卡。
+- 12 V 电池标注约 1.3C/6 A，两个 L 型 520 电机的堵转电流可能同时超过电池持续放电能力；首轮测试必须限制加速度、避免堵转，并准备保险丝或可立即断电的电源开关。
 - 所有电机请求必须经过 `Motor_Safety_RequestSpeed()`，保留 0→30% soft-start 和 200 ms watchdog。
 - 所有运动任务必须非阻塞；禁止在 5 ms/10 ms 调度路径中使用 `delay_ms(20)`、`delay_ms(100)` 或更长阻塞延时。
 - 实车验证前必须确认整车外廓 ≤35 cm×25 cm、编码器反馈格式、左右轮方向、灰度极性和共地；首次测试架空驱动轮并可立即断开 12.6 V 电源。
@@ -24,11 +28,11 @@
 - `Get_Odometry()` 只累加原始 `Encoder_Offset`，没有统一的 mm、角度和时间接口，路线控制不能可靠使用距离阈值。
 - `questions.c` 中的旧题目状态机未被当前 `main()` 调用，且把速度、角度、里程阈值写死在旧全局变量中；不直接扩展旧状态机，新增独立路线层。
 - 当前 `LineWalking()` 已有加权误差、转向极性和丢线停车，但没有向上层输出“黑线/横线/十字/丢线”等事件。
-- 当前工程没有摄像头、避障和无线任务输入接口；这些只能先做抽象接口，不能猜测硬件协议。
+- 当前工程没有摄像头、避障和无线任务输入接口；摄像头未购买，第一阶段不实现视觉功能，只保留后续适配边界。
 
 ---
 
-### Task 1: 建立硬件与软件验收基线
+### Task 1: 固化已购平台与电源验收基线
 
 **Files:**
 - Create: `docs/setup/CAR_PLATFORM_CONTRACT.md`
@@ -36,12 +40,12 @@
 - Test: `tests/test_car_platform_contract.py`
 
 **Interfaces:**
-- Consumes: 当前 `AGENTS.md`、`docs/setup/SETUP_GUIDE.md`、`empty.syscfg`、电机 UART 协议
-- Produces: `CarPlatformContract` 文档中的确定参数：车体尺寸、M2/M4 映射、编码器帧格式、灰度电平和候选外设接口
+- Consumes: 当前 `AGENTS.md`、`docs/setup/SETUP_GUIDE.md`、`empty.syscfg`、电机 UART 协议和已购平台图片
+- Produces: `CarPlatformContract` 文档中的确定参数：228×148×102.15 mm 底盘、M2/M4 映射、11 线 AB 编码器、灰度电平、电源输入验收和未购买摄像头的明确边界
 
 - [ ] **Step 1: 写入基线测试**
 
-在 `tests/test_car_platform_contract.py` 中检查以下字符串和数值存在：`MOTOR_TYPE=5`、`PB6`、`PB7`、`PA15`、`PA16`、`PA17`、`PA18`、`M2`、`M4`、`MOTOR_SAFETY_WATCHDOG_MS`；同时检查主工程路径为 `MSPM0G3507_LineFollowing_Car`。
+在 `tests/test_car_platform_contract.py` 中检查以下字符串和数值存在：`MOTOR_TYPE=5`、`PB6`、`PB7`、`PA15`、`PA16`、`PA17`、`PA18`、`M2`、`M4`、`MOTOR_SAFETY_WATCHDOG_MS`、`228`、`148`、`102.15`、`12.6`；同时检查主工程路径为 `MSPM0G3507_LineFollowing_Car`，并检查计划文档写明“摄像头未购买”。
 
 - [ ] **Step 2: 运行基线测试**
 
@@ -51,7 +55,7 @@ Expected: 新测试在文档/API尚未完成时失败，失败项明确指出缺
 
 - [ ] **Step 3: 编写平台契约**
 
-文档必须逐项记录：整车最大尺寸 35 cm×25 cm、两驱 M2/M4、灰度 PA15～PA18、UART0 调试 115200、UART1 电机 115200、黑线低电平约定、编码器帧 `MTEP`/`MAll`/`MSPD` 的含义，以及“摄像头/测距模块型号确认前不改 SysConfig”。
+文档必须逐项记录：底盘尺寸 228×148×102.15 mm、整车长宽限制 35 cm×25 cm、两驱 M2/M4、L 型 520 12 V/11 线 AB 编码器、灰度 PA15～PA18、UART0 调试 115200、UART1 电机 115200、黑线低电平约定、编码器帧 `MTEP`/`MAll`/`MSPD` 的含义、驱动板 5–12 V 标注与 12.6 V 满电电池的电压核验门槛，以及“摄像头未购买，暂不改 SysConfig”。
 
 - [ ] **Step 4: 复测并提交**
 
@@ -145,7 +149,7 @@ bool CarMotion_TurnAngleStep(void);
 
 - [ ] **Step 2: 实现反馈快照**
 
-在 `app_motor_usart.c` 中保留 `Encoder_Offset[]`、`g_Speed[]` 的协议解析，但新增带时间戳的快照读取；只使用 M2 和 M4 计算左右轮反馈，并明确正负方向。未确认编码器单位前，`CarMotionFeedback` 必须标记 `units_valid=false` 或由 `CarMotion_ReadFeedback()` 返回 `false`，禁止把原始计数伪装成毫米。
+在 `app_motor_usart.c` 中保留 `Encoder_Offset[]`、`g_Speed[]` 的协议解析，但新增带时间戳的快照读取；只使用 M2 和 M4 计算左右轮反馈，并明确正负方向。11 线 AB 编码器的脉冲/圈、减速比和轮径必须由驱动板上报或实测确认；未确认编码器单位前，`CarMotionFeedback` 必须标记 `units_valid=false` 或由 `CarMotion_ReadFeedback()` 返回 `false`，禁止把原始计数伪装成毫米。
 
 同时从 `app_motor.h` 移除对 `questions.h` 的反向包含，保留 `app_motor.h` 只依赖 DriverLib 和电机协议头，避免新 `CarControl` 层与旧题目状态机形成循环包含。
 
@@ -268,17 +272,35 @@ Run from Debug: `D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe -j4 all`
 
 Expected: PASS；提交：`git commit -m "feat: add nonblocking car route state machine"`。
 
-### Task 6: 预留摄像头、避障和无线输入适配层
+### Task 6: 暂缓摄像头，保留后置目标输入边界
 
 **Files:**
-- Create: `MSPM0G3507_LineFollowing_Car/BSP/CarControl/car_target_input.h`
-- Create: `MSPM0G3507_LineFollowing_Car/BSP/CarControl/car_target_input.c`
-- Modify only after hardware confirmation: `MSPM0G3507_LineFollowing_Car/empty.syscfg`
 - Modify: `MSPM0G3507_LineFollowing_Car/README.md`
-- Test: `tests/test_car_target_input_contract.py`
+- Modify: `docs/setup/CAR_PLATFORM_CONTRACT.md`
+- Create only after camera/测距硬件确认: `MSPM0G3507_LineFollowing_Car/BSP/CarControl/car_target_input.h`
+- Create only after camera/测距硬件确认: `MSPM0G3507_LineFollowing_Car/BSP/CarControl/car_target_input.c`
+- Modify only after hardware confirmation: `MSPM0G3507_LineFollowing_Car/empty.syscfg`
+- Test only after adapter is created: `tests/test_car_target_input_contract.py`
 
 **Interfaces:**
-- Produces:
+- 当前阶段只产出“视觉未启用”的文档约束，不新增固件 API。
+- 后续购买摄像头或测距模块后，再按已确认的通信协议产出统一目标观测接口。
+
+- [ ] **Step 1: 标记当前阶段不启用视觉**
+
+在 README 和平台契约中明确：摄像头尚未购买，第一阶段不加入摄像头驱动、不修改 SysConfig、不把电脑 USB 摄像头接入 MSPM0 固件；小车基础功能只依赖灰度、编码器和 MPU6050。
+
+- [ ] **Step 2: 暂不创建视觉代码**
+
+完成 Task 1–5 前不创建 `car_target_input.c/.h`，避免为了不存在的硬件引入无效接口；路线层先只支持循迹、定距、定角和搜索线。
+
+- [ ] **Step 3: 摄像头购买后再开独立变更**
+
+只有拿到摄像头/测距模块型号、供电电压、UART/I2C 协议、处理器输出格式和所需引脚后，才创建 `CarTargetObservation` 适配层并修改 `empty.syscfg`；不允许把电脑 USB 摄像头协议直接写入 MSPM0 固件。
+
+- [ ] **Step 4: 后置变更的接口**
+
+摄像头购买后再创建以下接口，不提前编译进基础固件：
 
 ```c
 typedef struct {
@@ -294,23 +316,11 @@ bool CarTargetInput_Init(void);
 bool CarTargetInput_Read(CarTargetObservation *observation);
 ```
 
-- [ ] **Step 1: 先写无硬件适配测试**
-
-测试检查目标数据结构、时间戳有效性、无数据时返回 `false`，并确认该模块不直接调用电机 API。
-
-- [ ] **Step 2: 实现空适配层**
-
-默认 `CarTargetInput_Read()` 返回 `false`，不占用任何新引脚；路线层把 `valid=false` 视为“暂无目标”，不能误判为目标丢失或立刻启动电机动作。
-
-- [ ] **Step 3: 确认硬件后选择具体驱动**
-
-只有拿到摄像头/测距模块型号、供电电压、UART/I2C 协议和所需引脚后，才修改 `empty.syscfg` 并生成配置文件；不允许把电脑 USB 摄像头协议直接写入 MSPM0 固件。
-
-- [ ] **Step 4: 复测并提交**
+- [ ] **Step 5: 硬件确认后单独测试和提交（不属于本轮执行范围）**
 
 Run: `python -m unittest tests.test_car_target_input_contract.py -v`
 
-Expected: 空适配层 PASS；提交：`git commit -m "feat: reserve target input adapter"`。具体硬件驱动单独提交。
+Expected: 适配层契约测试 PASS；提交：`git commit -m "feat: add confirmed target input adapter"`。未确认硬件时跳过本步骤，禁止创建空驱动占位。
 
 ### Task 7: 集成验证、文档和烧录包
 
@@ -323,7 +333,7 @@ Expected: 空适配层 PASS；提交：`git commit -m "feat: reserve target inpu
 - Test: `tests/test_motor_safety_contract.py`
 
 **Interfaces:**
-- Consumes: Tasks 1–6 的公共 API
+- Consumes: Tasks 1–5 的公共 API，以及 Task 6 记录的“视觉未启用”约束
 - Produces: 可导入 CCS、可离线测试、可生成 UniFlash TI-TXT 的比赛基线
 
 - [ ] **Step 1: 建立测试矩阵**
@@ -334,7 +344,7 @@ Expected: 空适配层 PASS；提交：`git commit -m "feat: reserve target inpu
 
 Run: `python -m unittest discover -s tests -v`
 
-Expected: 原有 22 项测试加新增契约测试全部通过，0 failures。
+Expected: 原有 22 项测试加 Tasks 1–5 的新增契约测试全部通过，0 failures；摄像头适配测试仅在后续硬件确认后计入。
 
 - [ ] **Step 3: 编译 CCS 工程**
 
@@ -356,7 +366,8 @@ Expected: 无空白错误；不包含 `Debug/` 生成物、不包含 `my-project
 
 ## 不在本计划内的内容
 
-- 不购买或切换到新的履带/麦克纳姆/Arduino 一体化平台。
-- 不在未知摄像头或测距硬件下猜测 SysConfig 引脚。
+- 不更换已经购买的两驱 L 型 520 底盘，不切换到履带/麦克纳姆/Arduino 一体化平台。
+- 当前不购买摄像头，不在未知摄像头或测距硬件下猜测 SysConfig 引脚。
+- 不在确认驱动板 5–12 V 输入能否承受 12.6 V 满电电池前接通电池。
 - 不把旧 `questions.c` 的硬编码比赛参数直接复制进新路线层。
 - 不在没有架空轮和断电措施的情况下自动启动真实电机。
