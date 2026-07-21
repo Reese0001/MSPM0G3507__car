@@ -6,6 +6,7 @@
 #include "timer.h"
 #include "motor_safety.h"
 #include "bsp_motor_usart.h"
+#include "task.h"
 
 int main(void)
 {
@@ -21,6 +22,7 @@ int main(void)
     while(1)
     {
         // 执行循迹
+        Scheduler_Run();
         LineWalking();
 
         Motor_Safety_Service();

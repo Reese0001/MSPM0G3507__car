@@ -62,7 +62,6 @@ void Get_EulerAngles(void)
     roll = r;
     yaw = y;
 
-    delay_ms(20);//根据设置的采样率，不可设置延时过大 According to the set sampling rate, the delay cannot be set too large
 }
 
 
