@@ -152,6 +152,13 @@ void Deal_data_real(void)
 	static uint8_t data[RXBUFF_LEN];
 	uint8_t  length = 0;
 
+	/* Consume each completed UART frame once. */
+	if (g_recv_flag == 0U)
+	{
+		return;
+	}
+	g_recv_flag = 0U;
+
 	//整体编码器	Overall encoder
 	 if ((strncmp("MAll",(char*)g_recv_buff_deal,4)==0))
     {

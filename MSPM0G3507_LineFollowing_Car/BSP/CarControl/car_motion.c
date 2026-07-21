@@ -43,7 +43,7 @@ bool CarMotion_ReadFeedback(CarMotionFeedback *feedback)
 
     now = Get_Time();
     if (g_motor_feedback_valid == 0U ||
-        (now - g_motor_feedback_timestamp_ms) > CAR_MOTION_FEEDBACK_MAX_AGE_MS) {
+        (now - g_motor_feedback_timestamp_ms) >= CAR_MOTION_FEEDBACK_MAX_AGE_MS) {
         return false;
     }
 

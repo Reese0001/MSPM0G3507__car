@@ -38,7 +38,7 @@ class CarMotionContractTests(unittest.TestCase):
         )
         self.assertRegex(
             source,
-            r"g_motor_feedback_timestamp_ms\)\s*>\s*CAR_MOTION_FEEDBACK_MAX_AGE_MS",
+            r"g_motor_feedback_timestamp_ms\)\s*>=\s*CAR_MOTION_FEEDBACK_MAX_AGE_MS",
         )
         self.assertIn("g_motor_feedback_valid", source)
         self.assertIn("g_motor_feedback_timestamp_ms", source)
@@ -48,6 +48,14 @@ class CarMotionContractTests(unittest.TestCase):
         self.assertIn("extern uint32_t g_motor_feedback_timestamp_ms;", usart_header)
         self.assertEqual(3, usart_source.count("g_motor_feedback_valid = 1U"))
         self.assertEqual(3, usart_source.count("g_motor_feedback_timestamp_ms = Get_Time()"))
+        deal_data = re.search(
+            r"void\s+Deal_data_real\s*\([^)]*\)\s*\{(.*?)\n\}",
+            usart_source,
+            re.DOTALL,
+        ).group(1)
+        self.assertRegex(deal_data, r"g_recv_flag\s*==\s*0U")
+        self.assertRegex(deal_data, r"return\s*;")
+        self.assertRegex(deal_data, r"g_recv_flag\s*=\s*0U")
 
     def test_command_routes_only_through_motion_control_and_stop_is_safe(self):
         source = read("BSP/CarControl/car_motion.c")
