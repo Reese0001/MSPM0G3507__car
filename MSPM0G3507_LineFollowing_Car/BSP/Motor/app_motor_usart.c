@@ -1,5 +1,7 @@
 #include "app_motor_usart.h"
 
+extern uint32_t Get_Time(void);
+
 #define RXBUFF_LEN 256
 
 uint8_t send_buff[50];
@@ -9,6 +11,8 @@ int Encoder_Offset[4];
 int Encoder_Now[4];
 
 uint8_t g_recv_flag;
+uint8_t g_motor_feedback_valid;
+uint32_t g_motor_feedback_timestamp_ms;
 uint8_t g_recv_buff[RXBUFF_LEN];
 uint8_t g_recv_buff_deal[RXBUFF_LEN];
 
@@ -167,6 +171,8 @@ void Deal_data_real(void)
 						strcpy(mystr_temp[i],strArray[i]);
 						Encoder_Now[i] = atoi(mystr_temp[i]);
 				}
+				g_motor_feedback_valid = 1U;
+				g_motor_feedback_timestamp_ms = Get_Time();
 
 		}
 		//10ms的实时编码器数据	10ms real-time encoder data
@@ -187,6 +193,8 @@ void Deal_data_real(void)
 						strcpy(mystr_temp[i],strArray[i]);
 						Encoder_Offset[i] = atoi(mystr_temp[i]);
 				}
+				g_motor_feedback_valid = 1U;
+				g_motor_feedback_timestamp_ms = Get_Time();
 		}
 		//速度	Speed
 		else if	((strncmp("MSPD",(char*)g_recv_buff_deal,4)==0))
@@ -206,5 +214,7 @@ void Deal_data_real(void)
 						strcpy(mystr_temp[i],strArray[i]);
 						g_Speed[i] = atof(mystr_temp[i]);
 				}
+				g_motor_feedback_valid = 1U;
+				g_motor_feedback_timestamp_ms = Get_Time();
 		}
 }

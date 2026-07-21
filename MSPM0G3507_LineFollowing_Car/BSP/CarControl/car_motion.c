@@ -11,6 +11,7 @@ extern uint32_t Get_Time(void);
  * measured.  In particular, the advertised 65 mm wheel diameter is not yet
  * an effective rolling diameter and must not be used to label raw counts. */
 #define CAR_MOTION_UNITS_CONFIRMED 0
+#define CAR_MOTION_FEEDBACK_MAX_AGE_MS 200U
 
 typedef enum {
     CAR_MOTION_ACTION_NONE = 0,
@@ -34,7 +35,15 @@ void CarMotion_Reset(void)
 
 bool CarMotion_ReadFeedback(CarMotionFeedback *feedback)
 {
+    uint32_t now;
+
     if (feedback == (CarMotionFeedback *)0) {
+        return false;
+    }
+
+    now = Get_Time();
+    if (g_motor_feedback_valid == 0U ||
+        (now - g_motor_feedback_timestamp_ms) > CAR_MOTION_FEEDBACK_MAX_AGE_MS) {
         return false;
     }
 
@@ -43,7 +52,7 @@ bool CarMotion_ReadFeedback(CarMotionFeedback *feedback)
     feedback->right_ticks = Encoder_Offset[3];
     feedback->left_speed_mm_s = g_Speed[1];
     feedback->right_speed_mm_s = g_Speed[3];
-    feedback->timestamp_ms = Get_Time();
+    feedback->timestamp_ms = g_motor_feedback_timestamp_ms;
     /* Raw counts/speed cannot be called millimetres until calibration. */
     feedback->units_valid = false;
     return true;

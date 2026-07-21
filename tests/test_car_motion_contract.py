@@ -32,6 +32,22 @@ class CarMotionContractTests(unittest.TestCase):
         self.assertRegex(source, r"feedback->left_speed_mm_s\s*=\s*g_Speed\[1\]")
         self.assertRegex(source, r"feedback->right_speed_mm_s\s*=\s*g_Speed\[3\]")
         self.assertRegex(source, r"feedback->units_valid\s*=\s*false")
+        self.assertRegex(
+            source,
+            r"g_motor_feedback_valid\s*==\s*0U\s*\|\|",
+        )
+        self.assertRegex(
+            source,
+            r"g_motor_feedback_timestamp_ms\)\s*>\s*CAR_MOTION_FEEDBACK_MAX_AGE_MS",
+        )
+        self.assertIn("g_motor_feedback_valid", source)
+        self.assertIn("g_motor_feedback_timestamp_ms", source)
+        usart_header = read("BSP/Motor/app_motor_usart.h")
+        usart_source = read("BSP/Motor/app_motor_usart.c")
+        self.assertIn("extern uint8_t g_motor_feedback_valid;", usart_header)
+        self.assertIn("extern uint32_t g_motor_feedback_timestamp_ms;", usart_header)
+        self.assertEqual(3, usart_source.count("g_motor_feedback_valid = 1U"))
+        self.assertEqual(3, usart_source.count("g_motor_feedback_timestamp_ms = Get_Time()"))
 
     def test_command_routes_only_through_motion_control_and_stop_is_safe(self):
         source = read("BSP/CarControl/car_motion.c")
@@ -58,6 +74,7 @@ class CarMotionContractTests(unittest.TestCase):
         self.assertIn("CAR_MOTION_UNITS_CONFIRMED 0", source)
         self.assertIn("65 mm", source)
         self.assertNotIn("delay_ms", source)
+        self.assertNotIn('include "../CarControl/car_motion.h"', read("BSP/Motor/app_motor.h"))
 
     def test_start_step_handles_inactive_actions(self):
         source = read("BSP/CarControl/car_motion.c")

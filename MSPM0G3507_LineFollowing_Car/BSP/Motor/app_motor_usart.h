@@ -31,6 +31,9 @@ extern int Encoder_Offset[4];
 extern int Encoder_Now[4];
 extern float g_Speed[4];
 extern uint8_t g_recv_flag;
+/* Set only after Deal_data_real parses a valid MAll/MTEP/MSPD frame. */
+extern uint8_t g_motor_feedback_valid;
+extern uint32_t g_motor_feedback_timestamp_ms;
 
 
 void send_motor_type(motor_type_t data);
