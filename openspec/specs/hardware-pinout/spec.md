@@ -32,13 +32,18 @@ MCU 通过 UART1 与四路电机驱动板通信，波特率 115200。
 - **WHEN** 驱动板发送 `$MSPD:s1,s2,s3,s4#`
 - **THEN** 通过 PB7(RX) 接收并解析速度值
 
-### Requirement: I2C1 八路灰度传感器
-八路灰度传感器通过硬件 I2C1 通信，地址 0x12。
+### Requirement: GPIO 多路选择八路灰度传感器
+当前八路灰度模块不是 I2C 地址设备；MCU 通过三个 GPIO 选择通道，再从一个 GPIO 读取数字输出。
 
 #### Scenario: 读取灰度通道值
-- **GIVEN** I2C1 已初始化 (PA15=SCL, PA16=SDA)
-- **WHEN** 调用 `IRTrack_Read()`
-- **THEN** 通过 I2C 读取 8 通道灰度值 (0x12)
+- **GIVEN** PA15/PA16/PA17 配置为通道选择输出，PA18 配置为灰度 OUT 输入
+- **WHEN** 调用 `Gray_ReadAll()`
+- **THEN** 依次输出 0~7 的选择码并读取 8 个黑线低电平数字值
+
+#### Scenario: PA18 启动复用检查
+- **GIVEN** PA18 同时具有 BSL 启动复用功能
+- **WHEN** 小车上电或复位
+- **THEN** 必须确认灰度模块不会把 PA18 固定在触发 BSL 的电平；未确认前不得把参考板引脚图直接当作接线许可
 
 ### Requirement: MPU6050 软件 I2C
 MPU6050 通过软件 I2C 连接，地址 0x68。

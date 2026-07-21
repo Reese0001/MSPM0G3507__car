@@ -2,21 +2,21 @@
 
 ## Purpose
 
-通过八路灰度传感器 (I2C, 地址 0x12) 检测赛道黑线位置，结合 PID 算法实现循迹行驶。
+通过 PA15/PA16/PA17 通道选择和 PA18 OUT 读取八路灰度传感器，结合加权误差与 PID 算法实现循迹行驶。
 
 ## Requirements
 
 ### Requirement: 灰度传感器读取
-通过 I2C1 (PA15=SCL, PA16=SDA) 读取八路灰度传感器数据。
+通过三个选择 GPIO 和一个 OUT GPIO 轮询八路灰度数字状态。
 
 #### Scenario: 读取八通道值
-- **GIVEN** I2C1 已初始化，传感器地址 0x12
-- **WHEN** 调用 `IRTrack_Read()`
-- **THEN** 返回 8 个通道的灰度值 (0~4095)
+- **GIVEN** PA15/PA16/PA17 为通道选择输出，PA18 为 OUT 输入
+- **WHEN** 调用 `Gray_ReadAll()`
+- **THEN** 每个通道只采样一次，返回 8 个数字状态
 
 #### Scenario: 黑线检测
-- **GIVEN** 传感器在白色赛道上方
-- **WHEN** 某通道值低于阈值
+- **GIVEN** 传感器在白色赛道上方且已确认模块极性
+- **WHEN** 某通道 OUT 为低电平
 - **THEN** 判断该通道检测到黑线
 
 ### Requirement: 循迹 PID 控制

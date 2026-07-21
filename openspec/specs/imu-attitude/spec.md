@@ -23,7 +23,7 @@
 #### Scenario: 初始化失败处理
 - **GIVEN** MPU6050 未接线或损坏
 - **WHEN** I2C 读取无应答
-- **THEN** 返回错误，串口输出失败信息
+- **THEN** 在有界超时后返回错误，串口输出失败信息，禁止永久忙等
 
 ### Requirement: 姿态数据获取
 DMP 解算后实时获取 yaw/pitch/roll 角度。
@@ -37,6 +37,11 @@ DMP 解算后实时获取 yaw/pitch/roll 角度。
 - **GIVEN** DMP 配置为 100Hz 输出
 - **WHEN** 主循环以 10ms 周期读取
 - **THEN** 每次读取获得最新姿态数据
+
+#### Scenario: 非阻塞采样
+- **GIVEN** 协作式调度器负责采样节拍
+- **WHEN** 调用一次姿态更新函数
+- **THEN** 最多执行一次 DMP/FIFO 读取并返回成功或失败，函数内部不得 `delay_ms()` 或 `while` 重试
 
 ### Requirement: 航向 PID 控制
 基于 yaw 角偏差计算 PID 输出，用于直线行驶时航向保持。
