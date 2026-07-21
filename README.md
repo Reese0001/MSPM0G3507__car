@@ -1,75 +1,73 @@
-# MSPM0G3507 八路灰度循迹小车
+# MSPM0G3507 两驱循迹小车
 
-本仓库是基于 TI MSPM0G3507、两轮差速底盘、L 型 520 减速电机、MPU6050 和八路灰度模块的裸机循迹小车工程。开发环境为 CCS Theia，编译器为 TI Arm Clang 4.0.4，工程不使用 RTOS。
+本仓库是面向 2026 电赛控制类备赛的裸机小车工程。主控为 TI
+MSPM0G3507，底盘为两驱 L 型 520 霍尔编码器电机，传感器包括八路灰度
+模块和 MPU6050。开发环境为 CCS Theia，工具链为 TI Arm Clang，工程不使用
+RTOS。
 
-## 主工程
+主工程位于
+[`MSPM0G3507_LineFollowing_Car/`](MSPM0G3507_LineFollowing_Car/)。外设配置的
+唯一真实来源是 `MSPM0G3507_LineFollowing_Car/empty.syscfg`，不要手改
+`Debug/` 下的 SysConfig 生成文件。
 
-CCS 工程目录：[`MSPM0G3507_LineFollowing_Car/`](MSPM0G3507_LineFollowing_Car/)
+## 当前可执行状态
 
-导入方法：
+当前 `empty.c` 仍运行已有基础循迹主循环：
+
+```text
+Scheduler_Run() -> LineWalking() -> Motor_Safety_Service()
+```
+
+`BSP/CarControl/car_route.*` 已实现非阻塞、故障闭锁的路线状态机，但 **CarRoute
+尚未接入 empty.c**。在电机反馈、按键启动流程和硬件验收完成之前，不把它
+静默接入现有入口。距离和角度动作也尚未标定，不能宣称已经能够按毫米或角度
+闭环行驶。
+
+## 已确认的硬件边界
+
+| 功能 | 接口或映射 | 当前约定 |
+|---|---|---|
+| 两驱电机 | UART：PB6/PB7，115200 | L520；M2 左轮、M4 右轮，M1/M3 始终为零 |
+| 八路灰度选择 | PA15/PA16/PA17 | GPIO 多路选择 AD0/AD1/AD2，不是 I2C 数据读取 |
+| 八路灰度输出 | PA18 | OUT 数字输入；低电平暂按黑线解释，实车仍需确认 |
+| MPU6050 | PA12/PA13 | 软件 I2C，3.3 V |
+| 调试串口 | PA10/PA11 | 115200 |
+
+电池满充电压为 **12.6 V**，而所购扩展/驱动板图片标注输入 **5-12 V**。
+这是上电硬门槛：未取得准确板卡规格并确认可承受 12.6 V 前，不得把满充电池
+接入该输入端。首次软件验证阶段必须断开电机电源。
+
+摄像头尚未购买（camera has not been purchased），当前不增加视觉接口，也不
+修改 SysConfig 预占视觉引脚。
+
+## 安全与数据新鲜度
+
+- 所有运动命令必须经过 Motor Safety；启动使用 0→30% 的 1000 ms 软启动。
+- 200 ms 内没有新的合法运动请求时，安全看门狗锁存故障并发送固定零速帧。
+- 电机反馈的年龄 **>= 200 ms** 时，`CarMotion`/`CarRoute` 必须故障停车。
+- `CarSensorFrame` 当前没有时间戳或序列号；调用方只能使用本周期成功执行
+  `CarSensor_ReadFrame` 后立即得到的帧，不能缓存旧帧冒充新数据。
+
+平台、电源和首次架空检查的完整约定见
+[`docs/setup/CAR_PLATFORM_CONTRACT.md`](docs/setup/CAR_PLATFORM_CONTRACT.md)。
+
+## 导入与验证
 
 1. 在 CCS Theia 选择 **File → Import → Existing Projects into Workspace**。
 2. 选择仓库中的 `MSPM0G3507_LineFollowing_Car` 目录。
-3. 确认已安装 MSPM0 SDK 2.10.00.04 和 TI Arm Clang 4.0.4。
-4. 执行 **Project → Clean**，然后 **Build Project**。
+3. 确认 MSPM0 SDK 2.10.00.04 与 TI Arm Clang 4.0.4 可用。
+4. 执行 **Project → Clean** 和 **Build Project**。
 
-外设配置只修改 `MSPM0G3507_LineFollowing_Car/empty.syscfg`，不要手改构建目录中的 SysConfig 生成文件。
-
-## 平台与电源验收基线
-
-已确认的底盘、电机映射、电源接入硬门槛及首次架空测试要求见
-[`docs/setup/CAR_PLATFORM_CONTRACT.md`](docs/setup/CAR_PLATFORM_CONTRACT.md)。
-The camera has not been purchased; the first stage does not change SysConfig
-for vision.
-
-## 关键接线
-
-| 功能 | MSPM0G3507 引脚 | 说明 |
-|---|---|---|
-| 调试串口 | PA10 TX / PA11 RX | 115200 |
-| 电机驱动 UART | PB6 TX / PB7 RX | 115200，M2/M4 为驱动轮 |
-| 灰度通道选择 | PA15 AD0 / PA16 AD1 / PA17 AD2 | 选择 X1～X8 |
-| 灰度数字输出 | PA18 OUT | 当前通道电平 |
-| MPU6050 软件 I2C | PA12 SCL / PA13 SDA | 地址 0x68 |
-
-灰度模块不是通过 I2C 地址读取。当前代码按“OUT 高电平为白、低电平为黑”解释，实车前必须逐路确认极性和 X1～X8 左右顺序。
-
-## 循迹控制
-
-- 八路黑线位置使用 `-7,-5,-3,-1,+1,+3,+5,+7` 对称权重求平均。
-- 第一阶段使用有界 PD，不启用积分。
-- 偏差越大，基础速度越低。
-- 正常循迹修正量被限制在基础速度的 80% 内，避免单侧车轮意外反转。
-- X1～X8 权重描述传感器位置；`TRACKING_STEERING_POLARITY=-1` 根据本车实测反转控制器到实际底盘的角速度方向，不通过交换 M2/M4 修正循迹符号。
-- 丢线前两个控制周期以低速按最后方向找线，第三个周期仍未检测到黑线则请求两轮零速。
-- `LineWalking()` 不使用 100 ms 阻塞延时，主循环可以持续运行电机安全服务。
-
-## 电机安全
-
-- 所有速度请求必须经过 `Motor_Safety_RequestSpeed()`。
-- 启动采用 0→30% 的 1000 ms soft-start。
-- 200 ms 没有新的合法请求时，看门狗锁存故障并发送固定零速帧。
-- M1/M3 保持零速，M2/M4 为左右驱动轮。
-
-首次烧录与实车测试前：
-
-```text
-[ ] 首次烧录时断开 12.6 V 电机电源
-[ ] MCU、灰度模块和电机驱动板共地
-[ ] PB6/PB7 与驱动板 TX/RX 交叉关系已确认
-[ ] PA15/PA16/PA17/PA18 接线已确认
-[ ] 驱动轮架空，周围无人接触车轮
-[ ] 可以立即切断电机电源
-```
-
-## 验证边界
-
-自动测试：
+当前离线测试命令：
 
 ```powershell
 python -m unittest discover -s tests -v
 ```
 
-离线测试和编译只能证明代码路径、配置合同及工具链兼容性。实际转向符号、传感器黑白极性、电机正方向和 PID 参数必须通过架空轮、低速封闭赛道逐项确认。
+Python 契约测试和部分 TI Arm Clang 翻译单元编译已经可离线运行；当前工作树
+没有 CCS 生成的 `Debug/` 构建目录，因此 **CCS 完整构建、烧录和目标板运行均
+未验证**。不得把离线通过解释为可以直接给电机上电。
 
-更多资料见 [`docs/README.md`](docs/README.md) 和 [`docs/notes/line-following-strategy-research.md`](docs/notes/line-following-strategy-research.md)。
+分阶段验证顺序与通过标准见
+[`docs/setup/CAR_CONTROL_TEST_MATRIX.md`](docs/setup/CAR_CONTROL_TEST_MATRIX.md)，
+详细设置见 [`docs/setup/SETUP_GUIDE.md`](docs/setup/SETUP_GUIDE.md)。
