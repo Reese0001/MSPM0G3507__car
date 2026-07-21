@@ -15,6 +15,13 @@ CCS 工程目录：[`MSPM0G3507_LineFollowing_Car/`](MSPM0G3507_LineFollowing_Ca
 
 外设配置只修改 `MSPM0G3507_LineFollowing_Car/empty.syscfg`，不要手改构建目录中的 SysConfig 生成文件。
 
+## 平台与电源验收基线
+
+已确认的底盘、电机映射、电源接入硬门槛及首次架空测试要求见
+[`docs/setup/CAR_PLATFORM_CONTRACT.md`](docs/setup/CAR_PLATFORM_CONTRACT.md)。
+The camera has not been purchased; the first stage does not change SysConfig
+for vision.
+
 ## 关键接线
 
 | 功能 | MSPM0G3507 引脚 | 说明 |
