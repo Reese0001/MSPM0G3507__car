@@ -189,3 +189,11 @@ Run: `python -m unittest discover -s tests -v`
 
 Expected: 全部通过；随后单独提交为 `fix: repair maintained UTF-8 text`。
 
+## 执行记录（2026-07-21）
+
+- Tasks 1–5 已完成：循迹修复提交为 `89fbef1`，本地 `main` 已 fast-forward，并已推送到 `origin/main`。
+- 合并前后均通过 22 项离线契约测试；TI Arm Clang Debug 构建成功。
+- Task 5 的实车架空验证保留为人工步骤，未自动执行电机或 12.6V 电源操作。
+- Task 6 审计确认维护目录不存在 UTF-8 解码失败或 U+FFFD 替换字符；抽查的中文源码及 OpenSpec 内容正常。此前的乱码来自 PowerShell 控制台显示编码，不是仓库文件损坏。
+- 原计划使用单个汉字片段识别 mojibake 会误报正常中文，因此未加入该错误检测，也未执行不必要的批量转码。
+
