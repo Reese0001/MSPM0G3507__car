@@ -262,6 +262,11 @@ Expected: PASS；提交：`git commit -m "feat: expose line tracking sensor even
 
 ### Task 5: 新增比赛路线状态机
 
+> 执行修订（2026-07-21）：由于编码器/IMU 单位、极性、轮径和轴距尚未实测，
+> 本任务只实现非阻塞、失效安全的路线状态机。`DRIVE_DISTANCE` 与
+> `TURN_ANGLE` 先保留枚举和接口，但在 `units_valid == false` 时必须停止并锁存
+> 故障，不能按旧资料中的硬编码阈值驱动电机；真实定距/定角动作移至 Task 3B。
+
 **Files:**
 - Create: `MSPM0G3507_LineFollowing_Car/BSP/CarControl/car_route.h`
 - Create: `MSPM0G3507_LineFollowing_Car/BSP/CarControl/car_route.c`
