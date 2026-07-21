@@ -10,6 +10,11 @@ README = ROOT / "README.md"
 
 
 class CarPlatformContractTests(unittest.TestCase):
+    def test_contract_states_the_200_ms_motor_safety_watchdog_threshold(self):
+        text = " ".join(CONTRACT.read_text(encoding="utf-8").split())
+
+        self.assertIn("MOTOR_SAFETY_WATCHDOG_MS=200 ms", text)
+
     def test_contract_records_accepted_platform_and_safety_boundaries(self):
         text = " ".join(CONTRACT.read_text(encoding="utf-8").split())
 

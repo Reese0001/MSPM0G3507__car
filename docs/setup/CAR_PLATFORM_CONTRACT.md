@@ -32,8 +32,10 @@ millimetre conversion is not validated and must not be presented as calibrated.
 
 ## Motor safety contract
 
-All motion requests must go through Motor Safety. `MOTOR_SAFETY_WATCHDOG_MS`
-remains the loss-of-control watchdog boundary. Starting motion must use the
+All motion requests must go through Motor Safety.
+`MOTOR_SAFETY_WATCHDOG_MS=200 ms` is the loss-of-control watchdog threshold:
+after 200 ms without a new valid request, the safety layer must latch the
+fault and command a fixed zero-speed frame. Starting motion must use the
 existing 0-to-30% soft-start ramp; no request may bypass this safety layer.
 
 ## Power acceptance gate
