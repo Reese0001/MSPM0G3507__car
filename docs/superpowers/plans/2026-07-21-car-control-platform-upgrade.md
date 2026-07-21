@@ -140,7 +140,7 @@ Run from `MSPM0G3507_LineFollowing_Car/Debug`: `D:\DevTools\ti\ccs2050\ccs\utils
 
 Expected: 测试 PASS，CCS exit code 0；提交：`git commit -m "fix: run sensor scheduler in car loop"`。
 
-### Task 3: 统一编码器和底盘运动接口
+### Task 3: 统一编码器和底盘运动接口（安全接口阶段）
 
 **Files:**
 - Create: `MSPM0G3507_LineFollowing_Car/BSP/CarControl/car_motion.h`
@@ -184,9 +184,9 @@ bool CarMotion_TurnAngleStep(void);
 
 同时从 `app_motor.h` 移除对 `questions.h` 的反向包含，保留 `app_motor.h` 只依赖 DriverLib 和电机协议头，避免新 `CarControl` 层与旧题目状态机形成循环包含。
 
-- [ ] **Step 3: 实现非阻塞定距/定角状态**
+- [ ] **Step 3: 建立安全门控的非阻塞动作接口**
 
-`CarMotion_DriveDistanceStart()` 保存起始左右轮计数和目标距离；`CarMotion_DriveDistanceStep()` 每次调用只读取一次反馈、计算剩余误差并发出有界速度；误差进入校准阈值后调用 `CarMotion_Stop()` 并返回 `true`。转角动作使用左右轮差分或已确认的 yaw 数据，禁止使用固定 `delay_ms()` 完成转弯。
+在编码器脉冲/圈、驱动板速度单位、有效轮径和轴距未实测前，`CarMotion_DriveDistanceStart()` 与 `CarMotion_TurnAngleStart()` 必须 fail-closed：不发起运动、经安全层停车并返回 `false`。不得用参考资料中的 260 脉冲/圈或 67 mm 轮径替代实测值。完成标定后，另行执行 Task 3B 实现真正的起始反馈、误差推进、阈值停车和角度闭环；禁止使用固定 `delay_ms()` 完成转弯。
 
 - [ ] **Step 4: 复测、构建并提交**
 
@@ -194,7 +194,20 @@ Run: `python -m unittest tests.test_car_motion_contract -v`
 
 Run from Debug: `D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe -j4 all`
 
-Expected: 测试 PASS，构建 PASS；提交：`git commit -m "feat: add nonblocking car motion primitives"`。
+Expected: 测试 PASS；若 CCS Debug 已由 CCS 生成则构建 PASS，否则记录环境阻塞；提交：`git commit -m "feat: add safe car motion interfaces"`。
+
+### Task 3B: 硬件标定后启用定距/定角闭环
+
+**前置条件：** 已确认驱动板编码器反馈格式、脉冲/圈、减速比、有效轮径、轴距、左右轮符号和 MPU6050 yaw 可用；未满足时保持 Task 3 的 fail-closed 行为。
+
+**Files:**
+- Modify: `MSPM0G3507_LineFollowing_Car/BSP/CarControl/car_motion.c`
+- Modify: `tests/test_car_motion_contract.py`
+
+**Requirements:**
+- `DriveDistanceStart()` 保存 M2/M4 起始计数和目标距离；每次 `Step()` 读取一次有效快照，计算剩余误差，使用有界速度并在阈值内调用 `CarMotion_Stop()` 返回 `true`。
+- `TurnAngleStart()` 保存起始 yaw 或左右轮差分；每次 `Step()` 使用新鲜反馈计算角度误差，完成后停车返回 `true`。
+- 所有路径非阻塞、可超时、经 Motor Safety；增加有效反馈、完成停车和超时测试。
 
 ### Task 4: 增加循迹事件和丢线恢复接口
 
