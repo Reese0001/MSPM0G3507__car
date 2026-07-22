@@ -7,6 +7,11 @@ ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 
 
 class ModularArchitectureContract(unittest.TestCase):
+    def test_module_status_contract_exists(self):
+        text = (ROOT / "modules/common/module_status.h").read_text(encoding="utf-8")
+        for token in ("timestamp_ms", "sequence", "valid", "health", "ModuleStatus_IsFresh"):
+            self.assertIn(token, text)
+
     def test_required_roots_exist(self):
         for name in ("application", "modules", "bsp"):
             self.assertTrue((ROOT / name).is_dir(), name)
