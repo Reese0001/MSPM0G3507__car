@@ -38,7 +38,7 @@
 ### 2.3 YbImu 九轴 IMU
 
 - 使用 I2C，地址 `0x23`，建议 100kHz；
-- PA12 = SDA、PA13 = SCL；
+- PA12 = SCL、PA13 = SDA；
 - 连接 3.3V、GND；
 - 目标更新率 100Hz；
 - 新模块替代 MPU6050/eMPL 的活动运行路径。旧实现可在迁移期保留作回滚证据，但不得与 YbImu 同时参与控制；
@@ -439,7 +439,7 @@ MCU 保留最近故障的 RAM 环形日志。K230 可在 TF 卡保存视觉事�
 
 1. 所有电源断开，核对扩展板丝印和接插件方向；
 2. 只接逻辑地，确认 MCU、扩展板、电机驱动、灰度、YbImu、HC-SR04、K230 共地；
-3. 接 YbImu：3.3V、GND、PA12 SDA、PA13 SCL；
+3. 接 YbImu：3.3V、GND、PA12 SCL、PA13 SDA；
 4. 接灰度：电源、GND、PA15/PA16/PA17、PA18，并确认模块允许的供电电压；
 5. 接 HC-SR04：5V、GND、PA26 Trig，Echo 经确认过的电平转换后接 PA27；
 6. 接 K230：5V、GND、PA21 TX→IO10/RX、PA22 RX←IO9/TX；
