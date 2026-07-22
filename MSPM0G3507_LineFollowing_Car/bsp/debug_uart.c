@@ -1,4 +1,4 @@
-#include "usart.h"
+#include "debug_uart.h"
 
 #define RE_0_BUFF_LEN_MAX	128
 

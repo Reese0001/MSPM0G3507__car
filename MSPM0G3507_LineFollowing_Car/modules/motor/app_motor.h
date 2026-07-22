@@ -3,7 +3,6 @@
 
 #include "ti_msp_dl_config.h"
 #include "app_motor_usart.h"
-#include "questions.h"
 
 //底盘电机间距之和的一半    Half of the sum of the motor spacing between the chassis
 #define Car_APB          				(188.0f)//  (228+148)/2

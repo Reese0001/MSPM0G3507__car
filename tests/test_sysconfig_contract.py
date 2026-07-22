@@ -10,7 +10,7 @@ class SysConfigContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.syscfg = (PROJECT / "empty.syscfg").read_text(encoding="utf-8")
-        cls.tracking_h = (PROJECT / "BSP/Eight_Tracking/app_irtracking.h").read_text(
+        cls.tracking_h = (PROJECT / "modules/line_tracking/app_irtracking.h").read_text(
             encoding="utf-8"
         )
 

@@ -2,7 +2,7 @@
 #include "delay.h"
 #include "app_irtracking.h"
 #include "app_motor.h"
-#include "usart.h"
+#include "debug_uart.h"
 #include "timer.h"
 #include "motor_safety.h"
 #include "bsp_motor_usart.h"

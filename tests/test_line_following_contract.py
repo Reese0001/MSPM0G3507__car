@@ -19,14 +19,14 @@ class LineFollowingContractTests(unittest.TestCase):
         self.assertLess(main.index("LineWalking();"), main.index("Motor_Safety_Service();"))
 
     def test_tracking_routes_motion_through_safety_layer(self):
-        tracking = read("BSP/Eight_Tracking/app_irtracking.c")
-        motor = read("BSP/Motor/app_motor.c")
+        tracking = read("modules/line_tracking/app_irtracking.c")
+        motor = read("modules/motor/app_motor.c")
         self.assertIn("Motion_Car_Control", tracking)
         self.assertNotIn("Contrl_Speed(", tracking)
         self.assertIn("Motor_Safety_RequestSpeed", motor)
 
     def test_two_wheel_mapping_keeps_m1_and_m3_stopped(self):
-        motor = read("BSP/Motor/app_motor.c")
+        motor = read("modules/motor/app_motor.c")
         body = re.search(
             r"void\s+Motion_Car_Control\s*\([^)]*\)\s*\{(.*?)\n\}",
             motor,
@@ -38,7 +38,7 @@ class LineFollowingContractTests(unittest.TestCase):
         self.assertRegex(body, r"speed_R2_setup\s*=\s*speed_fb\s*-\s*speed_spin")
 
     def test_timer_refreshes_motor_watchdog(self):
-        timer = read("BSP/Timer/timer.c")
+        timer = read("bsp/time/timer.c")
         self.assertIn("Motor_Safety_Tick1ms();", timer)
 
     def test_l520_configuration_is_selected(self):

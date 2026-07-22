@@ -2,7 +2,7 @@
 #define __TIMER_H__
 
 #include "ti_msp_dl_config.h"
-#include "usart.h"
+#include "debug_uart.h"
 #include "app_mpu6050.h"
 #include "buzzer.h"
 

@@ -32,6 +32,7 @@ struct state_machine
 
 extern volatile struct state_machine State_Machine;
 void State_Machine_init(void);
+void Legacy_Questions_HandleKey(void);
 void Question_Task_1(void);
 void Question_Task_2(void);
 void Question_Task_3(void);

@@ -7,7 +7,7 @@
 #include "app_mpu6050.h"
 #include "inv_mpu.h"
 #include "app_irtracking.h"
-#include "key.h"
+#include "questions.h"
 #include "led.h"
 #include "buzzer.h"
 

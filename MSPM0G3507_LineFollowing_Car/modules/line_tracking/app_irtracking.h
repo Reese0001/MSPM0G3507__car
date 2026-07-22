@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "ti_msp_dl_config.h"
 #include "app_motor.h"
-#include "usart.h"
+#include "debug_uart.h"
 
 #define BLACK       1        //黑线black
 #define WHITE       0        //白线white

@@ -2,12 +2,6 @@
 #define _KEY_H
 
 #include "ti_msp_dl_config.h"
-#include "timer.h"
-#include "led.h"
-#include "usart.h"
-#include "app_motor_usart.h"
-#include "buzzer.h"
-#include "questions.h"
 
 /* 按键事件类型定义 - Key Event Type Definitions */
 typedef enum {
@@ -34,6 +28,6 @@ typedef struct {
 } Key_t;
 
 KeyEvent Key_Scan(Key_t* key, uint32_t currentTime, uint32_t longPressThreshold);
-void Key_Handle(void);
+KeyEvent Key_PollEvent(void);
 
 #endif

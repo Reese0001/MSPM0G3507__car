@@ -6,9 +6,9 @@
 
 - `empty.c`：初始化、L 型 520 电机选择、循迹循环和安全服务。
 - `empty.syscfg`：引脚与外设配置的唯一真实来源。
-- `BSP/Eight_Tracking/`：PA15～PA18 灰度采样和循迹决策。
-- `BSP/Motor/`：两轮运动学、UART 驱动协议和电机安全层。
-- `BSP/Timer/`：1 ms 时间基和 200 ms 电机看门狗计时。
+- `modules/line_tracking/`：PA15～PA18 灰度采样和循迹决策。
+- `modules/motor/`：两轮运动学、UART 驱动协议和电机安全层。
+- `bsp/time/`：1 ms 时间基和 200 ms 电机看门狗计时。
 
 ## 构建
 

@@ -1,4 +1,6 @@
 #include "questions.h"
+#include "key.h"
+#include "buzzer.h"
 
 float object_angle = 0;                    //The target heading_Angle of the car movement(车辆运动的目标航向角)
 float Angle_error = 0;
@@ -36,6 +38,49 @@ void State_Machine_init(void)
 	State_Machine.Q2_State = STOP_STATE;
 	State_Machine.Q3_State = STOP_STATE;
 	State_Machine.Q4_State = STOP_STATE;
+}
+
+void Legacy_Questions_HandleKey(void)
+{
+    static int task_flag = 1;
+
+    switch (Key_PollEvent()) {
+        case KEY_EVENT_SHORT:
+            g_LinePortal_flag = 1;
+            bee_time = 500;
+            break;
+        case KEY_EVENT_LONG:
+            Contrl_Pwm(0, 0, 0, 0);
+            g_LinePortal_flag = 0;
+            switch (task_flag) {
+                case 1:
+                    State_Machine.Main_State = QUESTION_1;
+                    task_flag += 1;
+                    Beep_Times(1);
+                    break;
+                case 2:
+                    State_Machine.Main_State = QUESTION_2;
+                    task_flag += 1;
+                    Beep_Times(2);
+                    break;
+                case 3:
+                    State_Machine.Main_State = QUESTION_3;
+                    task_flag += 1;
+                    Beep_Times(3);
+                    break;
+                case 4:
+                    State_Machine.Main_State = QUESTION_4;
+                    task_flag = 1;
+                    Beep_Times(4);
+                    break;
+                default:
+                    task_flag = 1;
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
 }
 
 
