@@ -56,13 +56,15 @@ void Get_CalibratedAngles(void)
 void Get_EulerAngles(void)
 {
     //获取欧拉角 Get Euler angles
-    float p, r, y;
-    mpu_dmp_get_data(&p, &r, &y);
-    pitch = p;
-    roll = r;
-    yaw = y;
+    float p = pitch;
+    float r = roll;
+    float y = yaw;
 
-    delay_ms(20);//根据设置的采样率，不可设置延时过大 According to the set sampling rate, the delay cannot be set too large
+    if (mpu_dmp_get_data(&p, &r, &y) == 0U) {
+        pitch = p;
+        roll = r;
+        yaw = y;
+    }
 }
 
 

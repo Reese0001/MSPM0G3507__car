@@ -1,7 +1,13 @@
 #include "timer.h"
-#include "motor_safety.h"
+#include "ti_msp_dl_config.h"
 
 volatile uint32_t systick_counter = 0;
+static BSP_Time_Tick1msCallback tick_callback = 0;
+
+void BSP_Time_RegisterTick1ms(BSP_Time_Tick1msCallback callback)
+{
+    tick_callback = callback;
+}
 
 void Timer_Init(void)
 {
@@ -16,9 +22,10 @@ void TIMER_0_INST_IRQHandler(void)
     switch( DL_TimerG_getPendingInterrupt(TIMER_0_INST) )
     {
         case DL_TIMER_IIDX_ZERO://如果是0溢出中断  If it is a 0 overflow interrupt
-            Buzzer_Handle();
             systick_counter++; // 每1ms自动+1      +1 per second
-            Motor_Safety_Tick1ms();
+            if (tick_callback != 0) {
+                tick_callback();
+            }
             break;
 
         default:

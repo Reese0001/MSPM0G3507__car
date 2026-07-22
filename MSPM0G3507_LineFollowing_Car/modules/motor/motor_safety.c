@@ -13,7 +13,16 @@ typedef enum {
 static volatile Motor_Safety_State safety_state = MOTOR_SAFETY_DISARMED;
 static volatile uint32_t armed_elapsed_ms = 0U;
 static volatile uint32_t watchdog_elapsed_ms = 0U;
+static volatile uint8_t stop_pending = 0U;
 static int requested_speed[4] = {0, 0, 0, 0};
+
+static void clear_requested_speed(void)
+{
+    requested_speed[0] = 0;
+    requested_speed[1] = 0;
+    requested_speed[2] = 0;
+    requested_speed[3] = 0;
+}
 
 static int clamp_speed(int value, int limit)
 {
@@ -46,10 +55,8 @@ void Motor_Safety_Init(void)
     safety_state = MOTOR_SAFETY_DISARMED;
     armed_elapsed_ms = 0U;
     watchdog_elapsed_ms = 0U;
-    requested_speed[0] = 0;
-    requested_speed[1] = 0;
-    requested_speed[2] = 0;
-    requested_speed[3] = 0;
+    stop_pending = 0U;
+    clear_requested_speed();
     Contrl_Speed(0, 0, 0, 0);
 }
 
@@ -59,6 +66,15 @@ void Motor_Safety_Arm(void)
     armed_elapsed_ms = 0U;
     watchdog_elapsed_ms = 0U;
     safety_state = MOTOR_SAFETY_ARMED;
+}
+
+void Motor_Safety_Disarm(void)
+{
+    safety_state = MOTOR_SAFETY_DISARMED;
+    armed_elapsed_ms = 0U;
+    watchdog_elapsed_ms = 0U;
+    clear_requested_speed();
+    stop_pending = 1U;
 }
 
 void Motor_Safety_RequestSpeed(int motor1, int motor2, int motor3, int motor4)
@@ -74,6 +90,12 @@ void Motor_Safety_RequestSpeed(int motor1, int motor2, int motor3, int motor4)
 void Motor_Safety_Service(void)
 {
     int limit;
+
+    if (stop_pending != 0U) {
+        Contrl_Speed(0, 0, 0, 0);
+        stop_pending = 0U;
+        return;
+    }
     if (safety_state != MOTOR_SAFETY_ARMED) return;
     limit = current_output_limit();
     Contrl_Speed(clamp_speed(requested_speed[0], limit),

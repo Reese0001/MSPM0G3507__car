@@ -1,6 +1,7 @@
 #include "questions.h"
 #include "key.h"
 #include "buzzer.h"
+#include "motor_safety.h"
 
 float object_angle = 0;                    //The target heading_Angle of the car movement(车辆运动的目标航向角)
 float Angle_error = 0;
@@ -50,28 +51,28 @@ void Legacy_Questions_HandleKey(void)
             bee_time = 500;
             break;
         case KEY_EVENT_LONG:
-            Contrl_Pwm(0, 0, 0, 0);
+            Motor_Safety_Disarm();
             g_LinePortal_flag = 0;
             switch (task_flag) {
                 case 1:
                     State_Machine.Main_State = QUESTION_1;
                     task_flag += 1;
-                    Beep_Times(1);
+                    Buzzer_RequestBeeps(1U);
                     break;
                 case 2:
                     State_Machine.Main_State = QUESTION_2;
                     task_flag += 1;
-                    Beep_Times(2);
+                    Buzzer_RequestBeeps(2U);
                     break;
                 case 3:
                     State_Machine.Main_State = QUESTION_3;
                     task_flag += 1;
-                    Beep_Times(3);
+                    Buzzer_RequestBeeps(3U);
                     break;
                 case 4:
                     State_Machine.Main_State = QUESTION_4;
                     task_flag = 1;
-                    Beep_Times(4);
+                    Buzzer_RequestBeeps(4U);
                     break;
                 default:
                     task_flag = 1;

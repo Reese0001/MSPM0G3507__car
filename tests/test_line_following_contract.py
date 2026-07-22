@@ -14,9 +14,18 @@ def read(relative: str) -> str:
 class LineFollowingContractTests(unittest.TestCase):
     def test_main_runs_tracking_and_safety_service(self):
         main = read("empty.c")
-        self.assertIn("LineWalking();", main)
-        self.assertIn("Motor_Safety_Service();", main)
-        self.assertLess(main.index("LineWalking();"), main.index("Motor_Safety_Service();"))
+        app_main = read("application/app_main.c")
+        scheduler = read("application/app_scheduler.c")
+        questions = read("application/legacy_questions/questions.c")
+        self.assertIn("App_Main_RunOnce();", main)
+        self.assertIn("AppScheduler_Run(Get_Time());", app_main)
+        self.assertIn("Motor_Safety_Service();", app_main)
+        self.assertLess(
+            app_main.index("AppScheduler_Run(Get_Time());"),
+            app_main.index("Motor_Safety_Service();"),
+        )
+        self.assertIn("Legacy_Questions_HandleKey", scheduler)
+        self.assertIn("LineWalking();", questions)
 
     def test_tracking_routes_motion_through_safety_layer(self):
         tracking = read("modules/line_tracking/app_irtracking.c")
@@ -39,10 +48,13 @@ class LineFollowingContractTests(unittest.TestCase):
 
     def test_timer_refreshes_motor_watchdog(self):
         timer = read("bsp/time/timer.c")
-        self.assertIn("Motor_Safety_Tick1ms();", timer)
+        app_main = read("application/app_main.c")
+        self.assertIn("tick_callback();", timer)
+        self.assertIn("Motor_Safety_Tick1ms();", app_main)
+        self.assertIn("BSP_Time_RegisterTick1ms", app_main)
 
     def test_l520_configuration_is_selected(self):
-        self.assertIn("Set_Motor(5);", read("empty.c"))
+        self.assertIn("Set_Motor(5);", read("application/app_main.c"))
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@
 
 void Motor_Safety_Init(void);
 void Motor_Safety_Arm(void);
+void Motor_Safety_Disarm(void);
 void Motor_Safety_RequestSpeed(int motor1, int motor2, int motor3, int motor4);
 void Motor_Safety_Service(void);
 void Motor_Safety_Tick1ms(void);
