@@ -36,6 +36,8 @@ class LineRecoveryContract(unittest.TestCase):
             ("LINE_REACQUIRE_COUNT", "3U"),
             ("LINE_PIVOT_FORWARD_PERCENT", "12"),
             ("LINE_SEARCH_INNER_PERCENT", "8"),
+            ("LINE_SHARP_INNER_REVERSE_PERCENT", "8"),
+            ("LINE_SHARP_SEARCH_ERROR", "4.0f"),
             ("LINE_RECOVERY_MAX_YAW_DEG", "45.0f"),
             ("LINE_RECOVERY_TIMEOUT_MS", "3000U"),
             ("LINE_ALIGN_DURATION_MS", "300U"),
@@ -44,7 +46,7 @@ class LineRecoveryContract(unittest.TestCase):
         for name, value in expected:
             self.assertRegex(config, rf"{name}\s+\({re.escape(value)}\)")
 
-    def test_fault_paths_fail_closed_and_search_keeps_both_wheels_forward(self):
+    def test_search_uses_forward_arc_except_after_a_sharp_edge(self):
         source = (ROOT / "application/line_recovery.c").read_text(encoding="utf-8")
         primitives = (ROOT / "application/motion_primitives.c").read_text(
             encoding="utf-8"
@@ -59,10 +61,17 @@ class LineRecoveryContract(unittest.TestCase):
         self.assertIn("LINE_RECOVERY_TIMEOUT_MS", source)
         self.assertIn("request->valid = false", source)
         self.assertNotIn("-LINE_SEARCH_INNER_COMMAND", source + primitives)
-        self.assertRegex(source, r"left_speed\s*=\s*LINE_SEARCH_INNER_COMMAND")
+        self.assertRegex(source, r"inner_speed\s*=\s*sharp_search\s*\?")
+        self.assertIn("LINE_SEARCH_INNER_COMMAND", source)
         self.assertRegex(source, r"right_speed\s*=\s*LINE_PIVOT_FORWARD_COMMAND")
         self.assertRegex(source, r"left_speed\s*=\s*LINE_PIVOT_FORWARD_COMMAND")
-        self.assertRegex(source, r"right_speed\s*=\s*LINE_SEARCH_INNER_COMMAND")
+        self.assertRegex(source, r"left_speed\s*=\s*inner_speed")
+        self.assertRegex(source, r"right_speed\s*=\s*inner_speed")
+        self.assertIn(
+            "absolute_value(last_seen_error) >= LINE_SHARP_SEARCH_ERROR",
+            source,
+        )
+        self.assertIn("-LINE_SHARP_INNER_REVERSE_COMMAND", source)
 
 
 if __name__ == "__main__":

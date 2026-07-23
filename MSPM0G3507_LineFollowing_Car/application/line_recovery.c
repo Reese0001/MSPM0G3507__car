@@ -75,16 +75,25 @@ static bool set_follow_request(const LineControlOutput *follow,
     return true;
 }
 
-static void set_pivot_request(LineRecoveryState state,
-                              uint32_t now_ms,
-    MotionRequest *request)
+static bool sharp_search_required(void)
 {
+    return absolute_value(last_seen_error) >= LINE_SHARP_SEARCH_ERROR;
+}
+
+static void set_pivot_request(LineRecoveryState state,
+                              bool sharp_search,
+                              uint32_t now_ms,
+                              MotionRequest *request)
+{
+    int16_t inner_speed = sharp_search ?
+        -LINE_SHARP_INNER_REVERSE_COMMAND : LINE_SEARCH_INNER_COMMAND;
+
     if (state == LINE_RECOVERY_PIVOT_LEFT) {
-        request->left_speed = LINE_SEARCH_INNER_COMMAND;
+        request->left_speed = inner_speed;
         request->right_speed = LINE_PIVOT_FORWARD_COMMAND;
     } else {
         request->left_speed = LINE_PIVOT_FORWARD_COMMAND;
-        request->right_speed = LINE_SEARCH_INNER_COMMAND;
+        request->right_speed = inner_speed;
     }
     request->timestamp_ms = now_ms;
     request->valid = true;
@@ -179,7 +188,8 @@ bool LineRecovery_Step(const LineEstimate *line,
             pivot_start_yaw_deg = yaw_deg;
             state_started_ms = now_ms;
             reacquire_count = 0U;
-            set_pivot_request(recovery_state, now_ms, request);
+            set_pivot_request(recovery_state, sharp_search_required(),
+                              now_ms, request);
             return true;
         }
         return false;
@@ -208,11 +218,14 @@ bool LineRecovery_Step(const LineEstimate *line,
             recovery_state = LINE_RECOVERY_ALIGN;
             state_started_ms = now_ms;
         }
-        set_pivot_request(recovery_state == LINE_RECOVERY_ALIGN ?
-                          (last_seen_error <= 0.0f ?
-                           LINE_RECOVERY_PIVOT_LEFT :
-                           LINE_RECOVERY_PIVOT_RIGHT) : recovery_state,
-                          now_ms, request);
+        set_pivot_request(
+            recovery_state == LINE_RECOVERY_ALIGN ?
+                (last_seen_error <= 0.0f ?
+                 LINE_RECOVERY_PIVOT_LEFT :
+                 LINE_RECOVERY_PIVOT_RIGHT) : recovery_state,
+            recovery_state != LINE_RECOVERY_ALIGN &&
+                sharp_search_required(),
+            now_ms, request);
         return true;
     }
 
