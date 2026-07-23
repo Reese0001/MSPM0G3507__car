@@ -92,5 +92,53 @@ class LineEstimatorContract(unittest.TestCase):
         self.assertIn("LINE_EVENT_WIDE_BLACK", source)
 
 
+class LineControllerContract(unittest.TestCase):
+    def test_follow_correction_never_reverses_inner_wheel(self):
+        for base_speed in range(1, 301):
+            correction_limit = base_speed * 80 // 100
+            self.assertGreaterEqual(base_speed - correction_limit, 0)
+
+    def test_predictive_controller_has_speed_planning_and_slew_limits(self):
+        header = (ROOT / "modules/line_tracking/line_controller.h").read_text(
+            encoding="utf-8"
+        )
+        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+            encoding="utf-8"
+        )
+        config = (ROOT / "application/config/line_control_config.h").read_text(
+            encoding="utf-8"
+        )
+        for token in (
+            "LineControlOutput",
+            "forward",
+            "turn",
+            "valid",
+            "LineController_Step",
+        ):
+            self.assertIn(token, header)
+        for token in (
+            "predicted_error",
+            "confidence",
+            "yaw_rate_dps",
+            "LINE_TURN_LIMIT_PERCENT",
+            "LINE_ACCEL_STEP",
+            "LINE_DECEL_STEP",
+        ):
+            self.assertIn(token, source + config)
+        self.assertIn("LINE_MAX_FORWARD (300)", config)
+        self.assertIn("LINE_TURN_LIMIT_PERCENT (80)", config)
+        self.assertNotIn("Contrl_Speed", source)
+        self.assertNotIn("Motion_Car_Control", source)
+        self.assertNotIn("application/", source)
+        self.assertIn("LineController_Init", header + source)
+
+    def test_controller_fails_closed_on_lost_or_invalid_estimate(self):
+        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("LINE_EVENT_LOST", source)
+        self.assertIn("output->valid = false", source)
+
+
 if __name__ == "__main__":
     unittest.main()
