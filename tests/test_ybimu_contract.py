@@ -25,6 +25,74 @@ class YbImuContract(unittest.TestCase):
         self.assertNotIn("(float *)", source)
         self.assertNotIn("*(float", source)
 
+    def test_snapshot_is_timestamped_and_nonblocking(self):
+        header_path = ROOT / "modules/ybimu/ybimu.h"
+        source_path = ROOT / "modules/ybimu/ybimu.c"
+        config_path = ROOT / "modules/ybimu/ybimu_config.h"
+        self.assertTrue(header_path.exists(), header_path)
+        self.assertTrue(source_path.exists(), source_path)
+        self.assertTrue(config_path.exists(), config_path)
+        header = header_path.read_text(encoding="utf-8")
+        source = source_path.read_text(encoding="utf-8")
+        config = config_path.read_text(encoding="utf-8")
+        for token in (
+            "YbImuSnapshot",
+            "ModuleStatus status",
+            "gyro_rad_s",
+            "euler_deg",
+            "quat",
+            "mag_uT",
+            "magnetic_heading_healthy",
+            "YbImu_Init",
+            "YbImu_Service",
+            "YbImu_GetSnapshot",
+        ):
+            self.assertIn(token, header)
+        self.assertIn("YBIMU_SAMPLE_PERIOD_MS", config)
+        self.assertIn("10U", config)
+        self.assertNotIn("delay_ms", source)
+        self.assertNotRegex(source, r"while\s*\(")
+
+    def test_service_advances_one_vendor_register_per_call(self):
+        source_path = ROOT / "modules/ybimu/ybimu.c"
+        self.assertTrue(source_path.exists(), source_path)
+        source = source_path.read_text(encoding="utf-8")
+        for token in (
+            "YBIMU_REG_GYRO",
+            "YBIMU_REG_MAG",
+            "YBIMU_REG_QUAT",
+            "YBIMU_REG_EULER",
+            "publish_complete_group",
+        ):
+            self.assertIn(token, source)
+        service = source[source.index("void YbImu_Service"):]
+        self.assertEqual(1, service.count("BSP_I2C_Read("))
+        self.assertIn("read_index++", service)
+        self.assertIn("working.status.timestamp_ms = now_ms", source)
+
+    def test_bsp_i2c_is_bounded_zero_hardware_stub(self):
+        header_path = ROOT / "bsp/bsp_i2c.h"
+        source_path = ROOT / "bsp/bsp_i2c.c"
+        self.assertTrue(header_path.exists(), header_path)
+        self.assertTrue(source_path.exists(), source_path)
+        combined = header_path.read_text(encoding="utf-8") + source_path.read_text(
+            encoding="utf-8"
+        )
+        for token in ("BSP_I2C_Init", "BSP_I2C_Read", "BSP_I2C_MAX_TRANSFER"):
+            self.assertIn(token, combined)
+        self.assertIn("length > BSP_I2C_MAX_TRANSFER", combined)
+        self.assertNotIn("ti_msp_dl_config.h", combined)
+        self.assertNotIn("PA12", combined)
+        self.assertNotIn("PA13", combined)
+
+    def test_active_path_does_not_use_legacy_mpu(self):
+        source_path = ROOT / "modules/ybimu/ybimu.c"
+        self.assertTrue(source_path.exists(), source_path)
+        source = source_path.read_text(encoding="utf-8")
+        scheduler = (ROOT / "application/app_scheduler.c").read_text(encoding="utf-8")
+        for forbidden in ("app_mpu6050", "Get_EulerAngles", "mpu_dmp"):
+            self.assertNotIn(forbidden, source + scheduler)
+
 
 if __name__ == "__main__":
     unittest.main()
