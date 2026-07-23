@@ -15,6 +15,7 @@ typedef struct {
 
 typedef struct {
     int16_t max_forward;
+    int16_t cruise_forward;
     int16_t curve_forward;
     int16_t hard_curve_forward;
     int16_t wide_black_forward;
@@ -32,11 +33,13 @@ typedef struct {
     float kp;
     float kd;
     float steering_polarity;
+    float straight_error_threshold;
     float curve_error_threshold;
     float hard_curve_error_threshold;
     float high_yaw_rate_dps;
     uint8_t low_confidence;
     uint8_t medium_confidence;
+    uint8_t straight_confirm_frames;
     uint32_t estimate_stale_ms;
 } LineControlConfig;
 

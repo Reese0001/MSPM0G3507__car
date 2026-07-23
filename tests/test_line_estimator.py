@@ -12,6 +12,21 @@ def weighted_error(bits):
     return None if not active else sum(active) / len(active)
 
 
+def straight_target(frames):
+    stable = 0
+    targets = []
+    for error, confidence, event, trend in frames:
+        qualifies = (
+            abs(error) <= 1.0
+            and confidence >= 70
+            and event == "none"
+            and trend == "normal"
+        )
+        stable = min(255, stable + 1) if qualifies else 0
+        targets.append(400 if stable >= 5 else 330)
+    return targets
+
+
 class LineScannerContract(unittest.TestCase):
     def test_scanner_is_nonblocking_and_publishes_atomic_snapshot(self):
         source = (ROOT / "modules/line_tracking/line_scanner.c").read_text(
@@ -95,6 +110,79 @@ class LineEstimatorContract(unittest.TestCase):
 
 
 class LineControllerContract(unittest.TestCase):
+    def test_reference_boost_requires_five_frames(self):
+        frames = [(0.0, 100, "none", "normal")] * 5
+        self.assertEqual(straight_target(frames), [330, 330, 330, 330, 400])
+
+    def test_reference_curve_frame_cancels_boost_immediately(self):
+        frames = (
+            [(0.0, 100, "none", "normal")] * 5
+            + [(1.6, 100, "none", "normal")]
+        )
+        self.assertEqual(straight_target(frames)[-2:], [400, 330])
+
+    def test_straight_boost_and_early_braking_parameters(self):
+        header = (ROOT / "modules/line_tracking/line_controller.h").read_text(
+            encoding="utf-8"
+        )
+        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+            encoding="utf-8"
+        )
+        config = (ROOT / "application/config/line_control_config.h").read_text(
+            encoding="utf-8"
+        )
+        for token in (
+            "LINE_MAX_FORWARD (400)",
+            "LINE_CRUISE_FORWARD (330)",
+            "LINE_STRAIGHT_ERROR_THRESHOLD (1.0f)",
+            "LINE_STRAIGHT_CONFIRM_FRAMES (5U)",
+            "LINE_CURVE_ERROR_THRESHOLD (1.5f)",
+            "LINE_HARD_CURVE_ERROR_THRESHOLD (3.5f)",
+            "LINE_CURVE_FORWARD (240)",
+            "LINE_HARD_CURVE_FORWARD (150)",
+            "LINE_TIGHT_FORWARD (120)",
+            "LINE_HAIRPIN_FORWARD (40)",
+            "LINE_DECEL_STEP (70)",
+            "LINE_TURN_SLEW_STEP (25)",
+            "LINE_CONTROL_KP (28.0f)",
+        ):
+            self.assertIn(token, config)
+        for token in (
+            "cruise_forward",
+            "straight_error_threshold",
+            "straight_confirm_frames",
+        ):
+            self.assertIn(token, header)
+        for token in (
+            "stable_straight_frames",
+            "stable_straight_frame",
+            "LINE_TREND_NORMAL",
+            "LINE_EVENT_NONE",
+            "UINT8_MAX",
+        ):
+            self.assertIn(token, source)
+
+    def test_straight_boost_resets_on_uncertain_or_curve_frame(self):
+        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertRegex(
+            source,
+            r"if\s*\(stable_straight_frame[\s\S]{0,250}"
+            r"stable_straight_frames\+\+[\s\S]{0,180}"
+            r"else\s*\{\s*stable_straight_frames\s*=\s*0U;",
+        )
+        self.assertRegex(
+            source,
+            r"LineController_Reset[\s\S]{0,180}"
+            r"stable_straight_frames\s*=\s*0U",
+        )
+        self.assertRegex(
+            source,
+            r"estimate->event\s*==\s*LINE_EVENT_LOST[\s\S]{0,180}"
+            r"stable_straight_frames\s*=\s*0U",
+        )
+
     def test_all_curve_targets_stay_inside_competition_limit(self):
         config = (ROOT / "application/config/line_control_config.h").read_text(
             encoding="utf-8"
@@ -135,7 +223,7 @@ class LineControllerContract(unittest.TestCase):
         ):
             self.assertIn(token, source)
         for token in (
-            "LINE_TIGHT_FORWARD (140)",
+            "LINE_TIGHT_FORWARD (120)",
             "LINE_TIGHT_TURN (100)",
             "LINE_HAIRPIN_FORWARD (40)",
             "LINE_HAIRPIN_TURN (100)",
@@ -150,7 +238,7 @@ class LineControllerContract(unittest.TestCase):
             self.assertIn(field, header)
         self.assertIn("slew_turn", source)
         self.assertIn("LINE_CONTROL_KP (28.0f)", config)
-        self.assertIn("LINE_MAX_FORWARD (350)", config)
+        self.assertIn("LINE_MAX_FORWARD (400)", config)
         self.assertNotIn("Contrl_Speed", source)
         self.assertNotIn("Motion_Car_Control", source)
 
@@ -211,18 +299,19 @@ class LineControllerContract(unittest.TestCase):
         ):
             self.assertIn(token, source + config)
         for token in (
-            "LINE_MAX_FORWARD (350)",
-            "LINE_CURVE_FORWARD (270)",
-            "LINE_HARD_CURVE_FORWARD (180)",
+            "LINE_MAX_FORWARD (400)",
+            "LINE_CRUISE_FORWARD (330)",
+            "LINE_CURVE_FORWARD (240)",
+            "LINE_HARD_CURVE_FORWARD (150)",
             "LINE_WIDE_BLACK_FORWARD (120)",
             "LINE_LOW_CONFIDENCE_FORWARD (150)",
             "LINE_ACCEL_STEP (15)",
-            "LINE_DECEL_STEP (45)",
+            "LINE_DECEL_STEP (70)",
             "LINE_CONTROL_KP (28.0f)",
         ):
             self.assertIn(token, config)
         self.assertIn("LINE_TURN_LIMIT_PERCENT (80)", config)
-        self.assertIn("LINE_TURN_SLEW_STEP (20)", config)
+        self.assertIn("LINE_TURN_SLEW_STEP (25)", config)
         self.assertIn("turn_slew_step", header)
         self.assertIn("previous_turn", source)
         self.assertIn("slew_turn", source)

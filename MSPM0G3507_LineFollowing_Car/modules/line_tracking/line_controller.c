@@ -2,6 +2,7 @@
 
 static int16_t previous_forward = 0;
 static int16_t previous_turn = 0;
+static uint8_t stable_straight_frames = 0U;
 static LineControlConfig control_config = {0};
 static bool config_valid = false;
 
@@ -18,6 +19,32 @@ static int16_t absolute_int16(int16_t value)
 static int16_t minimum(int16_t left, int16_t right)
 {
     return left < right ? left : right;
+}
+
+static bool stable_straight_frame(const LineEstimate *estimate,
+                                  const LineTrendResult *trend,
+                                  bool trend_fresh)
+{
+    return trend_fresh &&
+           trend->type == LINE_TREND_NORMAL &&
+           estimate->event == LINE_EVENT_NONE &&
+           estimate->confidence >= control_config.medium_confidence &&
+           absolute_value(estimate->predicted_error) <=
+               control_config.straight_error_threshold;
+}
+
+static bool update_straight_boost(const LineEstimate *estimate,
+                                  const LineTrendResult *trend,
+                                  bool trend_fresh)
+{
+    if (stable_straight_frame(estimate, trend, trend_fresh)) {
+        if (stable_straight_frames < UINT8_MAX) {
+            stable_straight_frames++;
+        }
+    } else {
+        stable_straight_frames = 0U;
+    }
+    return stable_straight_frames >= control_config.straight_confirm_frames;
 }
 
 static bool trend_is_left(LineTrendType type)
@@ -65,10 +92,12 @@ static int16_t trend_turn_target(LineTrendType type)
 
 static int16_t plan_target_speed(const LineEstimate *estimate,
                                  float yaw_rate_dps,
-                                 bool yaw_fresh)
+                                 bool yaw_fresh,
+                                 bool straight_boost)
 {
     float curve = absolute_value(estimate->predicted_error);
-    int16_t target = control_config.max_forward;
+    int16_t target = straight_boost ?
+        control_config.max_forward : control_config.cruise_forward;
 
     if (estimate->event == LINE_EVENT_HARD_LEFT ||
         estimate->event == LINE_EVENT_HARD_RIGHT) {
@@ -131,7 +160,9 @@ static int16_t slew_turn(int16_t target, int16_t limit)
 bool LineController_Init(const LineControlConfig *settings)
 {
     if (settings == 0 || settings->max_forward <= 0 ||
-        settings->max_forward > 450 || settings->curve_forward <= 0 ||
+        settings->max_forward > 450 || settings->cruise_forward <= 0 ||
+        settings->cruise_forward > settings->max_forward ||
+        settings->curve_forward <= 0 ||
         settings->hard_curve_forward <= 0 ||
         settings->wide_black_forward <= 0 ||
         settings->low_confidence_forward <= 0 ||
@@ -155,16 +186,22 @@ bool LineController_Init(const LineControlConfig *settings)
         settings->low_confidence > 100U ||
         settings->medium_confidence > 100U ||
         settings->low_confidence > settings->medium_confidence ||
+        settings->straight_error_threshold <= 0.0f ||
+        settings->straight_error_threshold >=
+            settings->curve_error_threshold ||
+        settings->straight_confirm_frames == 0U ||
         settings->estimate_stale_ms == 0U) {
         config_valid = false;
         previous_forward = 0;
         previous_turn = 0;
+        stable_straight_frames = 0U;
         return false;
     }
     control_config = *settings;
     config_valid = true;
     previous_forward = 0;
     previous_turn = 0;
+    stable_straight_frames = 0U;
     return true;
 }
 
@@ -172,6 +209,7 @@ void LineController_Reset(void)
 {
     previous_forward = 0;
     previous_turn = 0;
+    stable_straight_frames = 0U;
 }
 
 bool LineController_Step(const LineEstimate *estimate,
@@ -187,6 +225,7 @@ bool LineController_Step(const LineEstimate *estimate,
     int16_t trend_forward;
     float raw_turn;
     bool trend_fresh;
+    bool straight_boost;
 
     if (output == 0) {
         return false;
@@ -200,6 +239,7 @@ bool LineController_Step(const LineEstimate *estimate,
         estimate->event == LINE_EVENT_LOST) {
         previous_forward = 0;
         previous_turn = 0;
+        stable_straight_frames = 0U;
         return false;
     }
 
@@ -207,6 +247,8 @@ bool LineController_Step(const LineEstimate *estimate,
         trend != 0 &&
         ModuleStatus_IsFresh(&trend->status, now_ms,
                              control_config.estimate_stale_ms);
+    straight_boost =
+        update_straight_boost(estimate, trend, trend_fresh);
     trend_forward = trend_fresh ? trend_forward_target(trend->type) : -1;
     if (trend_forward >= 0) {
         forward = slew_forward(trend_forward);
@@ -222,7 +264,8 @@ bool LineController_Step(const LineEstimate *estimate,
         turn = slew_turn(trend_turn_target(trend->type), turn_limit);
     } else {
         forward = slew_forward(plan_target_speed(estimate, yaw_rate_dps,
-                                                  yaw_fresh));
+                                                  yaw_fresh,
+                                                  straight_boost));
         raw_turn = control_config.steering_polarity *
                    (control_config.kp * estimate->error +
                     control_config.kd * estimate->derivative);

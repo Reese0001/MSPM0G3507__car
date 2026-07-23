@@ -4,37 +4,41 @@
 #include "../../modules/line_tracking/line_controller.h"
 
 /* Command scale is -1000..1000; competition ceiling is 45%. */
-#define LINE_MAX_FORWARD (350)
-#define LINE_CURVE_FORWARD (270)
-#define LINE_HARD_CURVE_FORWARD (180)
+#define LINE_MAX_FORWARD (400)
+#define LINE_CRUISE_FORWARD (330)
+#define LINE_CURVE_FORWARD (240)
+#define LINE_HARD_CURVE_FORWARD (150)
 #define LINE_WIDE_BLACK_FORWARD (120)
 #define LINE_LOW_CONFIDENCE_FORWARD (150)
 #define LINE_HARD_TURN_FORWARD (40)
 #define LINE_HARD_TURN_COMMAND (120)
-#define LINE_TIGHT_FORWARD (140)
+#define LINE_TIGHT_FORWARD (120)
 #define LINE_TIGHT_TURN (100)
 #define LINE_HAIRPIN_FORWARD (40)
 #define LINE_HAIRPIN_TURN (100)
 
 #define LINE_TURN_LIMIT_PERCENT (80)
 #define LINE_ACCEL_STEP (15)
-#define LINE_DECEL_STEP (45)
-#define LINE_TURN_SLEW_STEP (20)
+#define LINE_DECEL_STEP (70)
+#define LINE_TURN_SLEW_STEP (25)
 
 #define LINE_CONTROL_KP (28.0f)
 #define LINE_CONTROL_KD (0.015f)
 #define LINE_STEERING_POLARITY (-1.0f)
-#define LINE_CURVE_ERROR_THRESHOLD (2.0f)
-#define LINE_HARD_CURVE_ERROR_THRESHOLD (4.0f)
+#define LINE_STRAIGHT_ERROR_THRESHOLD (1.0f)
+#define LINE_CURVE_ERROR_THRESHOLD (1.5f)
+#define LINE_HARD_CURVE_ERROR_THRESHOLD (3.5f)
 #define LINE_HIGH_YAW_RATE_DPS (80.0f)
 #define LINE_LOW_CONFIDENCE (40U)
 #define LINE_MEDIUM_CONFIDENCE (70U)
+#define LINE_STRAIGHT_CONFIRM_FRAMES (5U)
 #define LINE_ESTIMATE_STALE_MS (20U)
 
 static inline LineControlConfig LineControlConfig_Default(void)
 {
     const LineControlConfig config = {
         LINE_MAX_FORWARD,
+        LINE_CRUISE_FORWARD,
         LINE_CURVE_FORWARD,
         LINE_HARD_CURVE_FORWARD,
         LINE_WIDE_BLACK_FORWARD,
@@ -52,11 +56,13 @@ static inline LineControlConfig LineControlConfig_Default(void)
         LINE_CONTROL_KP,
         LINE_CONTROL_KD,
         LINE_STEERING_POLARITY,
+        LINE_STRAIGHT_ERROR_THRESHOLD,
         LINE_CURVE_ERROR_THRESHOLD,
         LINE_HARD_CURVE_ERROR_THRESHOLD,
         LINE_HIGH_YAW_RATE_DPS,
         LINE_LOW_CONFIDENCE,
         LINE_MEDIUM_CONFIDENCE,
+        LINE_STRAIGHT_CONFIRM_FRAMES,
         LINE_ESTIMATE_STALE_MS
     };
     return config;
