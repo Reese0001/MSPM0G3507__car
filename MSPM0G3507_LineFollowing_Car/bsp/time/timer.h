@@ -6,6 +6,7 @@
 typedef void (*BSP_Time_Tick1msCallback)(void);
 
 uint32_t Get_Time(void);
+uint32_t BSP_Time_GetUs(void);
 void Timer_Init(void);
 void BSP_Time_RegisterTick1ms(BSP_Time_Tick1msCallback callback);
 

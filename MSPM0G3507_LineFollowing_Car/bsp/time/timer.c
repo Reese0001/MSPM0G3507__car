@@ -38,3 +38,13 @@ uint32_t Get_Time(void)
 {
     return systick_counter;
 }
+
+uint32_t BSP_Time_GetUs(void)
+{
+    /*
+     * TIMG12 is a 32-bit down counter clocked at 1 MHz.  Inverting the
+     * current count yields a naturally wrapping uint32_t microsecond clock.
+     */
+    return UINT32_MAX -
+           DL_TimerG_getTimerCount(MICROSECOND_TIMEBASE_INST);
+}

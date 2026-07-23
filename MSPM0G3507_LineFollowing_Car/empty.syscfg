@@ -24,6 +24,7 @@ const SYSCTL  = scripting.addModule("/ti/driverlib/SYSCTL");
 const SYSTICK = scripting.addModule("/ti/driverlib/SYSTICK");
 const TIMER   = scripting.addModule("/ti/driverlib/TIMER", {}, false);
 const TIMER1  = TIMER.addInstance();
+const TIMER2  = TIMER.addInstance();
 const UART    = scripting.addModule("/ti/driverlib/UART", {}, false);
 const UART1   = UART.addInstance();
 const UART2   = UART.addInstance();
@@ -121,6 +122,14 @@ TIMER1.timerMode          = "PERIODIC";
 TIMER1.interrupts         = ["ZERO"];
 TIMER1.interruptPriority  = "0";
 TIMER1.peripheral.$assign = "TIMG0";
+
+TIMER2.$name              = "MICROSECOND_TIMEBASE";
+TIMER2.timerClkSrc        = "MFCLK";
+TIMER2.timerClkDiv        = 4;
+TIMER2.timerMode          = "PERIODIC";
+TIMER2.timerPeriod        = "4294967296 us";
+TIMER2.timerStartTimer    = true;
+TIMER2.peripheral.$assign = "TIMG12";
 
 UART1.$name                    = "UART_0";
 UART1.uartClkSrc               = "MFCLK";
