@@ -75,7 +75,7 @@ class UltrasonicContract(unittest.TestCase):
         self.assertIn("captured_ready", body)
         self.assertIn("state = ULTRA_IDLE", body)
 
-    def test_bsp_boundary_is_zero_hardware_stub(self):
+    def test_bsp_binds_trigger_echo_irq_and_microsecond_timebase(self):
         header_path = ROOT / "bsp/bsp_ultrasonic.h"
         source_path = ROOT / "bsp/bsp_ultrasonic.c"
         self.assertTrue(header_path.exists(), header_path)
@@ -89,9 +89,18 @@ class UltrasonicContract(unittest.TestCase):
             "BSP_Ultrasonic_SetTrig",
         ):
             self.assertIn(api, combined)
-        self.assertNotIn("ti_msp_dl_config.h", combined)
-        self.assertNotIn("PA26", combined)
-        self.assertNotIn("PA27", combined)
+        for token in (
+            "ti_msp_dl_config.h",
+            "ULTRASONIC_TRIG_PORT",
+            "ULTRASONIC_TRIG_TRIG_PIN",
+            "ULTRASONIC_ECHO_INST_IRQHandler",
+            "DL_TIMERG_IIDX_CC1_DN",
+            "Ultrasonic_OnEchoEdge",
+            "BSP_Time_GetUs",
+        ):
+            self.assertIn(token, combined)
+        self.assertNotIn("delay_ms", combined)
+        self.assertNotIn("while (", combined)
 
 
 if __name__ == "__main__":

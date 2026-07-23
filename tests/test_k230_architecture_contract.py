@@ -67,6 +67,18 @@ class K230ArchitectureContract(unittest.TestCase):
         self.assertIn("ModuleStatus_IsFresh", source)
         self.assertIn("K230_VISION_STALE_MS", source)
 
+    def test_uart2_bsp_drains_rx_fifo_through_irq_bridge(self):
+        source = (MCU / "bsp/bsp_k230_uart.c").read_text(encoding="utf-8")
+        for token in (
+            "ti_msp_dl_config.h",
+            "DL_UART_Main_isRXFIFOEmpty",
+            "DL_UART_Main_receiveData",
+            "K230_INST_IRQHandler",
+            "K230_UART_IRQHandler",
+        ):
+            self.assertIn(token, source)
+        self.assertNotIn("receiveDataBlocking", source)
+
 
 if __name__ == "__main__":
     unittest.main()

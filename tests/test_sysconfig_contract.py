@@ -50,7 +50,8 @@ class SysConfigContractTests(unittest.TestCase):
         self.assertIn('GPIO6.associatedPins[0].pin.$assign = "PA26"', self.syscfg)
         self.assertIn('CAPTURE1.peripheral.$assign', self.syscfg)
         self.assertIn('CAPTURE1.peripheral.ccp1Pin.$assign = "PA27"', self.syscfg)
-        self.assertIn('CAPTURE1.captMode', self.syscfg)
+        self.assertIn('CAPTURE1.captMode                   = "EDGE_TIME"', self.syscfg)
+        self.assertIn('CAPTURE1.captEdgeDetection          = "EDGE"', self.syscfg)
         self.assertIn('"CC1_DN"', self.syscfg)
 
 

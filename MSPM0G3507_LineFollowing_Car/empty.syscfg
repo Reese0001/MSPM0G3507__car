@@ -89,11 +89,12 @@ GPIO6.associatedPins[0].pin.$assign = "PA26";
 
 CAPTURE1.$name                      = "ULTRASONIC_ECHO";
 CAPTURE1.ccIndex                    = 1;
-CAPTURE1.captMode                   = "PULSE_WIDTH";
+CAPTURE1.captMode                   = "EDGE_TIME";
+CAPTURE1.captEdgeDetection          = "EDGE";
 CAPTURE1.timerClkDiv                = 8;
 CAPTURE1.timerClkPrescale           = 10;
 CAPTURE1.timerPeriod                = "65.54 ms";
-CAPTURE1.interrupts                 = ["CC1_DN","ZERO"];
+CAPTURE1.interrupts                 = ["CC1_DN"];
 CAPTURE1.interruptPriority          = "1";
 CAPTURE1.peripheral.$assign         = "TIMG8";
 CAPTURE1.peripheral.ccp1Pin.$assign = "PA27";

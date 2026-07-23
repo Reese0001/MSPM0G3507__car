@@ -30,7 +30,7 @@ void K230Link_Service(uint32_t now_ms);
 bool K230Link_GetSnapshot(uint32_t now_ms, K230VisionSnapshot *out);
 void K230Link_GetDiagnostics(K230LinkDiagnostics *out);
 
-/* Temporary ISR boundary; bind to the generated UART IRQ at integration time. */
+/* BSP ISR bridge: drain UART2 quickly and defer frame parsing to the scheduler. */
 void K230_UART_IRQHandler(void);
 
 #endif
