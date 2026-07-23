@@ -1,5 +1,9 @@
 from pathlib import Path
+import tempfile
 import unittest
+
+from K230_Vision.app.event_log import EventLog
+from K230_Vision.protocol.frame import encode_frame
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,6 +61,50 @@ class K230ProtocolContract(unittest.TestCase):
         self.assertIn("K230_Config_IsIdAllowed", source)
         self.assertIn("id_tens", source)
         self.assertIn("id_ones", source)
+
+    def test_python_encoder_matches_mcu_length_rule(self):
+        frame = encode_frame(16, [87, "apple"])
+        body = frame.rstrip("\n")
+        declared = int(body[1:body.index(",")])
+        self.assertEqual(declared, len(body.encode("ascii")))
+        self.assertTrue(body.startswith("$") and body.endswith("#"))
+        self.assertEqual(frame, frame.encode("ascii").decode("ascii"))
+
+    def test_python_encoder_rejects_unsafe_fields(self):
+        for value in ("a,b", "bad#field", "line\nfeed", "中文"):
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    encode_frame(16, [80, value])
+        with self.assertRaises(ValueError):
+            encode_frame(18, [80])
+
+    def test_canmv_entry_uses_vendor_uart_and_bounded_log(self):
+        main = (ROOT / "K230_Vision/main.py").read_text(encoding="utf-8")
+        config = (ROOT / "K230_Vision/config/vision_config.py").read_text(
+            encoding="utf-8"
+        )
+        event_log = (ROOT / "K230_Vision/app/event_log.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("from ybUtils.YbUart import YbUart", main)
+        self.assertIn("baudrate=UART_BAUDRATE", main)
+        self.assertIn("encode_frame", main)
+        self.assertIn("LOG_ENABLED = False", config)
+        self.assertIn("LOG_MAX_BYTES = 1024 * 1024", config)
+        self.assertIn("LOG_MAX_FILES = 20", config)
+
+    def test_event_log_is_disabled_or_rotates_to_file_limit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "events.csv")
+            EventLog(False, path, 1, 3).append(1, 16, 80, ["ignored"])
+            self.assertFalse(Path(path).exists())
+
+            logger = EventLog(True, path, 1, 3)
+            for index in range(8):
+                logger.append(index, 16, 80, ["apple"])
+            files = list(Path(directory).glob("events.csv*"))
+            self.assertLessEqual(len(files), 3)
+            self.assertTrue(Path(path).exists())
 
 
 if __name__ == "__main__":
