@@ -152,7 +152,7 @@ class LineControllerContract(unittest.TestCase):
         ):
             self.assertIn(token, source + config)
         for token in (
-            "LINE_MAX_FORWARD (450)",
+            "LINE_MAX_FORWARD (350)",
             "LINE_CURVE_FORWARD (270)",
             "LINE_HARD_CURVE_FORWARD (180)",
             "LINE_WIDE_BLACK_FORWARD (120)",

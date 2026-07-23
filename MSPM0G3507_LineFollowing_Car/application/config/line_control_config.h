@@ -4,7 +4,7 @@
 #include "../../modules/line_tracking/line_controller.h"
 
 /* Command scale is -1000..1000; competition ceiling is 45%. */
-#define LINE_MAX_FORWARD (450)
+#define LINE_MAX_FORWARD (350)
 #define LINE_CURVE_FORWARD (270)
 #define LINE_HARD_CURVE_FORWARD (180)
 #define LINE_WIDE_BLACK_FORWARD (120)
