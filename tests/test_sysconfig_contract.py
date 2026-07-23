@@ -34,6 +34,25 @@ class SysConfigContractTests(unittest.TestCase):
         self.assertIn('TIMER1.timerPeriod        = "1 ms"', self.syscfg)
         self.assertIn('TIMER1.timerMode          = "PERIODIC"', self.syscfg)
 
+    def test_ybimu_software_i2c_pins(self):
+        self.assertIn('GPIO5.$name                          = "YBIMU_I2C"', self.syscfg)
+        self.assertIn('GPIO5.associatedPins[0].pin.$assign  = "PA12"', self.syscfg)
+        self.assertIn('GPIO5.associatedPins[1].pin.$assign  = "PA13"', self.syscfg)
+
+    def test_k230_uart2_pins_baud_and_rx_interrupt(self):
+        self.assertIn('UART3.peripheral.txPin.$assign = "PA21"', self.syscfg)
+        self.assertIn('UART3.peripheral.rxPin.$assign = "PA22"', self.syscfg)
+        self.assertIn("UART3.targetBaudRate", self.syscfg)
+        self.assertIn('UART3.enabledInterrupts        = ["RX"]', self.syscfg)
+        self.assertIn('UART3.peripheral.$suggestSolution          = "UART2"', self.syscfg)
+
+    def test_ultrasonic_trigger_and_echo_capture(self):
+        self.assertIn('GPIO6.associatedPins[0].pin.$assign = "PA26"', self.syscfg)
+        self.assertIn('CAPTURE1.peripheral.$assign', self.syscfg)
+        self.assertIn('CAPTURE1.peripheral.ccp1Pin.$assign = "PA27"', self.syscfg)
+        self.assertIn('CAPTURE1.captMode', self.syscfg)
+        self.assertIn('"CC1_DN"', self.syscfg)
+
 
 if __name__ == "__main__":
     unittest.main()
