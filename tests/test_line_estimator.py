@@ -4,6 +4,12 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
+WEIGHTS = (-7, -5, -3, -1, 1, 3, 5, 7)
+
+
+def weighted_error(bits):
+    active = [WEIGHTS[index] for index in range(8) if bits & (1 << index)]
+    return None if not active else sum(active) / len(active)
 
 
 class LineScannerContract(unittest.TestCase):
@@ -41,6 +47,49 @@ class LineScannerContract(unittest.TestCase):
             self.assertIn(pin, source)
         self.assertEqual(source.count("DL_GPIO_writePinsVal("), 1)
         self.assertNotIn("delay_", source)
+
+
+class LineEstimatorContract(unittest.TestCase):
+    def test_all_patterns_are_bounded_and_mirror_symmetric(self):
+        for bits in range(1, 256):
+            value = weighted_error(bits)
+            mirror_bits = int(f"{bits:08b}"[::-1], 2)
+            mirror = weighted_error(mirror_bits)
+            self.assertGreaterEqual(value, -7)
+            self.assertLessEqual(value, 7)
+            self.assertAlmostEqual(value + mirror, 0.0)
+
+    def test_estimator_contract_has_trend_confidence_and_events(self):
+        header = (ROOT / "modules/line_tracking/line_estimator.h").read_text(
+            encoding="utf-8"
+        )
+        source = (ROOT / "modules/line_tracking/line_estimator.c").read_text(
+            encoding="utf-8"
+        )
+        for token in (
+            "LINE_EVENT_NONE",
+            "LINE_EVENT_HARD_LEFT",
+            "LINE_EVENT_HARD_RIGHT",
+            "LINE_EVENT_WIDE_BLACK",
+            "LINE_EVENT_LOST",
+            "LineEstimate",
+            "derivative",
+            "predicted_error",
+            "confidence",
+            "LineEstimator_Update",
+        ):
+            self.assertIn(token, header + source)
+        self.assertIn("ModuleStatus_IsFresh", source)
+        self.assertNotIn("Contrl_Speed", source)
+        self.assertNotIn("Motion_Car_Control", source)
+
+    def test_empty_and_wide_patterns_have_explicit_events(self):
+        source = (ROOT / "modules/line_tracking/line_estimator.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertRegex(source, r"black_bits\s*==\s*0U")
+        self.assertIn("LINE_EVENT_LOST", source)
+        self.assertIn("LINE_EVENT_WIDE_BLACK", source)
 
 
 if __name__ == "__main__":
