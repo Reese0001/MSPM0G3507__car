@@ -1,6 +1,7 @@
 #include "motor_safety.h"
 #include "app_motor_usart.h"
 #include "bsp_motor_usart.h"
+#include "led.h"
 
 #define MOTOR_COMMAND_MAX (1000)
 
@@ -57,6 +58,7 @@ void Motor_Safety_Init(void)
     watchdog_elapsed_ms = 0U;
     stop_pending = 0U;
     clear_requested_speed();
+    LED_OFF();
     Contrl_Speed(0, 0, 0, 0);
 }
 
@@ -111,6 +113,7 @@ void Motor_Safety_Tick1ms(void)
     if (watchdog_elapsed_ms < MOTOR_SAFETY_WATCHDOG_MS) watchdog_elapsed_ms++;
     if (watchdog_elapsed_ms >= MOTOR_SAFETY_WATCHDOG_MS) {
         safety_state = MOTOR_SAFETY_FAULT_LATCHED;
+        LED_ON();
         Motor_EmergencyStop_FromISR();
     }
 }

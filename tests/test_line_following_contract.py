@@ -17,13 +17,15 @@ class LineFollowingContractTests(unittest.TestCase):
         app_main = read("application/app_main.c")
         scheduler = read("application/app_scheduler.c")
         self.assertIn("App_Main_RunOnce();", main)
-        self.assertIn("AppScheduler_Run(Get_Time());", app_main)
+        self.assertIn("uint32_t now_ms = Get_Time();", app_main)
+        self.assertIn("AppScheduler_Run(now_ms);", app_main)
         self.assertIn("Motor_Safety_Service();", app_main)
         self.assertLess(
-            app_main.index("AppScheduler_Run(Get_Time());"),
+            app_main.index("AppScheduler_Run(now_ms);"),
             app_main.index("Motor_Safety_Service();"),
         )
-        self.assertIn("Key_PollEvent", scheduler)
+        self.assertNotIn("Key_PollEvent", scheduler)
+        self.assertIn("AppScheduler_Start();", scheduler)
         self.assertIn("LineRecovery_Step", scheduler)
         self.assertIn("SafetySupervisor_Step", scheduler)
 

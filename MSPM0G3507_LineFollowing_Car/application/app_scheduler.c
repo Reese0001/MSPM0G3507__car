@@ -5,7 +5,6 @@
 #include "line_recovery.h"
 #include "safety_supervisor.h"
 #include "../bsp/time/timer.h"
-#include "../modules/key/key.h"
 #include "../modules/line_tracking/line_controller.h"
 #include "../modules/line_tracking/line_estimator.h"
 #include "../modules/line_tracking/line_scanner.h"
@@ -15,23 +14,7 @@
 static MotionRequest mission_request = {0};
 static LineEstimate line_estimate = {0};
 static LineControlOutput line_control = {0};
-static bool line_following_running = false;
 static bool start_requested = false;
-static bool suppress_short_after_stop = false;
-
-static void AppScheduler_Stop(uint32_t now_ms)
-{
-    mission_request.left_speed = 0;
-    mission_request.right_speed = 0;
-    mission_request.timestamp_ms = now_ms;
-    mission_request.valid = false;
-    line_following_running = false;
-    start_requested = false;
-    LineController_Reset();
-    LineRecovery_Reset();
-    Motor_Safety_Disarm();
-    SafetySupervisor_Reinitialize();
-}
 
 static void AppScheduler_Start(void)
 {
@@ -39,7 +22,6 @@ static void AppScheduler_Start(void)
     LineRecovery_Reset();
     SafetySupervisor_Reinitialize();
     Motor_Safety_Arm();
-    line_following_running = true;
     start_requested = true;
 }
 
@@ -62,7 +44,12 @@ static void AppScheduler_RunLineControl(uint32_t now_ms)
     }
 
     if (LineRecovery_GetState() == LINE_RECOVERY_FAULT) {
-        AppScheduler_Stop(now_ms);
+        mission_request.left_speed = 0;
+        mission_request.right_speed = 0;
+        mission_request.timestamp_ms = now_ms;
+        mission_request.valid = false;
+        LineController_Reset();
+        LineRecovery_Reset();
     }
 }
 
@@ -89,28 +76,9 @@ static void AppScheduler_RunSafety(uint32_t now_ms)
     }
 }
 
-static void AppScheduler_RunKey(uint32_t now_ms)
-{
-    KeyEvent event = Key_PollEvent();
-
-    if (event == KEY_EVENT_PRESS && line_following_running) {
-        AppScheduler_Stop(now_ms);
-        suppress_short_after_stop = true;
-    } else if (event == KEY_EVENT_SHORT) {
-        if (suppress_short_after_stop) {
-            suppress_short_after_stop = false;
-        } else if (!line_following_running) {
-            AppScheduler_Start();
-        }
-    } else if (event == KEY_EVENT_LONG) {
-        suppress_short_after_stop = false;
-    }
-}
-
 static AppTask app_tasks[] = {
     {1U, 200U, 0U, 0U, 0U, AppScheduler_RunSafety},
     {5U, 500U, 0U, 0U, 0U, AppScheduler_RunLineControl},
-    {LINE_KEY_TASK_PERIOD_MS, 200U, 0U, 0U, 0U, AppScheduler_RunKey},
 };
 
 void AppScheduler_Init(uint32_t now_ms)
@@ -127,9 +95,7 @@ void AppScheduler_Init(uint32_t now_ms)
     mission_request = (MotionRequest){0};
     line_estimate = (LineEstimate){0};
     line_control = (LineControlOutput){0};
-    line_following_running = false;
     start_requested = false;
-    suppress_short_after_stop = false;
 
     for (index = 0U;
          index < (uint32_t)(sizeof(app_tasks) / sizeof(app_tasks[0]));
@@ -138,6 +104,9 @@ void AppScheduler_Init(uint32_t now_ms)
         app_tasks[index].max_runtime_us = 0U;
         app_tasks[index].deadline_miss_count = 0U;
     }
+
+    /* Reset is the only start command; safety supervision still gates output. */
+    AppScheduler_Start();
 }
 
 void AppScheduler_Run(uint32_t now_ms)

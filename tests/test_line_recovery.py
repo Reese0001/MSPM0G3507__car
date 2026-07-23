@@ -39,6 +39,7 @@ class LineRecoveryContract(unittest.TestCase):
             ("LINE_RECOVERY_MAX_YAW_DEG", "45.0f"),
             ("LINE_RECOVERY_TIMEOUT_MS", "800U"),
             ("LINE_ALIGN_DURATION_MS", "300U"),
+            ("LINE_RECOVERY_ESTIMATE_STALE_MS", "20U"),
         )
         for name, value in expected:
             self.assertRegex(config, rf"{name}\s+\({re.escape(value)}\)")

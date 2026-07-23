@@ -12,6 +12,18 @@ def read(relative_path: str) -> str:
 
 
 class MotorSafetyContractTests(unittest.TestCase):
+    def test_watchdog_latch_marks_system_stall_on_d1(self):
+        source = read("modules/motor/motor_safety.c")
+        init = source[source.index("void Motor_Safety_Init"):]
+        init = init[:init.index("void Motor_Safety_Arm")]
+        tick = source[source.index("void Motor_Safety_Tick1ms"):]
+        tick = tick[:tick.index("uint8_t Motor_Safety_IsFaultLatched")]
+        self.assertIn('#include "led.h"', source)
+        self.assertIn("LED_OFF();", init)
+        self.assertIn("LED_ON();", tick)
+        self.assertLess(tick.index("MOTOR_SAFETY_FAULT_LATCHED"),
+                        tick.index("LED_ON();"))
+
     def test_safety_module_and_limits_exist(self):
         header = read("modules/motor/motor_safety.h")
         source = read("modules/motor/motor_safety.c")

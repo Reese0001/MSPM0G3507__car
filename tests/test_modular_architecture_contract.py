@@ -97,10 +97,11 @@ class ModularArchitectureContract(unittest.TestCase):
         self.assertIn("Set_Motor(5)", init_body)
         self.assertIn("AppScheduler_Init(Get_Time())", init_body)
         self.assertNotIn("Motor_Safety_Arm()", source)
-        self.assertIn("AppScheduler_Run(Get_Time())", run_body)
+        self.assertIn("uint32_t now_ms = Get_Time()", run_body)
+        self.assertIn("AppScheduler_Run(now_ms)", run_body)
         self.assertIn("Motor_Safety_Service()", run_body)
         self.assertLess(
-            run_body.index("AppScheduler_Run(Get_Time())"),
+            run_body.index("AppScheduler_Run(now_ms)"),
             run_body.index("Motor_Safety_Service()"),
         )
 
@@ -150,7 +151,7 @@ class ModularArchitectureContract(unittest.TestCase):
             app_main.index("BSP_Time_RegisterTick1ms"),
         )
 
-    def test_scheduled_key_callback_uses_non_blocking_safety_services(self):
+    def test_automatic_start_uses_non_blocking_safety_services(self):
         scheduler = (ROOT / "application/app_scheduler.c").read_text(
             encoding="utf-8"
         )
@@ -182,8 +183,9 @@ class ModularArchitectureContract(unittest.TestCase):
             safety,
             re.DOTALL,
         )
-        self.assertIn("Key_PollEvent();", scheduler)
-        self.assertIn("Motor_Safety_Disarm();", scheduler)
+        self.assertNotIn("Key_PollEvent();", scheduler)
+        self.assertIn("AppScheduler_Start();", scheduler)
+        self.assertNotIn("Motor_Safety_Disarm();", scheduler)
         self.assertIsNotNone(handler)
         self.assertIn("Buzzer_RequestBeeps", handler.group(1))
         self.assertIn("Motor_Safety_Disarm", handler.group(1))

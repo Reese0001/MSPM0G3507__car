@@ -25,8 +25,9 @@ class ApplicationScheduleTests(unittest.TestCase):
             "MotorAdapter_Apply",
         ):
             self.assertIn(call, self.scheduler)
-        for period in ("{1U,", "{5U,", "{LINE_KEY_TASK_PERIOD_MS,"):
+        for period in ("{1U,", "{5U,"):
             self.assertIn(period, self.scheduler)
+        self.assertNotIn("LINE_KEY_TASK_PERIOD_MS", self.scheduler)
         for call in (
             "Ultrasonic_Init",
             "Ultrasonic_Service",
@@ -43,24 +44,25 @@ class ApplicationScheduleTests(unittest.TestCase):
         self.assertIn('TIMER2.peripheral.$assign = "TIMG12"', self.syscfg)
         self.assertIn("BSP_Time_GetUs", self.scheduler)
 
-    def test_boot_is_disarmed_and_k1_controls_run_state(self):
+    def test_boot_automatically_arms_but_keeps_supervised_output_path(self):
         self.assertNotIn("Motor_Safety_Arm", self.main)
         init = self.scheduler[self.scheduler.index("void AppScheduler_Init"):]
         init = init[:init.index("void AppScheduler_Run")]
-        self.assertNotIn("Motor_Safety_Arm", init)
-        self.assertIn("KEY_EVENT_SHORT", self.scheduler)
-        self.assertIn("KEY_EVENT_PRESS", self.scheduler)
+        self.assertIn("AppScheduler_Start();", init)
+        self.assertNotIn("Key_PollEvent", self.scheduler)
         self.assertIn("Motor_Safety_Arm", self.scheduler)
-        self.assertIn("Motor_Safety_Disarm", self.scheduler)
+        self.assertNotIn("Motor_Safety_Disarm", self.scheduler)
         self.assertIn(
             "power_qualified = LINE_FOLLOWING_POWER_QUALIFIED",
             self.scheduler,
         )
 
-    def test_safety_tick_runs_before_legacy_low_priority_tasks(self):
-        safety = self.scheduler.index("AppScheduler_RunSafety")
-        legacy = self.scheduler.index("AppScheduler_RunKey")
-        self.assertLess(safety, legacy)
+    def test_safety_tick_and_line_control_are_the_only_active_tasks(self):
+        task_table = self.scheduler[self.scheduler.index("static AppTask app_tasks"):]
+        task_table = task_table[:task_table.index("};") + 2]
+        self.assertEqual(task_table.count("AppScheduler_RunSafety"), 1)
+        self.assertEqual(task_table.count("AppScheduler_RunLineControl"), 1)
+        self.assertNotIn("AppScheduler_RunKey", task_table)
 
     def test_scheduler_tracks_runtime_and_deadline_misses(self):
         header = (PROJECT / "application/app_scheduler.h").read_text(encoding="utf-8")

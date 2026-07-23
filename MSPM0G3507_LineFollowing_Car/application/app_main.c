@@ -4,6 +4,7 @@
 #include "app_scheduler.h"
 #include "bsp_motor_usart.h"
 #include "buzzer.h"
+#include "led.h"
 #include "motor_safety.h"
 #include "timer.h"
 
@@ -18,6 +19,7 @@ void App_Main_Init(void)
     Motor_Usart_init();
     Timer_Init();
     Motor_Safety_Init();
+    LED_HeartbeatInit();
 
     /* Configure the confirmed L-type 520 motor while safety remains disarmed. */
     Set_Motor(5);
@@ -27,6 +29,9 @@ void App_Main_Init(void)
 
 void App_Main_RunOnce(void)
 {
-    AppScheduler_Run(Get_Time());
+    uint32_t now_ms = Get_Time();
+
+    LED_HeartbeatService(now_ms);
+    AppScheduler_Run(now_ms);
     Motor_Safety_Service();
 }
