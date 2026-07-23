@@ -196,11 +196,11 @@ MotionResult MotionPrimitive_StepWithContext(uint32_t now_ms,
             return finish_primitive(MOTION_COMPLETE, now_ms, request);
         }
         if (target < 0.0f) {
-            request->left_speed = -LINE_PIVOT_REVERSE_COMMAND;
+            request->left_speed = LINE_SEARCH_INNER_COMMAND;
             request->right_speed = LINE_PIVOT_FORWARD_COMMAND;
         } else {
             request->left_speed = LINE_PIVOT_FORWARD_COMMAND;
-            request->right_speed = -LINE_PIVOT_REVERSE_COMMAND;
+            request->right_speed = LINE_SEARCH_INNER_COMMAND;
         }
         request->timestamp_ms = now_ms;
         request->valid = true;
@@ -226,11 +226,11 @@ MotionResult MotionPrimitive_StepWithContext(uint32_t now_ms,
             return finish_primitive(MOTION_FAILED, now_ms, request);
         }
         if (active_params.search_line.prefer_left) {
-            request->left_speed = -LINE_PIVOT_REVERSE_COMMAND;
+            request->left_speed = LINE_SEARCH_INNER_COMMAND;
             request->right_speed = LINE_PIVOT_FORWARD_COMMAND;
         } else {
             request->left_speed = LINE_PIVOT_FORWARD_COMMAND;
-            request->right_speed = -LINE_PIVOT_REVERSE_COMMAND;
+            request->right_speed = LINE_SEARCH_INNER_COMMAND;
         }
         request->timestamp_ms = now_ms;
         request->valid = true;

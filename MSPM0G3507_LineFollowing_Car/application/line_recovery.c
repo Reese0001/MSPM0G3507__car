@@ -77,14 +77,14 @@ static bool set_follow_request(const LineControlOutput *follow,
 
 static void set_pivot_request(LineRecoveryState state,
                               uint32_t now_ms,
-                              MotionRequest *request)
+    MotionRequest *request)
 {
     if (state == LINE_RECOVERY_PIVOT_LEFT) {
-        request->left_speed = -LINE_PIVOT_REVERSE_COMMAND;
+        request->left_speed = LINE_SEARCH_INNER_COMMAND;
         request->right_speed = LINE_PIVOT_FORWARD_COMMAND;
     } else {
         request->left_speed = LINE_PIVOT_FORWARD_COMMAND;
-        request->right_speed = -LINE_PIVOT_REVERSE_COMMAND;
+        request->right_speed = LINE_SEARCH_INNER_COMMAND;
     }
     request->timestamp_ms = now_ms;
     request->valid = true;

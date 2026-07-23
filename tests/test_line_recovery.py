@@ -35,17 +35,20 @@ class LineRecoveryContract(unittest.TestCase):
             ("LINE_LOSS_CONFIRM_COUNT", "3U"),
             ("LINE_REACQUIRE_COUNT", "3U"),
             ("LINE_PIVOT_FORWARD_PERCENT", "12"),
-            ("LINE_PIVOT_REVERSE_PERCENT", "8"),
+            ("LINE_SEARCH_INNER_PERCENT", "8"),
             ("LINE_RECOVERY_MAX_YAW_DEG", "45.0f"),
-            ("LINE_RECOVERY_TIMEOUT_MS", "800U"),
+            ("LINE_RECOVERY_TIMEOUT_MS", "3000U"),
             ("LINE_ALIGN_DURATION_MS", "300U"),
             ("LINE_RECOVERY_ESTIMATE_STALE_MS", "20U"),
         )
         for name, value in expected:
             self.assertRegex(config, rf"{name}\s+\({re.escape(value)}\)")
 
-    def test_fault_paths_fail_closed_and_pivot_has_one_forward_wheel(self):
+    def test_fault_paths_fail_closed_and_search_keeps_both_wheels_forward(self):
         source = (ROOT / "application/line_recovery.c").read_text(encoding="utf-8")
+        primitives = (ROOT / "application/motion_primitives.c").read_text(
+            encoding="utf-8"
+        )
         self.assertNotIn("emergency_stop || !yaw_fresh", source)
         self.assertIn("if (emergency_stop)", source)
         self.assertRegex(
@@ -55,10 +58,11 @@ class LineRecoveryContract(unittest.TestCase):
         self.assertIn("LINE_RECOVERY_MAX_YAW_DEG", source)
         self.assertIn("LINE_RECOVERY_TIMEOUT_MS", source)
         self.assertIn("request->valid = false", source)
-        self.assertRegex(source, r"left_speed\s*=\s*-LINE_PIVOT_REVERSE_COMMAND")
+        self.assertNotIn("-LINE_SEARCH_INNER_COMMAND", source + primitives)
+        self.assertRegex(source, r"left_speed\s*=\s*LINE_SEARCH_INNER_COMMAND")
         self.assertRegex(source, r"right_speed\s*=\s*LINE_PIVOT_FORWARD_COMMAND")
         self.assertRegex(source, r"left_speed\s*=\s*LINE_PIVOT_FORWARD_COMMAND")
-        self.assertRegex(source, r"right_speed\s*=\s*-LINE_PIVOT_REVERSE_COMMAND")
+        self.assertRegex(source, r"right_speed\s*=\s*LINE_SEARCH_INNER_COMMAND")
 
 
 if __name__ == "__main__":
