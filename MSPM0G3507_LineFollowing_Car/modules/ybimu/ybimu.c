@@ -27,12 +27,21 @@ static uint32_t last_group_start_ms = 0U;
 static uint8_t read_index = 0U;
 static uint8_t consecutive_errors = 0U;
 static bool group_active = false;
+static bool read_pending = false;
+static uint8_t transfer_buffer[BSP_I2C_MAX_TRANSFER] = {0};
 static YbImuCalibrationState calibration_state = YBIMU_CAL_IDLE;
 static YbImuCalibrationType calibration_type = YBIMU_CAL_TYPE_IMU;
 static uint8_t calibration_register = YBIMU_REG_CAL_IMU;
 static uint32_t calibration_start_ms = 0U;
 static uint32_t calibration_last_poll_ms = 0U;
 static uint8_t calibration_errors = 0U;
+typedef enum {
+    YBIMU_CAL_TRANSFER_NONE = 0,
+    YBIMU_CAL_TRANSFER_WRITE,
+    YBIMU_CAL_TRANSFER_READ
+} YbImuCalibrationTransfer;
+static YbImuCalibrationTransfer calibration_transfer =
+    YBIMU_CAL_TRANSFER_NONE;
 static float previous_mag_norm_sq = 0.0f;
 static bool previous_mag_valid = false;
 
@@ -93,6 +102,7 @@ static void mark_group_failed(void)
     }
     published.status.health = MODULE_HEALTH_DEGRADED;
     group_active = false;
+    read_pending = false;
     read_index = 0U;
 }
 
@@ -133,6 +143,7 @@ static void publish_complete_group(uint32_t now_ms)
 static void finish_calibration(YbImuCalibrationState result, uint32_t now_ms)
 {
     calibration_state = result;
+    calibration_transfer = YBIMU_CAL_TRANSFER_NONE;
     calibration_errors = 0U;
     published.status.valid = false;
     published.status.health = (result == YBIMU_CAL_SUCCESS) ?
@@ -145,10 +156,41 @@ static void finish_calibration(YbImuCalibrationState result, uint32_t now_ms)
 
 static void service_calibration(uint32_t now_ms)
 {
-    uint8_t calibration_status = 0U;
+    BSP_I2C_Status i2c_status;
     uint32_t timeout_ms = (calibration_type == YBIMU_CAL_TYPE_IMU) ?
                               YBIMU_CAL_IMU_TIMEOUT_MS :
                               YBIMU_CAL_MAG_TIMEOUT_MS;
+
+    if (calibration_transfer != YBIMU_CAL_TRANSFER_NONE) {
+        i2c_status = BSP_I2C_GetStatus();
+        if (i2c_status == BSP_I2C_STATUS_BUSY) {
+            return;
+        }
+        if (i2c_status != BSP_I2C_STATUS_DONE) {
+            if (calibration_errors < 0xFFU) {
+                calibration_errors++;
+            }
+            calibration_transfer = YBIMU_CAL_TRANSFER_NONE;
+            if (calibration_errors >= YBIMU_MAX_CONSECUTIVE_ERRORS) {
+                finish_calibration(YBIMU_CAL_FAILED, now_ms);
+            }
+            return;
+        }
+        calibration_errors = 0U;
+        if (calibration_transfer == YBIMU_CAL_TRANSFER_WRITE) {
+            calibration_transfer = YBIMU_CAL_TRANSFER_NONE;
+            calibration_start_ms = now_ms;
+            calibration_last_poll_ms = now_ms;
+            return;
+        }
+        calibration_transfer = YBIMU_CAL_TRANSFER_NONE;
+        if (transfer_buffer[0] == 1U) {
+            finish_calibration(YBIMU_CAL_SUCCESS, now_ms);
+        } else if (transfer_buffer[0] != 0U) {
+            finish_calibration(YBIMU_CAL_FAILED, now_ms);
+        }
+        return;
+    }
 
     if (elapsed_ms(now_ms, calibration_start_ms) >= timeout_ms) {
         finish_calibration(YBIMU_CAL_FAILED, now_ms);
@@ -160,10 +202,10 @@ static void service_calibration(uint32_t now_ms)
     }
 
     calibration_last_poll_ms = now_ms;
-    if (!BSP_I2C_Read(YBIMU_I2C_ADDRESS,
-                      calibration_register,
-                      &calibration_status,
-                      1U)) {
+    if (!BSP_I2C_BeginRead(YBIMU_I2C_ADDRESS,
+                           calibration_register,
+                           transfer_buffer,
+                           1U)) {
         if (calibration_errors < 0xFFU) {
             calibration_errors++;
         }
@@ -172,13 +214,7 @@ static void service_calibration(uint32_t now_ms)
         }
         return;
     }
-
-    calibration_errors = 0U;
-    if (calibration_status == 1U) {
-        finish_calibration(YBIMU_CAL_SUCCESS, now_ms);
-    } else if (calibration_status != 0U) {
-        finish_calibration(YBIMU_CAL_FAILED, now_ms);
-    }
+    calibration_transfer = YBIMU_CAL_TRANSFER_READ;
 }
 
 void YbImu_Init(uint32_t now_ms)
@@ -194,19 +230,21 @@ void YbImu_Init(uint32_t now_ms)
     read_index = 0U;
     consecutive_errors = 0U;
     group_active = false;
+    read_pending = false;
     calibration_state = YBIMU_CAL_IDLE;
     calibration_type = YBIMU_CAL_TYPE_IMU;
     calibration_register = YBIMU_REG_CAL_IMU;
     calibration_start_ms = now_ms;
     calibration_last_poll_ms = now_ms;
     calibration_errors = 0U;
+    calibration_transfer = YBIMU_CAL_TRANSFER_NONE;
     previous_mag_norm_sq = 0.0f;
     previous_mag_valid = false;
 }
 
 void YbImu_Service(uint32_t now_ms)
 {
-    uint8_t bytes[BSP_I2C_MAX_TRANSFER] = {0};
+    BSP_I2C_Status i2c_status;
 
     if (calibration_state == YBIMU_CAL_RUNNING) {
         service_calibration(now_ms);
@@ -217,6 +255,24 @@ void YbImu_Service(uint32_t now_ms)
         elapsed_ms(now_ms, published.status.timestamp_ms) >
             YBIMU_STALE_TIMEOUT_MS) {
         published.status.health = MODULE_HEALTH_DEGRADED;
+    }
+
+    if (read_pending) {
+        i2c_status = BSP_I2C_GetStatus();
+        if (i2c_status == BSP_I2C_STATUS_BUSY) {
+            return;
+        }
+        read_pending = false;
+        if (i2c_status != BSP_I2C_STATUS_DONE) {
+            mark_group_failed();
+            return;
+        }
+        decode_current_register(transfer_buffer);
+        read_index++;
+        if (read_index >= YBIMU_READ_COUNT) {
+            publish_complete_group(now_ms);
+            return;
+        }
     }
 
     if (!group_active) {
@@ -230,19 +286,14 @@ void YbImu_Service(uint32_t now_ms)
         read_index = 0U;
     }
 
-    if (!BSP_I2C_Read(YBIMU_I2C_ADDRESS,
-                      registers[read_index],
-                      bytes,
-                      register_lengths[read_index])) {
+    if (!BSP_I2C_BeginRead(YBIMU_I2C_ADDRESS,
+                           registers[read_index],
+                           transfer_buffer,
+                           register_lengths[read_index])) {
         mark_group_failed();
         return;
     }
-
-    decode_current_register(bytes);
-    read_index++;
-    if (read_index >= YBIMU_READ_COUNT) {
-        publish_complete_group(now_ms);
-    }
+    read_pending = true;
 }
 
 bool YbImu_GetSnapshot(YbImuSnapshot *out)
@@ -264,20 +315,28 @@ bool YbImu_RequestCalibration(YbImuCalibrationType type, uint32_t now_ms)
         (type != YBIMU_CAL_TYPE_IMU && type != YBIMU_CAL_TYPE_MAG)) {
         return false;
     }
+    /*
+     * Do not tear down an in-flight sensor read.  The caller can retry the
+     * calibration request after the bounded I2C transaction completes.
+     */
+    if (BSP_I2C_GetStatus() == BSP_I2C_STATUS_BUSY) {
+        return false;
+    }
 
     reg = (type == YBIMU_CAL_TYPE_IMU) ? YBIMU_REG_CAL_IMU :
                                          YBIMU_REG_CAL_MAG;
     group_active = false;
+    read_pending = false;
     read_index = 0U;
     published.status.valid = false;
     published.status.health = MODULE_HEALTH_DEGRADED;
     published.magnetic_heading_healthy = false;
     previous_mag_valid = false;
 
-    if (!BSP_I2C_Write(YBIMU_I2C_ADDRESS,
-                       reg,
-                       &calibration_value,
-                       1U)) {
+    if (!BSP_I2C_BeginWrite(YBIMU_I2C_ADDRESS,
+                            reg,
+                            &calibration_value,
+                            1U)) {
         calibration_state = YBIMU_CAL_FAILED;
         published.status.health = MODULE_HEALTH_FAULT;
         return false;
@@ -288,6 +347,7 @@ bool YbImu_RequestCalibration(YbImuCalibrationType type, uint32_t now_ms)
     calibration_start_ms = now_ms;
     calibration_last_poll_ms = now_ms;
     calibration_errors = 0U;
+    calibration_transfer = YBIMU_CAL_TRANSFER_WRITE;
     calibration_state = YBIMU_CAL_RUNNING;
     return true;
 }
@@ -296,6 +356,7 @@ void YbImu_CancelCalibration(void)
 {
     if (calibration_state == YBIMU_CAL_RUNNING) {
         calibration_state = YBIMU_CAL_FAILED;
+        calibration_transfer = YBIMU_CAL_TRANSFER_NONE;
         published.status.valid = false;
         published.status.health = MODULE_HEALTH_FAULT;
         published.magnetic_heading_healthy = false;

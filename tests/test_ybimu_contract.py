@@ -66,11 +66,11 @@ class YbImuContract(unittest.TestCase):
         ):
             self.assertIn(token, source)
         service = source[source.index("void YbImu_Service"):]
-        self.assertEqual(1, service.count("BSP_I2C_Read("))
+        self.assertEqual(1, service.count("BSP_I2C_BeginRead("))
         self.assertIn("read_index++", service)
         self.assertIn("working.status.timestamp_ms = now_ms", source)
 
-    def test_bsp_i2c_is_bounded_zero_hardware_stub(self):
+    def test_bsp_i2c_is_nonblocking_open_drain_state_machine(self):
         header_path = ROOT / "bsp/bsp_i2c.h"
         source_path = ROOT / "bsp/bsp_i2c.c"
         self.assertTrue(header_path.exists(), header_path)
@@ -78,12 +78,27 @@ class YbImuContract(unittest.TestCase):
         combined = header_path.read_text(encoding="utf-8") + source_path.read_text(
             encoding="utf-8"
         )
-        for token in ("BSP_I2C_Init", "BSP_I2C_Read", "BSP_I2C_MAX_TRANSFER"):
+        for token in (
+            "BSP_I2C_Init",
+            "BSP_I2C_BeginRead",
+            "BSP_I2C_BeginWrite",
+            "BSP_I2C_Service",
+            "BSP_I2C_GetStatus",
+            "BSP_I2C_MAX_TRANSFER",
+        ):
             self.assertIn(token, combined)
         self.assertIn("length > BSP_I2C_MAX_TRANSFER", combined)
-        self.assertNotIn("ti_msp_dl_config.h", combined)
-        self.assertNotIn("PA12", combined)
-        self.assertNotIn("PA13", combined)
+        for token in (
+            "ti_msp_dl_config.h",
+            "YBIMU_I2C_SCL_PIN",
+            "YBIMU_I2C_SDA_PIN",
+            "DL_GPIO_disableOutput",
+            "BSP_I2C_STATUS_BUSY",
+            "BSP_I2C_TRANSACTION_TIMEOUT_US",
+        ):
+            self.assertIn(token, combined)
+        self.assertNotIn("delay_us", combined)
+        self.assertNotRegex(combined, r"while\s*\(")
 
     def test_active_path_does_not_use_legacy_mpu(self):
         source_path = ROOT / "modules/ybimu/ybimu.c"
@@ -125,11 +140,21 @@ class YbImuContract(unittest.TestCase):
         bsp = (ROOT / "bsp/bsp_i2c.h").read_text(encoding="utf-8") + (
             ROOT / "bsp/bsp_i2c.c"
         ).read_text(encoding="utf-8")
-        self.assertIn("BSP_I2C_Write", source)
-        self.assertIn("BSP_I2C_Write", bsp)
+        self.assertIn("BSP_I2C_BeginWrite", source)
+        self.assertIn("BSP_I2C_BeginWrite", bsp)
         self.assertIn("length > BSP_I2C_MAX_TRANSFER", bsp)
         self.assertIn("calibration_value = 0x01U", source)
         self.assertIn("service_calibration", source)
+
+    def test_application_services_i2c_bit_engine_in_fast_loop(self):
+        scheduler = (ROOT / "application/app_scheduler.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('#include "../bsp/bsp_i2c.h"', scheduler)
+        fast_start = scheduler.index("/* Fast cooperative services")
+        task_start = scheduler.index("for (index", fast_start)
+        fast_section = scheduler[fast_start:task_start]
+        self.assertIn("BSP_I2C_Service(now_us)", fast_section)
 
     def test_magnetic_heading_has_plausibility_and_change_gates(self):
         source = (ROOT / "modules/ybimu/ybimu.c").read_text(encoding="utf-8")

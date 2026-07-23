@@ -4,6 +4,7 @@
 #include "config/line_control_config.h"
 #include "questions.h"
 #include "safety_supervisor.h"
+#include "../bsp/bsp_i2c.h"
 #include "../bsp/time/timer.h"
 #include "../modules/k230_link/k230_link.h"
 #include "../modules/line_tracking/line_controller.h"
@@ -119,6 +120,7 @@ void AppScheduler_Run(uint32_t now_ms)
     uint32_t now_us = BSP_Time_GetUs();
 
     /* Fast cooperative services contain no blocking waits. */
+    BSP_I2C_Service(now_us);
     LineScanner_Service(now_us);
     Ultrasonic_Service(now_us);
 
