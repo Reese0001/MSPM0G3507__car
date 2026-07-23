@@ -29,6 +29,8 @@ _integration_staging/
 __pycache__/
 *.pyc
 .worktrees/
+.superpowers/
+my-project/
 docs/docs_backup/
 workspace_ccstheia/
 
