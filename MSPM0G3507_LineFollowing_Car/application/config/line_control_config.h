@@ -1,0 +1,51 @@
+#ifndef LINE_CONTROL_CONFIG_H
+#define LINE_CONTROL_CONFIG_H
+
+#include "../../modules/line_tracking/line_controller.h"
+
+/* Command scale is -1000..1000; initial bench ceiling is therefore 30%. */
+#define LINE_MAX_FORWARD (300)
+#define LINE_CURVE_FORWARD (180)
+#define LINE_HARD_CURVE_FORWARD (120)
+#define LINE_WIDE_BLACK_FORWARD (80)
+#define LINE_LOW_CONFIDENCE_FORWARD (100)
+
+#define LINE_TURN_LIMIT_PERCENT (80)
+#define LINE_ACCEL_STEP (10)
+#define LINE_DECEL_STEP (30)
+
+#define LINE_CONTROL_KP (28.0f)
+#define LINE_CONTROL_KD (0.015f)
+#define LINE_STEERING_POLARITY (-1.0f)
+#define LINE_CURVE_ERROR_THRESHOLD (2.0f)
+#define LINE_HARD_CURVE_ERROR_THRESHOLD (4.0f)
+#define LINE_HIGH_YAW_RATE_DPS (80.0f)
+#define LINE_LOW_CONFIDENCE (40U)
+#define LINE_MEDIUM_CONFIDENCE (70U)
+#define LINE_ESTIMATE_STALE_MS (20U)
+
+static inline LineControlConfig LineControlConfig_Default(void)
+{
+    const LineControlConfig config = {
+        LINE_MAX_FORWARD,
+        LINE_CURVE_FORWARD,
+        LINE_HARD_CURVE_FORWARD,
+        LINE_WIDE_BLACK_FORWARD,
+        LINE_LOW_CONFIDENCE_FORWARD,
+        LINE_TURN_LIMIT_PERCENT,
+        LINE_ACCEL_STEP,
+        LINE_DECEL_STEP,
+        LINE_CONTROL_KP,
+        LINE_CONTROL_KD,
+        LINE_STEERING_POLARITY,
+        LINE_CURVE_ERROR_THRESHOLD,
+        LINE_HARD_CURVE_ERROR_THRESHOLD,
+        LINE_HIGH_YAW_RATE_DPS,
+        LINE_LOW_CONFIDENCE,
+        LINE_MEDIUM_CONFIDENCE,
+        LINE_ESTIMATE_STALE_MS
+    };
+    return config;
+}
+
+#endif

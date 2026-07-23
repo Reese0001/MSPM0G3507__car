@@ -15,15 +15,20 @@ const GPIO2   = GPIO.addInstance();
 const GPIO3   = GPIO.addInstance();
 const GPIO4   = GPIO.addInstance();
 const GPIO5   = GPIO.addInstance();
+const GPIO6   = GPIO.addInstance();
+const CAPTURE  = scripting.addModule("/ti/driverlib/CAPTURE", {}, false);
+const CAPTURE1 = CAPTURE.addInstance();
 const PWM     = scripting.addModule("/ti/driverlib/PWM", {}, false);
 const PWM1    = PWM.addInstance();
 const SYSCTL  = scripting.addModule("/ti/driverlib/SYSCTL");
 const SYSTICK = scripting.addModule("/ti/driverlib/SYSTICK");
 const TIMER   = scripting.addModule("/ti/driverlib/TIMER", {}, false);
 const TIMER1  = TIMER.addInstance();
+const TIMER2  = TIMER.addInstance();
 const UART    = scripting.addModule("/ti/driverlib/UART", {}, false);
 const UART1   = UART.addInstance();
 const UART2   = UART.addInstance();
+const UART3   = UART.addInstance();
 
 /**
  * Write custom configuration values to the imported modules.
@@ -69,7 +74,7 @@ GPIO4.associatedPins[0].direction   = "INPUT";
 GPIO4.associatedPins[0].$name       = "OUT";
 GPIO4.associatedPins[0].pin.$assign = "PA18";
 
-GPIO5.$name                          = "MPU6050";
+GPIO5.$name                          = "YBIMU_I2C";
 GPIO5.associatedPins.create(2);
 GPIO5.associatedPins[0].$name        = "SCL";
 GPIO5.associatedPins[0].initialValue = "SET";
@@ -77,6 +82,23 @@ GPIO5.associatedPins[0].pin.$assign  = "PA12";
 GPIO5.associatedPins[1].$name        = "SDA";
 GPIO5.associatedPins[1].initialValue = "SET";
 GPIO5.associatedPins[1].pin.$assign  = "PA13";
+
+GPIO6.$name                         = "ULTRASONIC_TRIG";
+GPIO6.associatedPins[0].$name       = "TRIG";
+GPIO6.associatedPins[0].pin.$assign = "PA26";
+
+CAPTURE1.$name                      = "ULTRASONIC_ECHO";
+CAPTURE1.ccIndex                    = 1;
+CAPTURE1.captMode                   = "EDGE_TIME";
+CAPTURE1.captEdgeDetection          = "EDGE";
+CAPTURE1.timerClkDiv                = 8;
+CAPTURE1.timerClkPrescale           = 10;
+CAPTURE1.timerPeriod                = "65.54 ms";
+CAPTURE1.interrupts                 = ["CC1_DN"];
+CAPTURE1.interruptPriority          = "1";
+CAPTURE1.peripheral.$assign         = "TIMG8";
+CAPTURE1.peripheral.ccp1Pin.$assign = "PA27";
+CAPTURE1.ccp1PinConfig.$name        = "ti_driverlib_gpio_GPIOPinGeneric5";
 
 PWM1.$name                      = "BUZZER";
 PWM1.pwmMode                    = "EDGE_ALIGN_UP";
@@ -101,6 +123,14 @@ TIMER1.timerMode          = "PERIODIC";
 TIMER1.interrupts         = ["ZERO"];
 TIMER1.interruptPriority  = "0";
 TIMER1.peripheral.$assign = "TIMG0";
+
+TIMER2.$name              = "MICROSECOND_TIMEBASE";
+TIMER2.timerClkSrc        = "MFCLK";
+TIMER2.timerClkDiv        = 4;
+TIMER2.timerMode          = "PERIODIC";
+TIMER2.timerPeriod        = "4294967296 us";
+TIMER2.timerStartTimer    = true;
+TIMER2.peripheral.$assign = "TIMG12";
 
 UART1.$name                    = "UART_0";
 UART1.uartClkSrc               = "MFCLK";
@@ -128,6 +158,16 @@ UART2.rxPinConfig.onlyInternalResistor = scripting.forceWrite(false);
 UART2.rxPinConfig.passedPeripheralType = scripting.forceWrite("Digital");
 UART2.rxPinConfig.$name                = "ti_driverlib_gpio_GPIOPinGeneric3";
 
+UART3.$name                    = "K230";
+UART3.uartClkSrc               = "MFCLK";
+UART3.targetBaudRate           = 115200;
+UART3.enabledInterrupts        = ["RX"];
+UART3.interruptPriority        = "2";
+UART3.peripheral.txPin.$assign = "PA21";
+UART3.peripheral.rxPin.$assign = "PA22";
+UART3.txPinConfig.$name        = "ti_driverlib_gpio_GPIOPinGeneric6";
+UART3.rxPinConfig.$name        = "ti_driverlib_gpio_GPIOPinGeneric7";
+
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future
  * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
@@ -139,3 +179,4 @@ Board.peripheral.swdioPin.$suggestSolution = "PA19";
 PWM1.peripheral.$suggestSolution           = "TIMA0";
 UART1.peripheral.$suggestSolution          = "UART0";
 UART2.peripheral.$suggestSolution          = "UART1";
+UART3.peripheral.$suggestSolution          = "UART2";

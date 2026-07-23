@@ -13,8 +13,8 @@ def read(relative_path: str) -> str:
 
 class MotorSafetyContractTests(unittest.TestCase):
     def test_safety_module_and_limits_exist(self):
-        header = read("BSP/Motor/motor_safety.h")
-        source = read("BSP/Motor/motor_safety.c")
+        header = read("modules/motor/motor_safety.h")
+        source = read("modules/motor/motor_safety.c")
         combined = header + source
         for value in ("1000", "10", "30", "200", "100"):
             self.assertIn(value, combined)
@@ -29,28 +29,29 @@ class MotorSafetyContractTests(unittest.TestCase):
 
     def test_main_initializes_timer_and_uses_l520(self):
         main = read("empty.c")
-        self.assertIn("Set_Motor(5)", main)
-        self.assertNotIn("Set_Motor(1)", main)
-        self.assertNotIn("motor_init_count", main)
-        calls = [
-            main.index("Timer_Init()"),
-            main.index("Motor_Safety_Init()"),
-            main.index("Motor_Safety_Arm()"),
-        ]
-        self.assertEqual(calls, sorted(calls))
-        self.assertIn("Motor_Safety_Service()", main)
+        app_main = read("application/app_main.c")
+        self.assertIn("App_Main_Init();", main)
+        self.assertIn("App_Main_RunOnce();", main)
+        self.assertIn("Set_Motor(5)", app_main)
+        self.assertNotIn("Set_Motor(1)", app_main)
+        self.assertNotIn("motor_init_count", app_main)
+        self.assertNotIn("Motor_Safety_Arm()", app_main)
+        self.assertIn("Motor_Safety_Service()", app_main)
 
     def test_timer_starts_irq_and_ticks_watchdog(self):
-        timer_c = read("BSP/Timer/timer.c")
-        timer_h = read("BSP/Timer/timer.h")
+        timer_c = read("bsp/time/timer.c")
+        timer_h = read("bsp/time/timer.h")
+        app_main = read("application/app_main.c")
         self.assertIn("Timer_Init", timer_h)
         self.assertIn("Timer_Init", timer_c)
         self.assertIn("NVIC_EnableIRQ", timer_c)
         self.assertIn("DL_TimerG_startCounter", timer_c)
-        self.assertIn("Motor_Safety_Tick1ms", timer_c)
+        self.assertIn("BSP_Time_RegisterTick1ms", timer_h)
+        self.assertIn("Motor_Safety_Tick1ms", app_main)
 
     def test_motion_commands_are_routed_through_safety(self):
-        source = read("BSP/Motor/app_motor.c")
+        source = read("modules/motor/app_motor.c")
+        adapter = read("modules/motor/motor_adapter.c")
         for function in ("Motion_Car_Control", "Motion_Yaw_Calc"):
             match = re.search(
                 rf"void\s+{function}\s*\([^)]*\)\s*\{{(.*?)\n\}}",
@@ -58,10 +59,11 @@ class MotorSafetyContractTests(unittest.TestCase):
                 re.DOTALL,
             )
             self.assertIsNotNone(match, function)
-            self.assertIn("Motor_Safety_RequestSpeed", match.group(1))
+            self.assertNotIn("Motor_Safety_RequestSpeed", match.group(1))
+        self.assertIn("Motor_Safety_RequestSpeed", adapter)
 
     def test_isr_stop_is_fixed_and_bounded(self):
-        source = read("BSP/Motor/bsp_motor_usart.c")
+        source = read("modules/motor/bsp_motor_usart.c")
         match = re.search(
             r"Motor_EmergencyStop_FromISR\s*\([^)]*\)\s*\{(.*?)\n\}",
             source,

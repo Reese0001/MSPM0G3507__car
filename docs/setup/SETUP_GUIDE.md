@@ -141,7 +141,7 @@
 ### 主要文件
 - `empty.c` - 主程序，包含初始化和主循环
 - `empty.syscfg` - SysConfig配置文件
-- `BSP/` - 板级支持包
+- `application/`、`modules/`、`bsp/` - 应用、功能模块和板级支持包
   - `Motor/` - 电机控制
   - `MPU6050/` - 陀螺仪驱动
   - `Eight_Tracking/` - 八路灰度传感器
