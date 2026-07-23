@@ -34,8 +34,8 @@ class LineRecoveryContract(unittest.TestCase):
         expected = (
             ("LINE_LOSS_CONFIRM_COUNT", "3U"),
             ("LINE_REACQUIRE_COUNT", "3U"),
-            ("LINE_PIVOT_FORWARD_PERCENT", "18"),
-            ("LINE_PIVOT_REVERSE_PERCENT", "12"),
+            ("LINE_PIVOT_FORWARD_PERCENT", "27"),
+            ("LINE_PIVOT_REVERSE_PERCENT", "18"),
             ("LINE_RECOVERY_MAX_YAW_DEG", "45.0f"),
             ("LINE_RECOVERY_TIMEOUT_MS", "800U"),
             ("LINE_ALIGN_DURATION_MS", "300U"),

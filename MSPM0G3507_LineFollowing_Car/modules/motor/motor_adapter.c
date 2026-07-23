@@ -2,7 +2,7 @@
 
 #include "motor_safety.h"
 
-#define MOTOR_ADAPTER_MAX_COMMAND (300)
+#define MOTOR_ADAPTER_MAX_COMMAND (450)
 
 static bool command_is_safe(int16_t command)
 {

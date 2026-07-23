@@ -96,9 +96,16 @@ class LineEstimatorContract(unittest.TestCase):
 
 class LineControllerContract(unittest.TestCase):
     def test_follow_correction_never_reverses_inner_wheel(self):
-        for base_speed in range(1, 301):
+        for base_speed in range(1, 451):
             correction_limit = base_speed * 80 // 100
             self.assertGreaterEqual(base_speed - correction_limit, 0)
+
+    def test_single_sensor_turn_keeps_both_wheels_within_command_limit(self):
+        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("absolute_int16(turn)", source)
+        self.assertIn("control_config.max_forward - turn_magnitude", source)
 
     def test_predictive_controller_has_speed_planning_and_slew_limits(self):
         header = (ROOT / "modules/line_tracking/line_controller.h").read_text(
@@ -127,7 +134,16 @@ class LineControllerContract(unittest.TestCase):
             "LINE_DECEL_STEP",
         ):
             self.assertIn(token, source + config)
-        self.assertIn("LINE_MAX_FORWARD (300)", config)
+        for token in (
+            "LINE_MAX_FORWARD (450)",
+            "LINE_CURVE_FORWARD (270)",
+            "LINE_HARD_CURVE_FORWARD (180)",
+            "LINE_WIDE_BLACK_FORWARD (120)",
+            "LINE_LOW_CONFIDENCE_FORWARD (150)",
+            "LINE_ACCEL_STEP (15)",
+            "LINE_DECEL_STEP (45)",
+        ):
+            self.assertIn(token, config)
         self.assertIn("LINE_TURN_LIMIT_PERCENT (80)", config)
         self.assertNotIn("Contrl_Speed", source)
         self.assertNotIn("Motion_Car_Control", source)

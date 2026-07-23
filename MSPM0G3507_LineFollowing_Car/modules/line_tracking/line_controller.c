@@ -9,6 +9,11 @@ static float absolute_value(float value)
     return value < 0.0f ? -value : value;
 }
 
+static int16_t absolute_int16(int16_t value)
+{
+    return value < 0 ? (int16_t)-value : value;
+}
+
 static int16_t minimum(int16_t left, int16_t right)
 {
     return left < right ? left : right;
@@ -59,7 +64,7 @@ static int16_t slew_forward(int16_t target)
 bool LineController_Init(const LineControlConfig *settings)
 {
     if (settings == 0 || settings->max_forward <= 0 ||
-        settings->max_forward > 300 || settings->curve_forward <= 0 ||
+        settings->max_forward > 450 || settings->curve_forward <= 0 ||
         settings->hard_curve_forward <= 0 ||
         settings->wide_black_forward <= 0 ||
         settings->low_confidence_forward <= 0 ||
@@ -125,6 +130,13 @@ bool LineController_Step(const LineEstimate *estimate,
         turn = (int16_t)-turn_limit;
     } else {
         turn = (int16_t)raw_turn;
+    }
+    {
+        int16_t turn_magnitude = absolute_int16(turn);
+        if (forward + turn_magnitude > control_config.max_forward) {
+            forward = (int16_t)(control_config.max_forward - turn_magnitude);
+            previous_forward = forward;
+        }
     }
 
     output->forward = forward;

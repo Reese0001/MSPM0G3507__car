@@ -68,6 +68,7 @@ class SafetySupervisorContract(unittest.TestCase):
             "SAFETY_OBSTACLE_LIMIT_MM (350U)",
             "SAFETY_OBSTACLE_CLEAR_MM (400U)",
             "SAFETY_CLEAR_SAMPLE_COUNT (5U)",
+            "SAFETY_RUNNING_SPEED_LIMIT (450)",
         ):
             self.assertIn(token, config)
 

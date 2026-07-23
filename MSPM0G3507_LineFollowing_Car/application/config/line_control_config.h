@@ -3,16 +3,16 @@
 
 #include "../../modules/line_tracking/line_controller.h"
 
-/* Command scale is -1000..1000; initial bench ceiling is therefore 30%. */
-#define LINE_MAX_FORWARD (300)
-#define LINE_CURVE_FORWARD (180)
-#define LINE_HARD_CURVE_FORWARD (120)
-#define LINE_WIDE_BLACK_FORWARD (80)
-#define LINE_LOW_CONFIDENCE_FORWARD (100)
+/* Command scale is -1000..1000; competition ceiling is 45%. */
+#define LINE_MAX_FORWARD (450)
+#define LINE_CURVE_FORWARD (270)
+#define LINE_HARD_CURVE_FORWARD (180)
+#define LINE_WIDE_BLACK_FORWARD (120)
+#define LINE_LOW_CONFIDENCE_FORWARD (150)
 
 #define LINE_TURN_LIMIT_PERCENT (80)
-#define LINE_ACCEL_STEP (10)
-#define LINE_DECEL_STEP (30)
+#define LINE_ACCEL_STEP (15)
+#define LINE_DECEL_STEP (45)
 
 #define LINE_CONTROL_KP (28.0f)
 #define LINE_CONTROL_KD (0.015f)

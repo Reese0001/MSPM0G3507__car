@@ -27,7 +27,7 @@ class MotorAuthorityContract(unittest.TestCase):
             source,
         )
         self.assertIn("0, decision->right_speed)", source)
-        self.assertIn("MOTOR_ADAPTER_MAX_COMMAND (300)", source)
+        self.assertIn("MOTOR_ADAPTER_MAX_COMMAND (450)", source)
 
     def test_boot_path_remains_disarmed(self):
         app_main = (ROOT / "application/app_main.c").read_text(encoding="utf-8")
