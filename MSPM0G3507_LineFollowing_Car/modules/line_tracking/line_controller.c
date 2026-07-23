@@ -20,6 +20,49 @@ static int16_t minimum(int16_t left, int16_t right)
     return left < right ? left : right;
 }
 
+static bool trend_is_left(LineTrendType type)
+{
+    return type == LINE_TREND_TIGHT_LEFT ||
+           type == LINE_TREND_HAIRPIN_LEFT;
+}
+
+static bool trend_is_right(LineTrendType type)
+{
+    return type == LINE_TREND_TIGHT_RIGHT ||
+           type == LINE_TREND_HAIRPIN_RIGHT;
+}
+
+static int16_t trend_forward_target(LineTrendType type)
+{
+    switch (type) {
+        case LINE_TREND_TIGHT_LEFT:
+        case LINE_TREND_TIGHT_RIGHT:
+            return control_config.tight_forward;
+        case LINE_TREND_HAIRPIN_LEFT:
+        case LINE_TREND_HAIRPIN_RIGHT:
+            return control_config.hairpin_forward;
+        default:
+            return -1;
+    }
+}
+
+static int16_t trend_turn_target(LineTrendType type)
+{
+    if (type == LINE_TREND_TIGHT_LEFT) {
+        return control_config.tight_turn;
+    }
+    if (type == LINE_TREND_TIGHT_RIGHT) {
+        return (int16_t)-control_config.tight_turn;
+    }
+    if (type == LINE_TREND_HAIRPIN_LEFT) {
+        return control_config.hairpin_turn;
+    }
+    if (type == LINE_TREND_HAIRPIN_RIGHT) {
+        return (int16_t)-control_config.hairpin_turn;
+    }
+    return 0;
+}
+
 static int16_t plan_target_speed(const LineEstimate *estimate,
                                  float yaw_rate_dps,
                                  bool yaw_fresh)
@@ -95,6 +138,14 @@ bool LineController_Init(const LineControlConfig *settings)
         settings->hard_turn_forward < 0 ||
         settings->hard_turn_command <= settings->hard_turn_forward ||
         settings->hard_turn_command > settings->max_forward ||
+        settings->tight_forward <= 0 ||
+        settings->tight_turn <= 0 ||
+        settings->hairpin_forward < 0 ||
+        settings->hairpin_turn <= 0 ||
+        settings->tight_forward + settings->tight_turn >
+            settings->max_forward ||
+        settings->hairpin_forward + settings->hairpin_turn >
+            settings->max_forward ||
         settings->curve_forward > settings->max_forward ||
         settings->hard_curve_forward > settings->max_forward ||
         settings->wide_black_forward > settings->max_forward ||
@@ -124,6 +175,7 @@ void LineController_Reset(void)
 }
 
 bool LineController_Step(const LineEstimate *estimate,
+                         const LineTrendResult *trend,
                          float yaw_rate_dps,
                          bool yaw_fresh,
                          uint32_t now_ms,
@@ -132,7 +184,9 @@ bool LineController_Step(const LineEstimate *estimate,
     int16_t forward;
     int16_t turn;
     int16_t turn_limit;
+    int16_t trend_forward;
     float raw_turn;
+    bool trend_fresh;
 
     if (output == 0) {
         return false;
@@ -149,28 +203,47 @@ bool LineController_Step(const LineEstimate *estimate,
         return false;
     }
 
-    forward = slew_forward(plan_target_speed(estimate, yaw_rate_dps,
-                                              yaw_fresh));
-    raw_turn = control_config.steering_polarity *
-               (control_config.kp * estimate->error +
-                control_config.kd * estimate->derivative);
-    if (estimate->event == LINE_EVENT_HARD_LEFT ||
-        estimate->event == LINE_EVENT_HARD_RIGHT) {
-        turn_limit = control_config.hard_turn_command;
-        raw_turn = raw_turn < 0.0f ? (float)-turn_limit :
-                                      (float)turn_limit;
+    trend_fresh =
+        trend != 0 &&
+        ModuleStatus_IsFresh(&trend->status, now_ms,
+                             control_config.estimate_stale_ms);
+    trend_forward = trend_fresh ? trend_forward_target(trend->type) : -1;
+    if (trend_forward >= 0) {
+        forward = slew_forward(trend_forward);
+        if (trend_is_left(trend->type) || trend_is_right(trend->type)) {
+            turn_limit =
+                trend->type == LINE_TREND_TIGHT_LEFT ||
+                trend->type == LINE_TREND_TIGHT_RIGHT ?
+                    control_config.tight_turn :
+                    control_config.hairpin_turn;
+        } else {
+            turn_limit = 0;
+        }
+        turn = slew_turn(trend_turn_target(trend->type), turn_limit);
     } else {
-        turn_limit = (int16_t)(((int32_t)forward *
-                                control_config.turn_limit_percent) / 100);
+        forward = slew_forward(plan_target_speed(estimate, yaw_rate_dps,
+                                                  yaw_fresh));
+        raw_turn = control_config.steering_polarity *
+                   (control_config.kp * estimate->error +
+                    control_config.kd * estimate->derivative);
+        if (estimate->event == LINE_EVENT_HARD_LEFT ||
+            estimate->event == LINE_EVENT_HARD_RIGHT) {
+            turn_limit = control_config.hard_turn_command;
+            raw_turn = raw_turn < 0.0f ? (float)-turn_limit :
+                                          (float)turn_limit;
+        } else {
+            turn_limit = (int16_t)(((int32_t)forward *
+                                    control_config.turn_limit_percent) / 100);
+        }
+        if (raw_turn > (float)turn_limit) {
+            turn = turn_limit;
+        } else if (raw_turn < (float)-turn_limit) {
+            turn = (int16_t)-turn_limit;
+        } else {
+            turn = (int16_t)raw_turn;
+        }
+        turn = slew_turn(turn, turn_limit);
     }
-    if (raw_turn > (float)turn_limit) {
-        turn = turn_limit;
-    } else if (raw_turn < (float)-turn_limit) {
-        turn = (int16_t)-turn_limit;
-    } else {
-        turn = (int16_t)raw_turn;
-    }
-    turn = slew_turn(turn, turn_limit);
     {
         int16_t turn_magnitude = absolute_int16(turn);
         if (forward + turn_magnitude > control_config.max_forward) {

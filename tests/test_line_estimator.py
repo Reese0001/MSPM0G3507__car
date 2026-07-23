@@ -95,6 +95,50 @@ class LineEstimatorContract(unittest.TestCase):
 
 
 class LineControllerContract(unittest.TestCase):
+    def test_controller_accepts_and_handles_continuous_curve_trends(self):
+        header = (ROOT / "modules/line_tracking/line_controller.h").read_text(
+            encoding="utf-8"
+        )
+        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+            encoding="utf-8"
+        )
+        config = (ROOT / "application/config/line_control_config.h").read_text(
+            encoding="utf-8"
+        )
+        self.assertRegex(
+            header,
+            r"LineController_Step\(const LineEstimate \*estimate,\s*"
+            r"const LineTrendResult \*trend,",
+        )
+        for token in (
+            "LINE_TREND_TIGHT_LEFT",
+            "LINE_TREND_TIGHT_RIGHT",
+            "LINE_TREND_HAIRPIN_LEFT",
+            "LINE_TREND_HAIRPIN_RIGHT",
+            "trend_forward_target",
+            "trend_turn_target",
+        ):
+            self.assertIn(token, source)
+        for token in (
+            "LINE_TIGHT_FORWARD (140)",
+            "LINE_TIGHT_TURN (100)",
+            "LINE_HAIRPIN_FORWARD (40)",
+            "LINE_HAIRPIN_TURN (100)",
+        ):
+            self.assertIn(token, config)
+        for field in (
+            "tight_forward",
+            "tight_turn",
+            "hairpin_forward",
+            "hairpin_turn",
+        ):
+            self.assertIn(field, header)
+        self.assertIn("slew_turn", source)
+        self.assertIn("LINE_CONTROL_KP (28.0f)", config)
+        self.assertIn("LINE_MAX_FORWARD (350)", config)
+        self.assertNotIn("Contrl_Speed", source)
+        self.assertNotIn("Motion_Car_Control", source)
+
     def test_normal_follow_correction_never_reverses_inner_wheel(self):
         for base_speed in range(1, 451):
             correction_limit = base_speed * 80 // 100

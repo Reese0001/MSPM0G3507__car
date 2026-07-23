@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "line_estimator.h"
+#include "line_trend_detector.h"
 
 typedef struct {
     int16_t forward;
@@ -20,6 +21,10 @@ typedef struct {
     int16_t low_confidence_forward;
     int16_t hard_turn_forward;
     int16_t hard_turn_command;
+    int16_t tight_forward;
+    int16_t tight_turn;
+    int16_t hairpin_forward;
+    int16_t hairpin_turn;
     uint8_t turn_limit_percent;
     int16_t accel_step;
     int16_t decel_step;
@@ -38,6 +43,7 @@ typedef struct {
 bool LineController_Init(const LineControlConfig *settings);
 void LineController_Reset(void);
 bool LineController_Step(const LineEstimate *estimate,
+                         const LineTrendResult *trend,
                          float yaw_rate_dps,
                          bool yaw_fresh,
                          uint32_t now_ms,
