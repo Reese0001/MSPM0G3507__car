@@ -92,14 +92,16 @@ bool SafetySupervisor_Step(const SafetyInputs *inputs,
         return false;
     }
 
-    ultrasonic_fresh = ModuleStatus_IsFresh(
-        &inputs->ultrasonic.status, now_ms, SAFETY_ULTRASONIC_STALE_MS);
-    new_ultrasonic_sample = ultrasonic_fresh &&
+    ultrasonic_fresh = !inputs->ultrasonic_required ||
+        ModuleStatus_IsFresh(
+            &inputs->ultrasonic.status, now_ms, SAFETY_ULTRASONIC_STALE_MS);
+    new_ultrasonic_sample = inputs->ultrasonic_required &&
+        ultrasonic_fresh &&
         inputs->ultrasonic.status.sequence != last_ultrasonic_sequence;
     if (new_ultrasonic_sample) {
         last_ultrasonic_sequence = inputs->ultrasonic.status.sequence;
     }
-    if (!ultrasonic_fresh) {
+    if (inputs->ultrasonic_required && !ultrasonic_fresh) {
         if (supervisor_state == SAFETY_RUNNING ||
             supervisor_state == SAFETY_LIMITED) {
             supervisor_state = SAFETY_FAULT;
@@ -110,7 +112,8 @@ bool SafetySupervisor_Step(const SafetyInputs *inputs,
         return false;
     }
 
-    if (inputs->ultrasonic.distance_mm <= SAFETY_OBSTACLE_STOP_MM) {
+    if (inputs->ultrasonic_required &&
+        inputs->ultrasonic.distance_mm <= SAFETY_OBSTACLE_STOP_MM) {
         supervisor_state = SAFETY_STOP_LATCHED;
         clear_sample_count = 0U;
         reject(decision, SAFETY_REASON_OBSTACLE);
@@ -165,7 +168,8 @@ bool SafetySupervisor_Step(const SafetyInputs *inputs,
         return false;
     }
 
-    if (inputs->ultrasonic.distance_mm <= SAFETY_OBSTACLE_LIMIT_MM) {
+    if (inputs->ultrasonic_required &&
+        inputs->ultrasonic.distance_mm <= SAFETY_OBSTACLE_LIMIT_MM) {
         supervisor_state = SAFETY_LIMITED;
         speed_limit = SAFETY_LIMITED_SPEED_LIMIT;
     } else {

@@ -22,6 +22,7 @@ class SafetySupervisorContract(unittest.TestCase):
             "SAFETY_FAULT",
             "SafetyInputs",
             "UltrasonicSnapshot ultrasonic",
+            "ultrasonic_required",
             "YbImuSnapshot imu",
             "K230VisionSnapshot vision",
             "SafetyDecision",
@@ -46,6 +47,16 @@ class SafetySupervisorContract(unittest.TestCase):
         self.assertIn("SAFETY_CLEAR_SAMPLE_COUNT", source)
         self.assertIn("inputs->reset_pressed", source)
         self.assertIn("clear_sample_count", source)
+
+    def test_ultrasonic_gate_can_be_disabled_for_minimal_hardware(self):
+        source = (ROOT / "application/safety_supervisor.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("inputs->ultrasonic_required", source)
+        self.assertIn(
+            "if (inputs->ultrasonic_required && !ultrasonic_fresh)",
+            source,
+        )
 
     def test_timing_and_distance_limits_are_tunable(self):
         config = (ROOT / "application/config/safety_config.h").read_text(

@@ -14,6 +14,7 @@ typedef struct {
     UltrasonicSnapshot ultrasonic;
     YbImuSnapshot imu;
     K230VisionSnapshot vision;
+    bool ultrasonic_required;
     bool vision_required;
     bool imu_required;
     bool start_pressed;
