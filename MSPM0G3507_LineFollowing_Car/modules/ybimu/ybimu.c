@@ -27,10 +27,23 @@ static uint32_t last_group_start_ms = 0U;
 static uint8_t read_index = 0U;
 static uint8_t consecutive_errors = 0U;
 static bool group_active = false;
+static YbImuCalibrationState calibration_state = YBIMU_CAL_IDLE;
+static YbImuCalibrationType calibration_type = YBIMU_CAL_TYPE_IMU;
+static uint8_t calibration_register = YBIMU_REG_CAL_IMU;
+static uint32_t calibration_start_ms = 0U;
+static uint32_t calibration_last_poll_ms = 0U;
+static uint8_t calibration_errors = 0U;
+static float previous_mag_norm_sq = 0.0f;
+static bool previous_mag_valid = false;
 
 static uint32_t elapsed_ms(uint32_t now_ms, uint32_t start_ms)
 {
     return (uint32_t)(now_ms - start_ms);
+}
+
+static float abs_float(float value)
+{
+    return (value < 0.0f) ? -value : value;
 }
 
 static void map_vector(const float sensor[3], float body[3])
@@ -83,17 +96,89 @@ static void mark_group_failed(void)
     read_index = 0U;
 }
 
+static void update_magnetic_health(void)
+{
+    float norm_sq = working.mag_uT[0] * working.mag_uT[0] +
+                    working.mag_uT[1] * working.mag_uT[1] +
+                    working.mag_uT[2] * working.mag_uT[2];
+    float min_sq = YBIMU_MAG_MIN_UT * YBIMU_MAG_MIN_UT;
+    float max_sq = YBIMU_MAG_MAX_UT * YBIMU_MAG_MAX_UT;
+    bool plausible = norm_sq >= min_sq && norm_sq <= max_sq;
+    bool stable = !previous_mag_valid ||
+                  abs_float(norm_sq - previous_mag_norm_sq) <=
+                      YBIMU_MAG_NORM_SQ_DELTA_MAX;
+    bool calibration_allows_heading =
+        calibration_state != YBIMU_CAL_RUNNING &&
+        calibration_state != YBIMU_CAL_FAILED;
+
+    working.magnetic_heading_healthy =
+        plausible && stable && calibration_allows_heading;
+    previous_mag_norm_sq = norm_sq;
+    previous_mag_valid = true;
+}
+
 static void publish_complete_group(uint32_t now_ms)
 {
+    update_magnetic_health();
     working.status.timestamp_ms = now_ms;
     working.status.sequence = (uint16_t)(published.status.sequence + 1U);
     working.status.valid = true;
     working.status.health = MODULE_HEALTH_OK;
-    working.magnetic_heading_healthy = false;
     published = working;
     consecutive_errors = 0U;
     group_active = false;
     read_index = 0U;
+}
+
+static void finish_calibration(YbImuCalibrationState result, uint32_t now_ms)
+{
+    calibration_state = result;
+    calibration_errors = 0U;
+    published.status.valid = false;
+    published.status.health = (result == YBIMU_CAL_SUCCESS) ?
+                                  MODULE_HEALTH_UNKNOWN :
+                                  MODULE_HEALTH_FAULT;
+    published.magnetic_heading_healthy = false;
+    previous_mag_valid = false;
+    last_group_start_ms = now_ms - YBIMU_SAMPLE_PERIOD_MS;
+}
+
+static void service_calibration(uint32_t now_ms)
+{
+    uint8_t calibration_status = 0U;
+    uint32_t timeout_ms = (calibration_type == YBIMU_CAL_TYPE_IMU) ?
+                              YBIMU_CAL_IMU_TIMEOUT_MS :
+                              YBIMU_CAL_MAG_TIMEOUT_MS;
+
+    if (elapsed_ms(now_ms, calibration_start_ms) >= timeout_ms) {
+        finish_calibration(YBIMU_CAL_FAILED, now_ms);
+        return;
+    }
+    if (elapsed_ms(now_ms, calibration_last_poll_ms) <
+        YBIMU_CAL_POLL_PERIOD_MS) {
+        return;
+    }
+
+    calibration_last_poll_ms = now_ms;
+    if (!BSP_I2C_Read(YBIMU_I2C_ADDRESS,
+                      calibration_register,
+                      &calibration_status,
+                      1U)) {
+        if (calibration_errors < 0xFFU) {
+            calibration_errors++;
+        }
+        if (calibration_errors >= YBIMU_MAX_CONSECUTIVE_ERRORS) {
+            finish_calibration(YBIMU_CAL_FAILED, now_ms);
+        }
+        return;
+    }
+
+    calibration_errors = 0U;
+    if (calibration_status == 1U) {
+        finish_calibration(YBIMU_CAL_SUCCESS, now_ms);
+    } else if (calibration_status != 0U) {
+        finish_calibration(YBIMU_CAL_FAILED, now_ms);
+    }
 }
 
 void YbImu_Init(uint32_t now_ms)
@@ -109,11 +194,24 @@ void YbImu_Init(uint32_t now_ms)
     read_index = 0U;
     consecutive_errors = 0U;
     group_active = false;
+    calibration_state = YBIMU_CAL_IDLE;
+    calibration_type = YBIMU_CAL_TYPE_IMU;
+    calibration_register = YBIMU_REG_CAL_IMU;
+    calibration_start_ms = now_ms;
+    calibration_last_poll_ms = now_ms;
+    calibration_errors = 0U;
+    previous_mag_norm_sq = 0.0f;
+    previous_mag_valid = false;
 }
 
 void YbImu_Service(uint32_t now_ms)
 {
     uint8_t bytes[BSP_I2C_MAX_TRANSFER] = {0};
+
+    if (calibration_state == YBIMU_CAL_RUNNING) {
+        service_calibration(now_ms);
+        return;
+    }
 
     if (published.status.valid &&
         elapsed_ms(now_ms, published.status.timestamp_ms) >
@@ -155,4 +253,57 @@ bool YbImu_GetSnapshot(YbImuSnapshot *out)
 
     *out = published;
     return true;
+}
+
+bool YbImu_RequestCalibration(YbImuCalibrationType type, uint32_t now_ms)
+{
+    uint8_t calibration_value = 0x01U;
+    uint8_t reg;
+
+    if (calibration_state == YBIMU_CAL_RUNNING ||
+        (type != YBIMU_CAL_TYPE_IMU && type != YBIMU_CAL_TYPE_MAG)) {
+        return false;
+    }
+
+    reg = (type == YBIMU_CAL_TYPE_IMU) ? YBIMU_REG_CAL_IMU :
+                                         YBIMU_REG_CAL_MAG;
+    group_active = false;
+    read_index = 0U;
+    published.status.valid = false;
+    published.status.health = MODULE_HEALTH_DEGRADED;
+    published.magnetic_heading_healthy = false;
+    previous_mag_valid = false;
+
+    if (!BSP_I2C_Write(YBIMU_I2C_ADDRESS,
+                       reg,
+                       &calibration_value,
+                       1U)) {
+        calibration_state = YBIMU_CAL_FAILED;
+        published.status.health = MODULE_HEALTH_FAULT;
+        return false;
+    }
+
+    calibration_type = type;
+    calibration_register = reg;
+    calibration_start_ms = now_ms;
+    calibration_last_poll_ms = now_ms;
+    calibration_errors = 0U;
+    calibration_state = YBIMU_CAL_RUNNING;
+    return true;
+}
+
+void YbImu_CancelCalibration(void)
+{
+    if (calibration_state == YBIMU_CAL_RUNNING) {
+        calibration_state = YBIMU_CAL_FAILED;
+        published.status.valid = false;
+        published.status.health = MODULE_HEALTH_FAULT;
+        published.magnetic_heading_healthy = false;
+        previous_mag_valid = false;
+    }
+}
+
+YbImuCalibrationState YbImu_GetCalibrationState(void)
+{
+    return calibration_state;
 }

@@ -11,5 +11,9 @@ bool BSP_I2C_Read(uint8_t address,
                   uint8_t reg,
                   uint8_t *buffer,
                   uint8_t length);
+bool BSP_I2C_Write(uint8_t address,
+                   uint8_t reg,
+                   const uint8_t *buffer,
+                   uint8_t length);
 
 #endif

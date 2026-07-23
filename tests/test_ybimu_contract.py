@@ -93,6 +93,75 @@ class YbImuContract(unittest.TestCase):
         for forbidden in ("app_mpu6050", "Get_EulerAngles", "mpu_dmp"):
             self.assertNotIn(forbidden, source + scheduler)
 
+    def test_calibration_has_timeout_states(self):
+        header = (ROOT / "modules/ybimu/ybimu.h").read_text(encoding="utf-8")
+        source = (ROOT / "modules/ybimu/ybimu.c").read_text(encoding="utf-8")
+        config = (ROOT / "modules/ybimu/ybimu_config.h").read_text(
+            encoding="utf-8"
+        )
+        protocol = (ROOT / "modules/ybimu/ybimu_protocol.h").read_text(
+            encoding="utf-8"
+        )
+        for token in (
+            "YBIMU_CAL_IDLE",
+            "YBIMU_CAL_RUNNING",
+            "YBIMU_CAL_SUCCESS",
+            "YBIMU_CAL_FAILED",
+            "YbImu_RequestCalibration",
+            "YbImu_CancelCalibration",
+            "YbImu_GetCalibrationState",
+        ):
+            self.assertIn(token, header)
+        for token in ("0x70U", "0x71U"):
+            self.assertIn(token, protocol)
+        for token in ("100U", "7000U", "60000U"):
+            self.assertIn(token, config)
+        self.assertNotIn("delay_ms", source)
+        self.assertNotRegex(source, r"while\s*\(")
+        self.assertNotIn("Motor_", source)
+
+    def test_calibration_write_and_poll_are_bounded(self):
+        source = (ROOT / "modules/ybimu/ybimu.c").read_text(encoding="utf-8")
+        bsp = (ROOT / "bsp/bsp_i2c.h").read_text(encoding="utf-8") + (
+            ROOT / "bsp/bsp_i2c.c"
+        ).read_text(encoding="utf-8")
+        self.assertIn("BSP_I2C_Write", source)
+        self.assertIn("BSP_I2C_Write", bsp)
+        self.assertIn("length > BSP_I2C_MAX_TRANSFER", bsp)
+        self.assertIn("calibration_value = 0x01U", source)
+        self.assertIn("service_calibration", source)
+
+    def test_magnetic_heading_has_plausibility_and_change_gates(self):
+        source = (ROOT / "modules/ybimu/ybimu.c").read_text(encoding="utf-8")
+        config = (ROOT / "modules/ybimu/ybimu_config.h").read_text(
+            encoding="utf-8"
+        )
+        for token in (
+            "YBIMU_MAG_MIN_UT",
+            "YBIMU_MAG_MAX_UT",
+            "YBIMU_MAG_NORM_SQ_DELTA_MAX",
+        ):
+            self.assertIn(token, config)
+        self.assertIn("update_magnetic_health", source)
+        self.assertIn("magnetic_heading_healthy", source)
+
+    def test_calibration_checklist_covers_bench_gates(self):
+        path = ROOT.parents[0] / "docs/hardware/ybimu-calibration-checklist.md"
+        self.assertTrue(path.exists(), path)
+        text = path.read_text(encoding="utf-8")
+        for token in (
+            "PA12",
+            "PA13",
+            "0x23",
+            "60s",
+            "X/Y/Z",
+            "yaw",
+            "8 字",
+            "100Hz",
+            "电机断电",
+        ):
+            self.assertIn(token, text)
+
 
 if __name__ == "__main__":
     unittest.main()

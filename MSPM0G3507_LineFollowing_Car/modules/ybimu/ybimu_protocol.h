@@ -8,6 +8,8 @@
 #define YBIMU_REG_MAG       (0x10U)
 #define YBIMU_REG_QUAT      (0x16U)
 #define YBIMU_REG_EULER     (0x26U)
+#define YBIMU_REG_CAL_IMU   (0x70U)
+#define YBIMU_REG_CAL_MAG   (0x71U)
 
 int16_t YbImuProtocol_DecodeI16LE(const uint8_t bytes[2]);
 float YbImuProtocol_DecodeFloatLE(const uint8_t bytes[4]);
