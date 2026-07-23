@@ -1,0 +1,58 @@
+from pathlib import Path
+import unittest
+
+
+ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
+
+
+class MotionPrimitiveContract(unittest.TestCase):
+    def test_six_composable_primitives_and_injected_context_exist(self):
+        header = (ROOT / "application/motion_primitives.h").read_text(
+            encoding="utf-8"
+        )
+        for token in (
+            "MOTION_PRIMITIVE_FOLLOW_LINE",
+            "MOTION_PRIMITIVE_DRIVE_DISTANCE",
+            "MOTION_PRIMITIVE_TURN_RELATIVE",
+            "MOTION_PRIMITIVE_SEARCH_LINE",
+            "MOTION_PRIMITIVE_STOP_AT_MARKER",
+            "MOTION_PRIMITIVE_WAIT_VISION",
+            "MotionContext",
+            "LineEstimate line",
+            "distance_mm",
+            "yaw_deg",
+            "vision_event",
+            "odometry_fresh",
+            "yaw_fresh",
+            "vision_fresh",
+            "MotionPrimitive_Start",
+            "MotionPrimitive_StepWithContext",
+            "MotionPrimitive_Cancel",
+        ):
+            self.assertIn(token, header)
+
+    def test_primitives_are_nonblocking_and_motor_independent(self):
+        source = (ROOT / "application/motion_primitives.c").read_text(
+            encoding="utf-8"
+        )
+        for forbidden in (
+            "delay_ms",
+            "delay_us",
+            "Contrl_Speed",
+            "Motion_Car_Control",
+            "Motor_Safety_Arm",
+        ):
+            self.assertNotIn(forbidden, source)
+        self.assertIn("MotionRequest", source)
+        self.assertIn("request->valid = false", source)
+
+    def test_active_scheduler_does_not_call_legacy_blocking_tracking(self):
+        scheduler = (ROOT / "application/app_scheduler.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("LineWalking", scheduler)
+        self.assertNotIn("Question_Task_", scheduler)
+
+
+if __name__ == "__main__":
+    unittest.main()
