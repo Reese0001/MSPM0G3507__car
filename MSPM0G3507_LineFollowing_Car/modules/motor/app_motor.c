@@ -1,5 +1,4 @@
 #include "app_motor.h"
-#include "motor_safety.h"
 
 static float speed_lr = 0;
 static float speed_fb = 0;
@@ -93,7 +92,10 @@ void Motion_Car_Control(int16_t V_x, int16_t V_y, int16_t V_z)
     speed_spin = (V_z / 1000.0f) * robot_APB;
     if (V_x == 0 && V_y == 0 && V_z == 0)
     {
-        Motor_Safety_RequestSpeed(0, 0, 0, 0);
+        speed_L1_setup = 0;
+        speed_L2_setup = 0;
+        speed_R1_setup = 0;
+        speed_R2_setup = 0;
         return;
     }
 
@@ -114,8 +116,7 @@ void Motion_Car_Control(int16_t V_x, int16_t V_y, int16_t V_z)
 
     //printf("%d\t,%d\t,%d\t,%d\r\n",speed_L1_setup,speed_L2_setup,speed_R1_setup,speed_R2_setup);
 
-    Motor_Safety_RequestSpeed(speed_L1_setup, speed_L2_setup, speed_R1_setup, speed_R2_setup);
-
+    /* Legacy calculation only. SafetySupervisor owns all motor authority. */
 }
 
 // 通过偏航角计算当前的偏航值，校准小车运动方向   Calculate the current deviation value by yaw angle and calibrate the direction of the carriage movement.
@@ -134,7 +135,10 @@ void Motion_Yaw_Calc(float offset_yaw)
     if (speed_R1 < -1000) speed_R1 = -1000;
     if (speed_R2 > 1000) speed_R2 = 1000;
     if (speed_R2 < -1000) speed_R2 = -1000;
-    Motor_Safety_RequestSpeed(speed_L1, speed_L2, speed_R1, speed_R2);
+    (void)speed_L1;
+    (void)speed_L2;
+    (void)speed_R1;
+    (void)speed_R2;
 }
 
 //获取四个编码器的平均10ms的编码器数据，累加编码值获取里程值

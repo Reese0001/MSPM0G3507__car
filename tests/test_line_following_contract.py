@@ -30,9 +30,11 @@ class LineFollowingContractTests(unittest.TestCase):
     def test_tracking_routes_motion_through_safety_layer(self):
         tracking = read("modules/line_tracking/app_irtracking.c")
         motor = read("modules/motor/app_motor.c")
+        adapter = read("modules/motor/motor_adapter.c")
         self.assertIn("Motion_Car_Control", tracking)
         self.assertNotIn("Contrl_Speed(", tracking)
-        self.assertIn("Motor_Safety_RequestSpeed", motor)
+        self.assertNotIn("Motor_Safety_RequestSpeed", motor)
+        self.assertIn("Motor_Safety_RequestSpeed", adapter)
 
     def test_two_wheel_mapping_keeps_m1_and_m3_stopped(self):
         motor = read("modules/motor/app_motor.c")

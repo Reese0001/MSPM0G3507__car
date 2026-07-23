@@ -51,6 +51,7 @@ class MotorSafetyContractTests(unittest.TestCase):
 
     def test_motion_commands_are_routed_through_safety(self):
         source = read("modules/motor/app_motor.c")
+        adapter = read("modules/motor/motor_adapter.c")
         for function in ("Motion_Car_Control", "Motion_Yaw_Calc"):
             match = re.search(
                 rf"void\s+{function}\s*\([^)]*\)\s*\{{(.*?)\n\}}",
@@ -58,7 +59,8 @@ class MotorSafetyContractTests(unittest.TestCase):
                 re.DOTALL,
             )
             self.assertIsNotNone(match, function)
-            self.assertIn("Motor_Safety_RequestSpeed", match.group(1))
+            self.assertNotIn("Motor_Safety_RequestSpeed", match.group(1))
+        self.assertIn("Motor_Safety_RequestSpeed", adapter)
 
     def test_isr_stop_is_fixed_and_bounded(self):
         source = read("modules/motor/bsp_motor_usart.c")
