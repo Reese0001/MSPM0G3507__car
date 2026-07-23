@@ -159,6 +159,7 @@ class LineControllerContract(unittest.TestCase):
             "LINE_LOW_CONFIDENCE_FORWARD (150)",
             "LINE_ACCEL_STEP (15)",
             "LINE_DECEL_STEP (45)",
+            "LINE_CONTROL_KP (21.0f)",
         ):
             self.assertIn(token, config)
         self.assertIn("LINE_TURN_LIMIT_PERCENT (80)", config)
