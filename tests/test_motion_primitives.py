@@ -6,6 +6,35 @@ ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 
 
 class MotionPrimitiveContract(unittest.TestCase):
+    def test_trend_is_injected_through_scheduler_and_motion_context(self):
+        header = (ROOT / "application/motion_primitives.h").read_text(
+            encoding="utf-8"
+        )
+        source = (ROOT / "application/motion_primitives.c").read_text(
+            encoding="utf-8"
+        )
+        scheduler = (ROOT / "application/app_scheduler.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("LineTrendResult line_trend", header)
+        self.assertIn("&context->line_trend", source)
+        self.assertIn("line_trend_detector.h", scheduler)
+        self.assertIn("static LineTrendResult line_trend", scheduler)
+        self.assertIn("LineTrendDetector_Init", scheduler)
+        self.assertIn("LineTrendDetector_Reset", scheduler)
+        self.assertLess(
+            scheduler.index("LineTrendDetector_Update"),
+            scheduler.index("LineController_Step"),
+        )
+        self.assertRegex(
+            scheduler,
+            r"LineController_Step\(\s*&line_estimate,\s*&line_trend,",
+        )
+        self.assertRegex(
+            scheduler,
+            r"LineRecovery_Step\(\s*&line_estimate,\s*&line_trend,",
+        )
+
     def test_six_composable_primitives_and_injected_context_exist(self):
         header = (ROOT / "application/motion_primitives.h").read_text(
             encoding="utf-8"
@@ -19,6 +48,7 @@ class MotionPrimitiveContract(unittest.TestCase):
             "MOTION_PRIMITIVE_WAIT_VISION",
             "MotionContext",
             "LineEstimate line",
+            "LineTrendResult line_trend",
             "distance_mm",
             "yaw_deg",
             "vision_event",

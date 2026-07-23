@@ -8,17 +8,20 @@
 #include "../modules/line_tracking/line_controller.h"
 #include "../modules/line_tracking/line_estimator.h"
 #include "../modules/line_tracking/line_scanner.h"
+#include "../modules/line_tracking/line_trend_detector.h"
 #include "../modules/motor/motor_adapter.h"
 #include "../modules/motor/motor_safety.h"
 
 static MotionRequest mission_request = {0};
 static LineEstimate line_estimate = {0};
+static LineTrendResult line_trend = {0};
 static LineControlOutput line_control = {0};
 static bool start_requested = false;
 
 static void AppScheduler_Start(void)
 {
     LineController_Reset();
+    LineTrendDetector_Reset();
     LineRecovery_Reset();
     SafetySupervisor_Reinitialize();
     Motor_Safety_Arm();
@@ -28,17 +31,26 @@ static void AppScheduler_Start(void)
 static void AppScheduler_RunLineControl(uint32_t now_ms)
 {
     LineSensorSnapshot scanner = {0};
+    bool estimate_ready = false;
+    bool trend_ready = false;
 
     if (LineScanner_GetSnapshot(&scanner)) {
-        (void)LineEstimator_Update(&scanner, now_ms);
+        estimate_ready = LineEstimator_Update(&scanner, now_ms) &&
+                         LineEstimator_Get(&line_estimate);
     }
-    if (LineEstimator_Get(&line_estimate)) {
+    if (estimate_ready) {
+        trend_ready = LineTrendDetector_Update(
+            &line_estimate, &scanner, now_ms, &line_trend);
+    }
+    if (trend_ready) {
         (void)LineController_Step(
-            &line_estimate, 0.0F, false, now_ms, &line_control);
+            &line_estimate, &line_trend, 0.0F, false, now_ms, &line_control);
         (void)LineRecovery_Step(
-            &line_estimate, &line_control, 0.0F, false, false,
+            &line_estimate, &line_trend, &line_control, 0.0F, false, false,
             now_ms, &mission_request);
     } else {
+        mission_request.left_speed = 0;
+        mission_request.right_speed = 0;
         mission_request.valid = false;
         mission_request.timestamp_ms = now_ms;
     }
@@ -49,6 +61,7 @@ static void AppScheduler_RunLineControl(uint32_t now_ms)
         mission_request.timestamp_ms = now_ms;
         mission_request.valid = false;
         LineController_Reset();
+        LineTrendDetector_Reset();
         LineRecovery_Reset();
     }
 }
@@ -88,12 +101,14 @@ void AppScheduler_Init(uint32_t now_ms)
 
     LineScanner_Init();
     LineEstimator_Init();
+    LineTrendDetector_Init();
     (void)LineController_Init(&line_config);
     LineRecovery_Init();
     SafetySupervisor_Init();
 
     mission_request = (MotionRequest){0};
     line_estimate = (LineEstimate){0};
+    line_trend = (LineTrendResult){0};
     line_control = (LineControlOutput){0};
     start_requested = false;
 

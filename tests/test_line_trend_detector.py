@@ -42,6 +42,16 @@ def classify_trace(samples):
 
 
 class LineTrendDetectorContract(unittest.TestCase):
+    def test_scheduler_resets_trend_at_control_reset_boundaries(self):
+        scheduler = (ROOT / "application/app_scheduler.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertGreaterEqual(scheduler.count("LineTrendDetector_Reset();"), 2)
+        self.assertRegex(
+            scheduler,
+            r"LINE_RECOVERY_FAULT[\s\S]{0,400}LineTrendDetector_Reset\(\)",
+        )
+
     def test_public_types_and_thresholds_exist(self):
         header_path = ROOT / "modules/line_tracking/line_trend_detector.h"
         config_path = ROOT / "modules/line_tracking/line_trend_config.h"

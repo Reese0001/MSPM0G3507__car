@@ -6,6 +6,7 @@
 
 #include "../modules/common/motion_request.h"
 #include "../modules/line_tracking/line_estimator.h"
+#include "../modules/line_tracking/line_trend_detector.h"
 
 typedef enum {
     MOTION_RUNNING = 0,
@@ -40,6 +41,7 @@ typedef union {
 
 typedef struct {
     LineEstimate line;
+    LineTrendResult line_trend;
     int32_t distance_mm;
     float yaw_deg;
     float yaw_rate_dps;

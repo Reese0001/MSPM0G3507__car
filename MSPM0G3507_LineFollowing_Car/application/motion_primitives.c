@@ -75,11 +75,12 @@ static bool step_follow(uint32_t now_ms, const MotionContext *context,
 {
     LineControlOutput follow;
 
-    (void)LineController_Step(&context->line, context->yaw_rate_dps,
-                              context->yaw_fresh, now_ms, &follow);
-    return LineRecovery_Step(&context->line, &follow, context->yaw_deg,
-                             context->yaw_fresh, context->emergency_stop,
-                             now_ms, request);
+    (void)LineController_Step(
+        &context->line, &context->line_trend, context->yaw_rate_dps,
+        context->yaw_fresh, now_ms, &follow);
+    return LineRecovery_Step(
+        &context->line, &context->line_trend, &follow, context->yaw_deg,
+        context->yaw_fresh, context->emergency_stop, now_ms, request);
 }
 
 bool MotionPrimitive_Init(void)
@@ -197,9 +198,9 @@ MotionResult MotionPrimitive_StepWithContext(uint32_t now_ms,
         }
         if (target < 0.0f) {
             request->left_speed = LINE_SEARCH_INNER_COMMAND;
-            request->right_speed = LINE_PIVOT_FORWARD_COMMAND;
+            request->right_speed = LINE_SEARCH_OUTER_COMMAND;
         } else {
-            request->left_speed = LINE_PIVOT_FORWARD_COMMAND;
+            request->left_speed = LINE_SEARCH_OUTER_COMMAND;
             request->right_speed = LINE_SEARCH_INNER_COMMAND;
         }
         request->timestamp_ms = now_ms;
@@ -227,9 +228,9 @@ MotionResult MotionPrimitive_StepWithContext(uint32_t now_ms,
         }
         if (active_params.search_line.prefer_left) {
             request->left_speed = LINE_SEARCH_INNER_COMMAND;
-            request->right_speed = LINE_PIVOT_FORWARD_COMMAND;
+            request->right_speed = LINE_SEARCH_OUTER_COMMAND;
         } else {
-            request->left_speed = LINE_PIVOT_FORWARD_COMMAND;
+            request->left_speed = LINE_SEARCH_OUTER_COMMAND;
             request->right_speed = LINE_SEARCH_INNER_COMMAND;
         }
         request->timestamp_ms = now_ms;
