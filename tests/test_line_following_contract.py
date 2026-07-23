@@ -16,7 +16,6 @@ class LineFollowingContractTests(unittest.TestCase):
         main = read("empty.c")
         app_main = read("application/app_main.c")
         scheduler = read("application/app_scheduler.c")
-        questions = read("application/legacy_questions/questions.c")
         self.assertIn("App_Main_RunOnce();", main)
         self.assertIn("AppScheduler_Run(Get_Time());", app_main)
         self.assertIn("Motor_Safety_Service();", app_main)
@@ -24,8 +23,9 @@ class LineFollowingContractTests(unittest.TestCase):
             app_main.index("AppScheduler_Run(Get_Time());"),
             app_main.index("Motor_Safety_Service();"),
         )
-        self.assertIn("Legacy_Questions_HandleKey", scheduler)
-        self.assertIn("LineWalking();", questions)
+        self.assertIn("Key_PollEvent", scheduler)
+        self.assertIn("LineRecovery_Step", scheduler)
+        self.assertIn("SafetySupervisor_Step", scheduler)
 
     def test_tracking_routes_motion_through_safety_layer(self):
         tracking = read("modules/line_tracking/app_irtracking.c")

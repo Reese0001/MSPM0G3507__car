@@ -1,5 +1,11 @@
 #include "app_motor.h"
 
+#include "../../application/config/line_following_profile.h"
+#include "../../bsp/delay.h"
+#if LINE_FOLLOWING_USE_LEGACY_ODOMETRY
+#include "../../application/legacy_questions/questions.h"
+#endif
+
 static float speed_lr = 0;
 static float speed_fb = 0;
 static float speed_spin = 0;
@@ -145,12 +151,14 @@ void Motion_Yaw_Calc(float offset_yaw)
 //Get the average encoder data of driven motors and add the cumulatively to get the mileage value (2WD version)
 void Get_Odometry(void)
 {
+#if LINE_FOLLOWING_USE_LEGACY_ODOMETRY
     if(encoder_odometry_flag)
     {
         Deal_data_real();
         // 2WD: Only use M2 (Encoder_Offset[1]) and M4 (Encoder_Offset[3]) for odometry
         odometry_sum += ((Encoder_Offset[1] + Encoder_Offset[3]) / 2);
     }
+#endif
 }
 
 

@@ -182,7 +182,8 @@ class ModularArchitectureContract(unittest.TestCase):
             safety,
             re.DOTALL,
         )
-        self.assertIn("Legacy_Questions_HandleKey();", scheduler)
+        self.assertIn("Key_PollEvent();", scheduler)
+        self.assertIn("Motor_Safety_Disarm();", scheduler)
         self.assertIsNotNone(handler)
         self.assertIn("Buzzer_RequestBeeps", handler.group(1))
         self.assertIn("Motor_Safety_Disarm", handler.group(1))

@@ -1,93 +1,116 @@
 #include "app_scheduler.h"
 
-#include "app_motor.h"
 #include "config/line_control_config.h"
-#include "questions.h"
+#include "config/line_following_profile.h"
+#include "line_recovery.h"
 #include "safety_supervisor.h"
-#include "../bsp/bsp_i2c.h"
 #include "../bsp/time/timer.h"
-#include "../modules/k230_link/k230_link.h"
+#include "../modules/key/key.h"
 #include "../modules/line_tracking/line_controller.h"
 #include "../modules/line_tracking/line_estimator.h"
 #include "../modules/line_tracking/line_scanner.h"
 #include "../modules/motor/motor_adapter.h"
-#include "../modules/ultrasonic/ultrasonic.h"
-#include "../modules/ybimu/ybimu.h"
+#include "../modules/motor/motor_safety.h"
 
 static MotionRequest mission_request = {0};
 static LineEstimate line_estimate = {0};
 static LineControlOutput line_control = {0};
+static bool line_following_running = false;
+static bool start_requested = false;
+static bool suppress_short_after_stop = false;
 
-static void AppScheduler_RunSafety(uint32_t now_ms)
+static void AppScheduler_Stop(uint32_t now_ms)
 {
-    SafetyInputs inputs = {0};
-    SafetyDecision decision = {0};
+    mission_request.left_speed = 0;
+    mission_request.right_speed = 0;
+    mission_request.timestamp_ms = now_ms;
+    mission_request.valid = false;
+    line_following_running = false;
+    start_requested = false;
+    LineController_Reset();
+    LineRecovery_Reset();
+    Motor_Safety_Disarm();
+    SafetySupervisor_Reinitialize();
+}
 
-    (void)Ultrasonic_GetSnapshot(&inputs.ultrasonic);
-    (void)YbImu_GetSnapshot(&inputs.imu);
-    (void)K230Link_GetSnapshot(now_ms, &inputs.vision);
-
-    inputs.imu_required = false;
-    inputs.vision_required = false;
-    inputs.start_pressed = false;
-    inputs.reset_pressed = false;
-    inputs.power_qualified = false;
-    inputs.motor_fault = false;
-
-    (void)SafetySupervisor_Step(
-        &inputs, &mission_request, now_ms, &decision);
-    MotorAdapter_Apply(&decision);
+static void AppScheduler_Start(void)
+{
+    LineController_Reset();
+    LineRecovery_Reset();
+    SafetySupervisor_Reinitialize();
+    Motor_Safety_Arm();
+    line_following_running = true;
+    start_requested = true;
 }
 
 static void AppScheduler_RunLineControl(uint32_t now_ms)
 {
     LineSensorSnapshot scanner = {0};
-    YbImuSnapshot imu = {0};
-    bool yaw_fresh = YbImu_GetSnapshot(&imu);
-    const float radians_to_degrees = 57.2957795F;
 
     if (LineScanner_GetSnapshot(&scanner)) {
         (void)LineEstimator_Update(&scanner, now_ms);
     }
     if (LineEstimator_Get(&line_estimate)) {
         (void)LineController_Step(
-            &line_estimate,
-            yaw_fresh ? imu.gyro_rad_s[2] * radians_to_degrees : 0.0F,
-            yaw_fresh,
-            now_ms,
-            &line_control);
+            &line_estimate, 0.0F, false, now_ms, &line_control);
+        (void)LineRecovery_Step(
+            &line_estimate, &line_control, 0.0F, false, false,
+            now_ms, &mission_request);
+    } else {
+        mission_request.valid = false;
+        mission_request.timestamp_ms = now_ms;
+    }
+
+    if (LineRecovery_GetState() == LINE_RECOVERY_FAULT) {
+        AppScheduler_Stop(now_ms);
     }
 }
 
-static void AppScheduler_RunYbImu(uint32_t now_ms)
+static void AppScheduler_RunSafety(uint32_t now_ms)
 {
-    YbImu_Service(now_ms);
-}
+    SafetyInputs inputs = {0};
+    SafetyDecision decision = {0};
 
-static void AppScheduler_RunK230(uint32_t now_ms)
-{
-    K230Link_Service(now_ms);
+    inputs.ultrasonic_required = LINE_FOLLOWING_USE_ULTRASONIC != 0;
+    inputs.imu_required = LINE_FOLLOWING_USE_IMU != 0;
+    inputs.vision_required = LINE_FOLLOWING_USE_VISION != 0;
+    inputs.start_pressed = start_requested;
+    inputs.reset_pressed = false;
+    inputs.power_qualified = LINE_FOLLOWING_POWER_QUALIFIED != 0;
+    inputs.motor_fault = Motor_Safety_IsFaultLatched() != 0U;
+
+    (void)SafetySupervisor_Step(
+        &inputs, &mission_request, now_ms, &decision);
+    MotorAdapter_Apply(&decision);
+
+    if (SafetySupervisor_GetState() == SAFETY_RUNNING ||
+        SafetySupervisor_GetState() == SAFETY_LIMITED) {
+        start_requested = false;
+    }
 }
 
 static void AppScheduler_RunKey(uint32_t now_ms)
 {
-    (void)now_ms;
-    Legacy_Questions_HandleKey();
-}
+    KeyEvent event = Key_PollEvent();
 
-static void AppScheduler_RunOdometry(uint32_t now_ms)
-{
-    (void)now_ms;
-    Get_Odometry();
+    if (event == KEY_EVENT_PRESS && line_following_running) {
+        AppScheduler_Stop(now_ms);
+        suppress_short_after_stop = true;
+    } else if (event == KEY_EVENT_SHORT) {
+        if (suppress_short_after_stop) {
+            suppress_short_after_stop = false;
+        } else if (!line_following_running) {
+            AppScheduler_Start();
+        }
+    } else if (event == KEY_EVENT_LONG) {
+        suppress_short_after_stop = false;
+    }
 }
 
 static AppTask app_tasks[] = {
     {1U, 200U, 0U, 0U, 0U, AppScheduler_RunSafety},
-    {1U, 300U, 0U, 0U, 0U, AppScheduler_RunK230},
     {5U, 500U, 0U, 0U, 0U, AppScheduler_RunLineControl},
-    {10U, 500U, 0U, 0U, 0U, AppScheduler_RunYbImu},
-    {100U, 200U, 0U, 0U, 0U, AppScheduler_RunKey},
-    {15U, 200U, 0U, 0U, 0U, AppScheduler_RunOdometry},
+    {LINE_KEY_TASK_PERIOD_MS, 200U, 0U, 0U, 0U, AppScheduler_RunKey},
 };
 
 void AppScheduler_Init(uint32_t now_ms)
@@ -98,16 +121,19 @@ void AppScheduler_Init(uint32_t now_ms)
     LineScanner_Init();
     LineEstimator_Init();
     (void)LineController_Init(&line_config);
-    Ultrasonic_Init();
-    YbImu_Init(now_ms);
-    K230Link_Init();
+    LineRecovery_Init();
     SafetySupervisor_Init();
 
     mission_request = (MotionRequest){0};
     line_estimate = (LineEstimate){0};
     line_control = (LineControlOutput){0};
+    line_following_running = false;
+    start_requested = false;
+    suppress_short_after_stop = false;
 
-    for (index = 0U; index < (uint32_t)(sizeof(app_tasks) / sizeof(app_tasks[0])); index++) {
+    for (index = 0U;
+         index < (uint32_t)(sizeof(app_tasks) / sizeof(app_tasks[0]));
+         index++) {
         app_tasks[index].last_ms = now_ms;
         app_tasks[index].max_runtime_us = 0U;
         app_tasks[index].deadline_miss_count = 0U;
@@ -119,12 +145,11 @@ void AppScheduler_Run(uint32_t now_ms)
     uint32_t index;
     uint32_t now_us = BSP_Time_GetUs();
 
-    /* Fast cooperative services contain no blocking waits. */
-    BSP_I2C_Service(now_us);
     LineScanner_Service(now_us);
-    Ultrasonic_Service(now_us);
 
-    for (index = 0U; index < (uint32_t)(sizeof(app_tasks) / sizeof(app_tasks[0])); index++) {
+    for (index = 0U;
+         index < (uint32_t)(sizeof(app_tasks) / sizeof(app_tasks[0]));
+         index++) {
         AppTask *task = &app_tasks[index];
         uint32_t elapsed_ms = (uint32_t)(now_ms - task->last_ms);
 

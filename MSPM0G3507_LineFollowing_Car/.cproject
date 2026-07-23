@@ -11,6 +11,9 @@
                     <extension id="org.eclipse.cdt.core.GCCErrorParser" point="com.ti.ccs.project.ErrorParser"/>
                     <extension id="com.ti.ccs.errorparser.CompilerErrorParser_TI" point="com.ti.ccs.project.ErrorParser"/>
                 </extensions>
+                <sourceEntries>
+                    <entry excluding="Build_LineFollowing|Debug|application/legacy_questions|application/legacy_task|bsp/bsp_i2c.c|bsp/bsp_k230_uart.c|bsp/bsp_ultrasonic.c|modules/k230_link|modules/legacy_mpu6050|modules/line_tracking/app_irtracking.c|modules/ultrasonic|modules/ybimu" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                </sourceEntries>
             </storageModule>
             <storageModule moduleId="cdtBuildSystem" version="4.0.0">
                 <configuration artifactExtension="out" artifactName="${ProjName}" buildProperties="" cleanCommand="${CG_CLEAN_CMD}" description="" id="com.ti.ccstudio.buildDefinitions.TMS470.Debug.762579381" name="Debug" parent="com.ti.ccstudio.buildDefinitions.TMS470.Debug">

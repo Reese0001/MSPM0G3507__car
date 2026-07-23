@@ -31,6 +31,7 @@ KeyEvent Key_Scan(Key_t* key, uint32_t currentTime, uint32_t longPressThreshold)
                 if (isPressed) {
                     key->state = KEY_STATE_PRESSED;
                     key->pressTime = currentTime;
+                    return KEY_EVENT_PRESS;
                 } else {
                     key->state = KEY_STATE_RELEASED;
                 }

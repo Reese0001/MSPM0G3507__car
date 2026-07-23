@@ -6,6 +6,7 @@
 /* 按键事件类型定义 - Key Event Type Definitions */
 typedef enum {
     KEY_EVENT_NONE,     // 无事件 / No event
+    KEY_EVENT_PRESS,    // 消抖后确认按下 / Debounced press
     KEY_EVENT_SHORT,    // 短按事件 / Short press event
     KEY_EVENT_LONG      // 长按事件 / Long press event
 } KeyEvent;

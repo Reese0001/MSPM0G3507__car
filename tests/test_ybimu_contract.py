@@ -146,15 +146,16 @@ class YbImuContract(unittest.TestCase):
         self.assertIn("calibration_value = 0x01U", source)
         self.assertIn("service_calibration", source)
 
-    def test_application_services_i2c_bit_engine_in_fast_loop(self):
+    def test_minimal_burn_profile_does_not_service_unfitted_imu(self):
         scheduler = (ROOT / "application/app_scheduler.c").read_text(
             encoding="utf-8"
         )
-        self.assertIn('#include "../bsp/bsp_i2c.h"', scheduler)
-        fast_start = scheduler.index("/* Fast cooperative services")
-        task_start = scheduler.index("for (index", fast_start)
-        fast_section = scheduler[fast_start:task_start]
-        self.assertIn("BSP_I2C_Service(now_us)", fast_section)
+        profile = (ROOT / "application/config/line_following_profile.h").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("LINE_FOLLOWING_USE_IMU (0)", profile)
+        self.assertNotIn("BSP_I2C_Service", scheduler)
+        self.assertNotIn("YbImu_Service", scheduler)
 
     def test_magnetic_heading_has_plausibility_and_change_gates(self):
         source = (ROOT / "modules/ybimu/ybimu.c").read_text(encoding="utf-8")
