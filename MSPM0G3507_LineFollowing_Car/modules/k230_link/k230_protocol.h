@@ -14,5 +14,6 @@ typedef struct {
 void K230Protocol_Init(void);
 void K230Protocol_ConsumeByte(uint8_t byte);
 bool K230Protocol_TakeFrame(K230Frame *out);
+uint32_t K230Protocol_GetRejectedCount(void);
 
 #endif

@@ -28,6 +28,45 @@ class K230ArchitectureContract(unittest.TestCase):
             self.assertNotIn("calloc", text, path)
             self.assertNotIn("realloc", text, path)
 
+    def test_snapshot_has_status_confidence_and_timestamp(self):
+        header = (MCU / "modules/k230_link/k230_link.h").read_text(
+            encoding="utf-8"
+        )
+        for token in (
+            "K230VisionSnapshot",
+            "ModuleStatus status",
+            "confidence",
+            "event_id",
+            "K230Link_Service",
+            "K230Link_GetSnapshot",
+            "rejected_frames",
+        ):
+            self.assertIn(token, header)
+
+    def test_uart_isr_only_queues_bytes(self):
+        source = (MCU / "modules/k230_link/k230_link.c").read_text(
+            encoding="utf-8"
+        )
+        start = source.index("void K230Link_OnRxByteFromISR")
+        end = source.index("void K230Link_Service", start)
+        isr_body = source[start:end]
+        self.assertIn("rx_buffer", isr_body)
+        for forbidden in (
+            "K230Protocol_ConsumeByte",
+            "K230Protocol_TakeFrame",
+            "printf",
+            "strtok",
+            "sscanf",
+        ):
+            self.assertNotIn(forbidden, isr_body)
+
+    def test_snapshot_is_age_checked(self):
+        source = (MCU / "modules/k230_link/k230_link.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("ModuleStatus_IsFresh", source)
+        self.assertIn("K230_VISION_STALE_MS", source)
+
 
 if __name__ == "__main__":
     unittest.main()

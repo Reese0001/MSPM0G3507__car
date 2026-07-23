@@ -8,6 +8,7 @@
 #define K230_VISION_STALE_MS     (300U)
 #define K230_PROTOCOL_MAX_FIELDS (6U)
 #define K230_PROTOCOL_TEXT_LEN   (48U)
+#define K230_RX_BUFFER_LEN       (128U)
 #define K230_VENDOR_ID_MIN       (1U)
 #define K230_VENDOR_ID_MAX       (17U)
 

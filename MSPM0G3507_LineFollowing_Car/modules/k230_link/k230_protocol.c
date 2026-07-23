@@ -16,6 +16,7 @@ static char frame_buffer[K230_FRAME_MAX_LEN + 1U];
 static uint16_t frame_length = 0U;
 static K230Frame pending_frame = {0};
 static bool frame_ready = false;
+static uint32_t rejected_count = 0U;
 
 static bool parse_unsigned(const char *text, uint16_t length, uint16_t *out)
 {
@@ -196,6 +197,7 @@ void K230Protocol_Init(void)
 {
     reset_parser();
     frame_ready = false;
+    rejected_count = 0U;
     memset(frame_buffer, 0, sizeof(frame_buffer));
     memset(&pending_frame, 0, sizeof(pending_frame));
 }
@@ -225,9 +227,12 @@ void K230Protocol_ConsumeByte(uint8_t byte)
             if (!frame_ready && parse_frame(&candidate)) {
                 pending_frame = candidate;
                 frame_ready = true;
+            } else {
+                rejected_count++;
             }
             reset_parser();
         } else {
+            rejected_count++;
             parser_state = DISCARD;
         }
         return;
@@ -235,6 +240,7 @@ void K230Protocol_ConsumeByte(uint8_t byte)
 
     if (byte < 32U || byte > 126U ||
         frame_length >= K230_FRAME_MAX_LEN) {
+        rejected_count++;
         parser_state = DISCARD;
         return;
     }
@@ -252,4 +258,9 @@ bool K230Protocol_TakeFrame(K230Frame *out)
     *out = pending_frame;
     frame_ready = false;
     return true;
+}
+
+uint32_t K230Protocol_GetRejectedCount(void)
+{
+    return rejected_count;
 }
