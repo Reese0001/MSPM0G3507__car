@@ -118,6 +118,24 @@ class LineRecoveryContract(unittest.TestCase):
             r"[\s\S]{0,250}LINE_REVERSAL_PAUSE_MS",
         )
 
+    def test_every_recovery_command_stays_inside_competition_limit(self):
+        values = {
+            name: int(value)
+            for name, value in re.findall(
+                r"#define\s+(LINE_(?:SEARCH|CORNER)_[A-Z_]+)\s+\((-?\d+)\)",
+                self.config,
+            )
+        }
+        self.assertGreaterEqual(len(values), 4)
+        for name, value in values.items():
+            with self.subTest(name=name):
+                self.assertLessEqual(abs(value), 450)
+        pause = re.search(
+            r"LINE_REVERSAL_PAUSE_MS\s+\((\d+)U\)", self.config
+        )
+        self.assertIsNotNone(pause)
+        self.assertGreaterEqual(int(pause.group(1)), 120)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,6 +7,7 @@ static int8_t trend_direction;
 static uint8_t same_direction_frames;
 static uint8_t outward_steps;
 static uint8_t hairpin_frames;
+static uint8_t stable_reacquire_frames;
 static float previous_error;
 static float maximum_absolute_error;
 static uint32_t outer_seen_ms;
@@ -44,6 +45,7 @@ static void clear_direction_evidence(void)
     same_direction_frames = 0U;
     outward_steps = 0U;
     hairpin_frames = 0U;
+    stable_reacquire_frames = 0U;
     maximum_absolute_error = 0.0f;
     outer_seen_ms = 0U;
     outer_seen = false;
@@ -184,6 +186,20 @@ bool LineTrendDetector_Update(const LineEstimate *estimate,
             type = trend_direction < 0 ? LINE_TREND_TIGHT_LEFT :
                                          LINE_TREND_TIGHT_RIGHT;
         }
+    }
+
+    if (type == LINE_TREND_NORMAL && !completion_event &&
+        estimate->confidence >= LINE_TREND_MIN_CONFIDENCE &&
+        current_absolute_error <= LINE_TREND_TIGHT_ERROR) {
+        if (stable_reacquire_frames < UINT8_MAX) {
+            stable_reacquire_frames++;
+        }
+    } else {
+        stable_reacquire_frames = 0U;
+    }
+    if (stable_reacquire_frames >= LINE_TREND_REACQUIRE_FRAMES) {
+        clear_direction_evidence();
+        trend_direction = 0;
     }
 
     previous_error = estimate->error;

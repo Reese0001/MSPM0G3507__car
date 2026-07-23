@@ -95,6 +95,21 @@ class LineEstimatorContract(unittest.TestCase):
 
 
 class LineControllerContract(unittest.TestCase):
+    def test_all_curve_targets_stay_inside_competition_limit(self):
+        config = (ROOT / "application/config/line_control_config.h").read_text(
+            encoding="utf-8"
+        )
+        values = [
+            int(value)
+            for value in re.findall(
+                r"#define\s+LINE_(?:MAX|CURVE|HARD|WIDE|LOW|TIGHT|HAIRPIN)"
+                r"_[A-Z_]+\s+\((-?\d+)\)",
+                config,
+            )
+        ]
+        self.assertTrue(values)
+        self.assertTrue(all(abs(value) <= 450 for value in values))
+
     def test_controller_accepts_and_handles_continuous_curve_trends(self):
         header = (ROOT / "modules/line_tracking/line_controller.h").read_text(
             encoding="utf-8"

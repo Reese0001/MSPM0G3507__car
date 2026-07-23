@@ -42,6 +42,62 @@ def classify_trace(samples):
 
 
 class LineTrendDetectorContract(unittest.TestCase):
+    def test_photographed_track_scenarios_and_mirrors(self):
+        cases = {
+            "SQUARE_LEFT": (
+                ((-1, "none"), (-3, "none"), (-5, "none"), (0, "wide")),
+                "right_angle_left",
+            ),
+            "SQUARE_RIGHT": (
+                ((1, "none"), (3, "none"), (5, "none"), (0, "wide")),
+                "right_angle_right",
+            ),
+            "HAIRPIN_LEFT": (
+                ((-1, "none"), (-3, "none"), (-5, "none"),
+                 (-7, "hard"), (-7, "hard"), (-7, "hard")),
+                "hairpin_left",
+            ),
+            "HAIRPIN_RIGHT": (
+                ((1, "none"), (3, "none"), (5, "none"),
+                 (7, "hard"), (7, "hard"), (7, "hard")),
+                "hairpin_right",
+            ),
+            "S_CURVE": (
+                ((-1, "none"), (-3, "none"), (-1, "none"),
+                 (1, "none"), (3, "none"), (1, "none")),
+                "normal",
+            ),
+            "ORDINARY_GAP": (
+                ((0, "none"), (0, "none"), (0, "lost"),
+                 (0, "lost"), (0, "lost")),
+                "normal",
+            ),
+        }
+        for name, (trace, expected) in cases.items():
+            with self.subTest(name=name):
+                self.assertEqual(classify_trace(trace), expected)
+
+    def test_same_square_trace_is_identical_after_reset(self):
+        square_left = (
+            (-1, "none"), (-3, "none"), (-5, "none"), (0, "wide")
+        )
+        first_lap = classify_trace(square_left)
+        second_lap_after_reset = classify_trace(square_left)
+        self.assertEqual(first_lap, "right_angle_left")
+        self.assertEqual(second_lap_after_reset, first_lap)
+
+    def test_three_stable_frames_clear_old_corner_evidence(self):
+        source = (ROOT / "modules/line_tracking/line_trend_detector.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("stable_reacquire_frames", source)
+        self.assertIn("LINE_TREND_REACQUIRE_FRAMES", source)
+        self.assertRegex(
+            source,
+            r"stable_reacquire_frames\s*>=\s*LINE_TREND_REACQUIRE_FRAMES"
+            r"[\s\S]{0,180}clear_direction_evidence",
+        )
+
     def test_scheduler_resets_trend_at_control_reset_boundaries(self):
         scheduler = (ROOT / "application/app_scheduler.c").read_text(
             encoding="utf-8"
