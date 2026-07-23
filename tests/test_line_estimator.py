@@ -95,10 +95,26 @@ class LineEstimatorContract(unittest.TestCase):
 
 
 class LineControllerContract(unittest.TestCase):
-    def test_follow_correction_never_reverses_inner_wheel(self):
+    def test_normal_follow_correction_never_reverses_inner_wheel(self):
         for base_speed in range(1, 451):
             correction_limit = base_speed * 80 // 100
             self.assertGreaterEqual(base_speed - correction_limit, 0)
+
+    def test_hard_corner_has_separate_low_speed_pivot_commands(self):
+        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+            encoding="utf-8"
+        )
+        config = (ROOT / "application/config/line_control_config.h").read_text(
+            encoding="utf-8"
+        )
+        recovery = (ROOT / "application/line_recovery.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("LINE_HARD_TURN_FORWARD (40)", config)
+        self.assertIn("LINE_HARD_TURN_COMMAND (120)", config)
+        self.assertIn("hard_turn_forward", source)
+        self.assertIn("hard_turn_command", source)
+        self.assertNotIn("if (left < 0 || right < 0)", recovery)
 
     def test_single_sensor_turn_keeps_both_wheels_within_command_limit(self):
         source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
@@ -130,6 +146,7 @@ class LineControllerContract(unittest.TestCase):
             "confidence",
             "yaw_rate_dps",
             "LINE_TURN_LIMIT_PERCENT",
+            "LINE_TURN_SLEW_STEP",
             "LINE_ACCEL_STEP",
             "LINE_DECEL_STEP",
         ):
@@ -145,6 +162,10 @@ class LineControllerContract(unittest.TestCase):
         ):
             self.assertIn(token, config)
         self.assertIn("LINE_TURN_LIMIT_PERCENT (80)", config)
+        self.assertIn("LINE_TURN_SLEW_STEP (20)", config)
+        self.assertIn("turn_slew_step", header)
+        self.assertIn("previous_turn", source)
+        self.assertIn("slew_turn", source)
         self.assertNotIn("Contrl_Speed", source)
         self.assertNotIn("Motion_Car_Control", source)
         self.assertNotIn("application/", source)

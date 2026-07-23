@@ -68,10 +68,6 @@ static bool set_follow_request(const LineControlOutput *follow,
     }
     left = (int16_t)(follow->forward - follow->turn);
     right = (int16_t)(follow->forward + follow->turn);
-    if (left < 0 || right < 0) {
-        invalidate_request(request, now_ms);
-        return false;
-    }
     request->left_speed = left;
     request->right_speed = right;
     request->timestamp_ms = now_ms;
