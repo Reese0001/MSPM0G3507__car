@@ -3,27 +3,16 @@
 #include "config/line_recovery_config.h"
 
 static LineRecoveryState recovery_state = LINE_RECOVERY_FOLLOW;
+static int8_t recovery_direction = 0;
 static uint8_t loss_count = 0U;
 static uint8_t reacquire_count = 0U;
 static uint16_t last_line_sequence = 0U;
-static float last_seen_error = 0.0f;
-static float pivot_start_yaw_deg = 0.0f;
+static uint32_t recovery_started_ms = 0U;
 static uint32_t state_started_ms = 0U;
 
 static float absolute_value(float value)
 {
     return value < 0.0f ? -value : value;
-}
-
-static float relative_yaw(float current, float start)
-{
-    float delta = current - start;
-    if (delta > 180.0f) {
-        delta -= 360.0f;
-    } else if (delta < -180.0f) {
-        delta += 360.0f;
-    }
-    return delta;
 }
 
 static void invalidate_request(MotionRequest *request, uint32_t now_ms)
@@ -34,6 +23,17 @@ static void invalidate_request(MotionRequest *request, uint32_t now_ms)
     request->valid = false;
 }
 
+static void publish_request(int16_t left,
+                            int16_t right,
+                            uint32_t now_ms,
+                            MotionRequest *request)
+{
+    request->left_speed = left;
+    request->right_speed = right;
+    request->timestamp_ms = now_ms;
+    request->valid = true;
+}
+
 static bool line_is_fresh(const LineEstimate *line, uint32_t now_ms)
 {
     return line != 0 &&
@@ -41,14 +41,23 @@ static bool line_is_fresh(const LineEstimate *line, uint32_t now_ms)
                                 LINE_RECOVERY_ESTIMATE_STALE_MS);
 }
 
-static bool line_is_lost(const LineEstimate *line, uint32_t now_ms)
+static bool trend_is_fresh(const LineTrendResult *trend, uint32_t now_ms)
 {
-    return !line_is_fresh(line, now_ms) || line->event == LINE_EVENT_LOST;
+    return trend != 0 &&
+           ModuleStatus_IsFresh(&trend->status, now_ms,
+                                LINE_RECOVERY_ESTIMATE_STALE_MS);
+}
+
+static bool line_is_trustworthy(const LineEstimate *line)
+{
+    return line->event != LINE_EVENT_LOST &&
+           line->confidence >= LINE_RECOVERY_MIN_CONFIDENCE &&
+           absolute_value(line->error) <= LINE_RECOVERY_CENTER_ERROR;
 }
 
 static bool take_new_line(const LineEstimate *line)
 {
-    if (line == 0 || line->status.sequence == last_line_sequence) {
+    if (line->status.sequence == last_line_sequence) {
         return false;
     }
     last_line_sequence = line->status.sequence;
@@ -59,60 +68,111 @@ static bool set_follow_request(const LineControlOutput *follow,
                                uint32_t now_ms,
                                MotionRequest *request)
 {
-    int16_t left;
-    int16_t right;
-
     if (follow == 0 || !follow->valid) {
         invalidate_request(request, now_ms);
         return false;
     }
-    left = (int16_t)(follow->forward - follow->turn);
-    right = (int16_t)(follow->forward + follow->turn);
-    request->left_speed = left;
-    request->right_speed = right;
-    request->timestamp_ms = now_ms;
-    request->valid = true;
+    publish_request((int16_t)(follow->forward - follow->turn),
+                    (int16_t)(follow->forward + follow->turn),
+                    now_ms, request);
     return true;
 }
 
-static bool sharp_search_required(void)
+static void set_search_request(uint32_t now_ms, MotionRequest *request)
 {
-    return absolute_value(last_seen_error) >= LINE_SHARP_SEARCH_ERROR;
+    if (recovery_direction < 0) {
+        publish_request(LINE_SEARCH_INNER_COMMAND,
+                        LINE_SEARCH_OUTER_COMMAND, now_ms, request);
+    } else {
+        publish_request(LINE_SEARCH_OUTER_COMMAND,
+                        LINE_SEARCH_INNER_COMMAND, now_ms, request);
+    }
 }
 
-static void set_pivot_request(LineRecoveryState state,
-                              bool sharp_search,
-                              uint32_t now_ms,
-                              MotionRequest *request)
+static void set_pause_request(uint32_t now_ms, MotionRequest *request)
 {
-    int16_t inner_speed = sharp_search ?
-        -LINE_SHARP_INNER_REVERSE_COMMAND : LINE_SEARCH_INNER_COMMAND;
-
-    if (state == LINE_RECOVERY_PIVOT_LEFT) {
-        request->left_speed = inner_speed;
-        request->right_speed = LINE_PIVOT_FORWARD_COMMAND;
-    } else {
-        request->left_speed = LINE_PIVOT_FORWARD_COMMAND;
-        request->right_speed = inner_speed;
-    }
+    request->left_speed = 0;
+    request->right_speed = 0;
     request->timestamp_ms = now_ms;
     request->valid = true;
+}
+
+static void set_backtrack_request(uint32_t now_ms, MotionRequest *request)
+{
+    if (recovery_direction < 0) {
+        publish_request(-LINE_SEARCH_INNER_COMMAND,
+                        -LINE_SEARCH_OUTER_COMMAND, now_ms, request);
+    } else {
+        publish_request(-LINE_SEARCH_OUTER_COMMAND,
+                        -LINE_SEARCH_INNER_COMMAND, now_ms, request);
+    }
+}
+
+static void set_corner_request(uint32_t now_ms, MotionRequest *request)
+{
+    if (recovery_direction < 0) {
+        publish_request(LINE_CORNER_INNER_COMMAND,
+                        LINE_CORNER_OUTER_COMMAND, now_ms, request);
+    } else {
+        publish_request(LINE_CORNER_OUTER_COMMAND,
+                        LINE_CORNER_INNER_COMMAND, now_ms, request);
+    }
+}
+
+static void enter_state(LineRecoveryState state, uint32_t now_ms)
+{
+    recovery_state = state;
+    state_started_ms = now_ms;
 }
 
 static void enter_fault(uint32_t now_ms, MotionRequest *request)
 {
-    recovery_state = LINE_RECOVERY_FAULT;
+    enter_state(LINE_RECOVERY_FAULT, now_ms);
     invalidate_request(request, now_ms);
+}
+
+static void update_direction(const LineEstimate *line,
+                             const LineTrendResult *trend,
+                             uint32_t now_ms)
+{
+    if (trend_is_fresh(trend, now_ms) && trend->direction != 0) {
+        recovery_direction = trend->direction;
+    } else if (recovery_direction == 0) {
+        recovery_direction = line->predicted_error <= 0.0f ? -1 : 1;
+    }
+}
+
+static bool trend_is_right_angle(const LineTrendResult *trend,
+                                 uint32_t now_ms)
+{
+    return trend_is_fresh(trend, now_ms) &&
+           (trend->type == LINE_TREND_RIGHT_ANGLE_LEFT ||
+            trend->type == LINE_TREND_RIGHT_ANGLE_RIGHT);
+}
+
+static bool update_reacquisition(const LineEstimate *line, bool new_line)
+{
+    if (!new_line) {
+        return false;
+    }
+    if (line_is_trustworthy(line)) {
+        if (reacquire_count < UINT8_MAX) {
+            reacquire_count++;
+        }
+    } else {
+        reacquire_count = 0U;
+    }
+    return reacquire_count >= LINE_REACQUIRE_COUNT;
 }
 
 void LineRecovery_Init(void)
 {
     recovery_state = LINE_RECOVERY_FOLLOW;
+    recovery_direction = 0;
     loss_count = 0U;
     reacquire_count = 0U;
     last_line_sequence = 0U;
-    last_seen_error = 0.0f;
-    pivot_start_yaw_deg = 0.0f;
+    recovery_started_ms = 0U;
     state_started_ms = 0U;
 }
 
@@ -127,6 +187,7 @@ LineRecoveryState LineRecovery_GetState(void)
 }
 
 bool LineRecovery_Step(const LineEstimate *line,
+                       const LineTrendResult *trend,
                        const LineControlOutput *follow,
                        float yaw_deg,
                        bool yaw_fresh,
@@ -137,6 +198,8 @@ bool LineRecovery_Step(const LineEstimate *line,
     bool new_line;
     bool lost;
 
+    (void)yaw_deg;
+    (void)yaw_fresh;
     if (request == 0) {
         return false;
     }
@@ -148,26 +211,41 @@ bool LineRecovery_Step(const LineEstimate *line,
         enter_fault(now_ms, request);
         return false;
     }
+    if (!line_is_fresh(line, now_ms)) {
+        enter_fault(now_ms, request);
+        return false;
+    }
 
     new_line = take_new_line(line);
-    lost = line_is_lost(line, now_ms);
+    lost = line->event == LINE_EVENT_LOST;
+    if (recovery_state == LINE_RECOVERY_FOLLOW ||
+        recovery_state == LINE_RECOVERY_LOSS_CONFIRM) {
+        update_direction(line, trend, now_ms);
+    }
 
     if (recovery_state == LINE_RECOVERY_FOLLOW) {
+        if (trend_is_right_angle(trend, now_ms)) {
+            recovery_direction =
+                trend->type == LINE_TREND_RIGHT_ANGLE_LEFT ? -1 : 1;
+            recovery_started_ms = now_ms;
+            reacquire_count = 0U;
+            enter_state(LINE_RECOVERY_CORNER_PIVOT, now_ms);
+            set_pause_request(now_ms, request);
+            return true;
+        }
         if (lost) {
             if (new_line) {
                 loss_count = 1U;
-                recovery_state = LINE_RECOVERY_LOSS_CONFIRM;
-                state_started_ms = now_ms;
+                recovery_started_ms = now_ms;
+                enter_state(LINE_RECOVERY_LOSS_CONFIRM, now_ms);
             }
             return false;
-        }
-        if (new_line) {
-            last_seen_error = line->predicted_error;
         }
         return set_follow_request(follow, now_ms, request);
     }
 
-    if (!line_is_fresh(line, now_ms)) {
+    if ((uint32_t)(now_ms - recovery_started_ms) >=
+        LINE_RECOVERY_TOTAL_TIMEOUT_MS) {
         enter_fault(now_ms, request);
         return false;
     }
@@ -176,64 +254,72 @@ bool LineRecovery_Step(const LineEstimate *line,
         if (!lost) {
             recovery_state = LINE_RECOVERY_FOLLOW;
             loss_count = 0U;
-            last_seen_error = line->predicted_error;
             return set_follow_request(follow, now_ms, request);
         }
         if (new_line && loss_count < UINT8_MAX) {
             loss_count++;
         }
         if (loss_count >= LINE_LOSS_CONFIRM_COUNT) {
-            recovery_state = last_seen_error <= 0.0f ?
-                LINE_RECOVERY_PIVOT_LEFT : LINE_RECOVERY_PIVOT_RIGHT;
-            pivot_start_yaw_deg = yaw_deg;
-            state_started_ms = now_ms;
             reacquire_count = 0U;
-            set_pivot_request(recovery_state, sharp_search_required(),
-                              now_ms, request);
+            enter_state(LINE_RECOVERY_FORWARD_SEARCH, now_ms);
+            set_search_request(now_ms, request);
             return true;
         }
         return false;
     }
 
-    if (recovery_state == LINE_RECOVERY_PIVOT_LEFT ||
-        recovery_state == LINE_RECOVERY_PIVOT_RIGHT) {
+    if (recovery_state != LINE_RECOVERY_ALIGN &&
+        update_reacquisition(line, new_line)) {
+        enter_state(LINE_RECOVERY_ALIGN, now_ms);
+        return set_follow_request(follow, now_ms, request);
+    }
+
+    if (recovery_state == LINE_RECOVERY_CORNER_PIVOT) {
+        if ((uint32_t)(now_ms - state_started_ms) <
+            LINE_REVERSAL_PAUSE_MS) {
+            set_pause_request(now_ms, request);
+        } else {
+            set_corner_request(now_ms, request);
+        }
+        return true;
+    }
+
+    if (recovery_state == LINE_RECOVERY_FORWARD_SEARCH) {
         if ((uint32_t)(now_ms - state_started_ms) >=
-                LINE_RECOVERY_TIMEOUT_MS ||
-            (yaw_fresh &&
-             absolute_value(relative_yaw(yaw_deg, pivot_start_yaw_deg)) >=
-                 LINE_RECOVERY_MAX_YAW_DEG)) {
+            LINE_FORWARD_SEARCH_MS) {
+            enter_state(LINE_RECOVERY_REVERSAL_PAUSE, now_ms);
+            set_pause_request(now_ms, request);
+        } else {
+            set_search_request(now_ms, request);
+        }
+        return true;
+    }
+
+    if (recovery_state == LINE_RECOVERY_REVERSAL_PAUSE) {
+        if ((uint32_t)(now_ms - state_started_ms) >=
+            LINE_REVERSAL_PAUSE_MS) {
+            enter_state(LINE_RECOVERY_BACKTRACK, now_ms);
+            set_backtrack_request(now_ms, request);
+        } else {
+            set_pause_request(now_ms, request);
+        }
+        return true;
+    }
+
+    if (recovery_state == LINE_RECOVERY_BACKTRACK) {
+        if ((uint32_t)(now_ms - state_started_ms) >= LINE_BACKTRACK_MS) {
             enter_fault(now_ms, request);
             return false;
         }
-        if (new_line) {
-            if (!lost && line->confidence >= 40U) {
-                if (reacquire_count < UINT8_MAX) {
-                    reacquire_count++;
-                }
-            } else {
-                reacquire_count = 0U;
-            }
-        }
-        if (reacquire_count >= LINE_REACQUIRE_COUNT) {
-            recovery_state = LINE_RECOVERY_ALIGN;
-            state_started_ms = now_ms;
-        }
-        set_pivot_request(
-            recovery_state == LINE_RECOVERY_ALIGN ?
-                (last_seen_error <= 0.0f ?
-                 LINE_RECOVERY_PIVOT_LEFT :
-                 LINE_RECOVERY_PIVOT_RIGHT) : recovery_state,
-            recovery_state != LINE_RECOVERY_ALIGN &&
-                sharp_search_required(),
-            now_ms, request);
+        set_backtrack_request(now_ms, request);
         return true;
     }
 
     if (recovery_state == LINE_RECOVERY_ALIGN) {
         if (lost) {
-            recovery_state = LINE_RECOVERY_LOSS_CONFIRM;
             loss_count = new_line ? 1U : 0U;
-            state_started_ms = now_ms;
+            recovery_started_ms = now_ms;
+            enter_state(LINE_RECOVERY_LOSS_CONFIRM, now_ms);
             return false;
         }
         if ((uint32_t)(now_ms - state_started_ms) >=
