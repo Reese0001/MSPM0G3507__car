@@ -40,7 +40,7 @@ class LineScannerContract(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertRegex(config, r"LINE_MUX_SETTLE_US\s+\(50U\)")
-        self.assertRegex(config, r"LINE_SENSOR_BLACK_ACTIVE_LEVEL\s+\(0U\)")
+        self.assertRegex(config, r"LINE_SENSOR_BLACK_ACTIVE_LEVEL\s+\(1U\)")
 
     def test_bsp_owns_confirmed_gray_mux_pins(self):
         source = (ROOT / "bsp/bsp_line_mux.c").read_text(encoding="utf-8")
