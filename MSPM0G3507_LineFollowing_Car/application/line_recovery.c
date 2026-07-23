@@ -139,12 +139,7 @@ bool LineRecovery_Step(const LineEstimate *line,
     if (recovery_state == LINE_RECOVERY_FAULT) {
         return false;
     }
-    if (recovery_state != LINE_RECOVERY_FOLLOW) {
-        if (emergency_stop || !yaw_fresh) {
-            enter_fault(now_ms, request);
-            return false;
-        }
-    } else if (emergency_stop) {
+    if (emergency_stop) {
         enter_fault(now_ms, request);
         return false;
     }
@@ -198,8 +193,9 @@ bool LineRecovery_Step(const LineEstimate *line,
         recovery_state == LINE_RECOVERY_PIVOT_RIGHT) {
         if ((uint32_t)(now_ms - state_started_ms) >=
                 LINE_RECOVERY_TIMEOUT_MS ||
-            absolute_value(relative_yaw(yaw_deg, pivot_start_yaw_deg)) >=
-                LINE_RECOVERY_MAX_YAW_DEG) {
+            (yaw_fresh &&
+             absolute_value(relative_yaw(yaw_deg, pivot_start_yaw_deg)) >=
+                 LINE_RECOVERY_MAX_YAW_DEG)) {
             enter_fault(now_ms, request);
             return false;
         }

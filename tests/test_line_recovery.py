@@ -45,7 +45,12 @@ class LineRecoveryContract(unittest.TestCase):
 
     def test_fault_paths_fail_closed_and_pivot_has_one_forward_wheel(self):
         source = (ROOT / "application/line_recovery.c").read_text(encoding="utf-8")
-        self.assertIn("if (emergency_stop || !yaw_fresh", source)
+        self.assertNotIn("emergency_stop || !yaw_fresh", source)
+        self.assertIn("if (emergency_stop)", source)
+        self.assertRegex(
+            source,
+            r"yaw_fresh\s*&&[\s\S]{0,100}LINE_RECOVERY_MAX_YAW_DEG",
+        )
         self.assertIn("LINE_RECOVERY_MAX_YAW_DEG", source)
         self.assertIn("LINE_RECOVERY_TIMEOUT_MS", source)
         self.assertIn("request->valid = false", source)
