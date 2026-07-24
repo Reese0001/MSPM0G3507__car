@@ -2,6 +2,7 @@
 
 #include "config/line_control_config.h"
 #include "config/line_recovery_config.h"
+#include "config/motion_primitives_config.h"
 #include "line_recovery.h"
 
 static MotionPrimitiveType active_type = MOTION_PRIMITIVE_FOLLOW_LINE;
@@ -223,7 +224,7 @@ MotionResult MotionPrimitive_StepWithContext(uint32_t now_ms,
             reference_captured = true;
         }
         if (absolute_float(relative_yaw(context->yaw_deg, start_yaw_deg)) >=
-            LINE_RECOVERY_MAX_YAW_DEG) {
+            MOTION_SEARCH_LINE_MAX_YAW_DEG) {
             return finish_primitive(MOTION_FAILED, now_ms, request);
         }
         if (active_params.search_line.prefer_left) {

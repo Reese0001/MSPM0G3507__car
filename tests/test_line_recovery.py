@@ -1,5 +1,8 @@
 from pathlib import Path
+import os
 import re
+import subprocess
+import tempfile
 import unittest
 
 
@@ -123,6 +126,42 @@ class LineRecoveryContract(unittest.TestCase):
         )
         self.assertIsNotNone(pause)
         self.assertGreaterEqual(int(pause.group(1)), 120)
+
+
+class LineRecoveryRuntime(unittest.TestCase):
+    def test_host_harness_exercises_no_reverse_recovery_state_machine(self):
+        vsdevcmd = (
+            Path(os.environ["ProgramFiles"])
+            / "Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat"
+        )
+        harness = ROOT.parent / "tests/line_recovery_harness.c"
+        source = ROOT / "application/line_recovery.c"
+
+        self.assertTrue(vsdevcmd.exists(), "Visual Studio host toolchain missing")
+        self.assertTrue(harness.exists(), "line recovery harness missing")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            executable = Path(temp_dir) / "line_recovery_harness.exe"
+            compile_command = (
+                f'call "{vsdevcmd}" -arch=x64 >nul && '
+                f'cl /nologo /std:c11 /utf-8 /W4 /WX /TC /I"{ROOT}" '
+                f'"{harness}" "{source}" /Fe"{executable}"'
+            )
+            build = subprocess.run(
+                compile_command,
+                capture_output=True,
+                text=True,
+                errors="replace",
+                check=False,
+                shell=True,
+                executable=os.environ["ComSpec"],
+            )
+            self.assertEqual(
+                build.returncode, 0, (build.stdout or "") + build.stderr
+            )
+            run = subprocess.run(
+                [str(executable)], capture_output=True, text=True, check=False
+            )
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
 
 
 if __name__ == "__main__":

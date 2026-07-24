@@ -76,6 +76,20 @@ class MotionPrimitiveContract(unittest.TestCase):
         self.assertIn("MotionRequest", source)
         self.assertIn("request->valid = false", source)
 
+    def test_search_line_yaw_limit_is_owned_by_motion_primitives(self):
+        source = (ROOT / "application/motion_primitives.c").read_text(
+            encoding="utf-8"
+        )
+        recovery_config = (
+            ROOT / "application/config/line_recovery_config.h"
+        ).read_text(encoding="utf-8")
+        primitive_config = (
+            ROOT / "application/config/motion_primitives_config.h"
+        ).read_text(encoding="utf-8")
+        self.assertIn("MOTION_SEARCH_LINE_MAX_YAW_DEG (45.0f)", primitive_config)
+        self.assertIn("MOTION_SEARCH_LINE_MAX_YAW_DEG", source)
+        self.assertNotIn("LINE_RECOVERY_MAX_YAW_DEG", source + recovery_config)
+
     def test_active_scheduler_does_not_call_legacy_blocking_tracking(self):
         scheduler = (ROOT / "application/app_scheduler.c").read_text(
             encoding="utf-8"
