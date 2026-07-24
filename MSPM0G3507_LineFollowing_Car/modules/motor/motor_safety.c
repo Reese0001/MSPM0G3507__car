@@ -217,10 +217,16 @@ void Motor_Safety_Init(void)
 
 void Motor_Safety_Arm(void)
 {
-    if (safety_state == MOTOR_SAFETY_FAULT_LATCHED) return;
+    uint32_t previous_irq_state = motor_safety_enter_critical();
+
+    if (safety_state == MOTOR_SAFETY_FAULT_LATCHED) {
+        motor_safety_exit_critical(previous_irq_state);
+        return;
+    }
     armed_elapsed_ms = 0U;
     watchdog_elapsed_ms = 0U;
     safety_state = MOTOR_SAFETY_ARMED;
+    motor_safety_exit_critical(previous_irq_state);
 }
 
 void Motor_Safety_Disarm(void)

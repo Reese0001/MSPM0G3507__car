@@ -10,6 +10,18 @@ WORKTREE = ROOT.parent
 
 
 class MotorDirectionInterlockContract(unittest.TestCase):
+    def test_arm_serializes_fault_latch_check_and_assignment(self):
+        source = (ROOT / "modules/motor/motor_safety.c").read_text(
+            encoding="utf-8"
+        )
+        arm = source[source.index("void Motor_Safety_Arm"):
+                     source.index("void Motor_Safety_Disarm")]
+        self.assertIn("motor_safety_enter_critical", arm)
+        self.assertIn("MOTOR_SAFETY_FAULT_LATCHED", arm)
+        self.assertIn("motor_safety_exit_critical", arm)
+        self.assertLess(arm.index("MOTOR_SAFETY_FAULT_LATCHED"),
+                        arm.index("safety_state = MOTOR_SAFETY_ARMED"))
+
     def test_safety_header_exposes_the_120ms_direction_pause(self):
         header = (ROOT / "modules/motor/motor_safety.h").read_text(
             encoding="utf-8"
