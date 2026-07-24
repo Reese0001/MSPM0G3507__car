@@ -10,6 +10,9 @@ static uint8_t hairpin_frames;
 static uint8_t stable_reacquire_frames;
 static float previous_error;
 static float maximum_absolute_error;
+static uint16_t last_sequence;
+static bool sequence_seen;
+static LineTrendType last_type;
 
 static float absolute_error(float value)
 {
@@ -83,6 +86,9 @@ void LineTrendDetector_Reset(void)
 {
     trend_direction = 0;
     previous_error = 0.0f;
+    last_sequence = 0U;
+    sequence_seen = false;
+    last_type = LINE_TREND_NORMAL;
     clear_direction_evidence();
 }
 
@@ -113,6 +119,10 @@ bool LineTrendDetector_Update(const LineEstimate *estimate,
         !completion_event) {
         publish_invalid(result, now_ms);
         return false;
+    }
+    if (sequence_seen && estimate->status.sequence == last_sequence) {
+        publish_result(result, estimate, now_ms, last_type);
+        return true;
     }
 
     sample_direction = direction_from_error(estimate->error);
@@ -182,6 +192,9 @@ bool LineTrendDetector_Update(const LineEstimate *estimate,
     }
 
     previous_error = estimate->error;
+    last_sequence = estimate->status.sequence;
+    sequence_seen = true;
+    last_type = type;
     publish_result(result, estimate, now_ms, type);
     return true;
 }

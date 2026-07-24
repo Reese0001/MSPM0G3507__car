@@ -3,6 +3,8 @@
 static int16_t previous_forward = 0;
 static int16_t previous_turn = 0;
 static uint8_t stable_straight_frames = 0U;
+static uint16_t last_straight_sequence = 0U;
+static bool straight_sequence_seen = false;
 static LineControlConfig control_config = {0};
 static bool config_valid = false;
 
@@ -37,6 +39,14 @@ static bool update_straight_boost(const LineEstimate *estimate,
                                   const LineTrendResult *trend,
                                   bool trend_fresh)
 {
+    if (straight_sequence_seen &&
+        estimate->status.sequence == last_straight_sequence) {
+        return stable_straight_frames >=
+               control_config.straight_confirm_frames;
+    }
+    last_straight_sequence = estimate->status.sequence;
+    straight_sequence_seen = true;
+
     if (stable_straight_frame(estimate, trend, trend_fresh)) {
         if (stable_straight_frames < UINT8_MAX) {
             stable_straight_frames++;
@@ -195,6 +205,7 @@ bool LineController_Init(const LineControlConfig *settings)
         previous_forward = 0;
         previous_turn = 0;
         stable_straight_frames = 0U;
+        straight_sequence_seen = false;
         return false;
     }
     control_config = *settings;
@@ -202,6 +213,7 @@ bool LineController_Init(const LineControlConfig *settings)
     previous_forward = 0;
     previous_turn = 0;
     stable_straight_frames = 0U;
+    straight_sequence_seen = false;
     return true;
 }
 
@@ -210,6 +222,7 @@ void LineController_Reset(void)
     previous_forward = 0;
     previous_turn = 0;
     stable_straight_frames = 0U;
+    straight_sequence_seen = false;
 }
 
 bool LineController_Step(const LineEstimate *estimate,
@@ -240,6 +253,7 @@ bool LineController_Step(const LineEstimate *estimate,
         previous_forward = 0;
         previous_turn = 0;
         stable_straight_frames = 0U;
+        straight_sequence_seen = false;
         return false;
     }
 
