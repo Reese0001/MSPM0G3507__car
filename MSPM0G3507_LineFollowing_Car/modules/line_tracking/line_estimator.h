@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "line_scanner.h"
+#include "line_features.h"
 
 typedef enum {
     LINE_EVENT_NONE = 0,
@@ -24,7 +24,7 @@ typedef struct {
 } LineEstimate;
 
 void LineEstimator_Init(void);
-bool LineEstimator_Update(const LineSensorSnapshot *snapshot, uint32_t now_ms);
+bool LineEstimator_Update(const LineFeatures *features, uint32_t now_ms);
 bool LineEstimator_Get(LineEstimate *out);
 
 #endif

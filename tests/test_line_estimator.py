@@ -104,9 +104,26 @@ class LineEstimatorContract(unittest.TestCase):
         source = (ROOT / "modules/line_tracking/line_estimator.c").read_text(
             encoding="utf-8"
         )
-        self.assertRegex(source, r"black_bits\s*==\s*0U")
+        self.assertRegex(source, r"active_count\s*==\s*0U")
         self.assertIn("LINE_EVENT_LOST", source)
         self.assertIn("LINE_EVENT_WIDE_BLACK", source)
+
+    def test_estimator_consumes_stable_line_features(self):
+        header = (ROOT / "modules/line_tracking/line_estimator.h").read_text(
+            encoding="utf-8"
+        )
+        source = (ROOT / "modules/line_tracking/line_estimator.c").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("const LineFeatures *features", header)
+        self.assertNotIn("const LineSensorSnapshot *snapshot", header)
+        for token in (
+            "features->centroid_error",
+            "features->error_rate",
+            "features->active_count",
+            "features->confidence",
+        ):
+            self.assertIn(token, source)
 
 
 class LineControllerContract(unittest.TestCase):
