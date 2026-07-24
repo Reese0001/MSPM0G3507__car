@@ -77,7 +77,8 @@ class CornerManeuverRuntime(unittest.TestCase):
             executable = Path(temp_dir) / "corner_maneuver_harness.exe"
             compile_command = (
                 f'call "{vsdevcmd}" -arch=x64 >nul && '
-                f'cl /nologo /W4 /TC /I"{ROOT}" "{harness}" "{source}" '
+                f'cl /nologo /std:c11 /utf-8 /W4 /WX /TC /I"{ROOT}" '
+                f'"{harness}" "{source}" '
                 f'/Fe"{executable}"'
             )
             build = subprocess.run(

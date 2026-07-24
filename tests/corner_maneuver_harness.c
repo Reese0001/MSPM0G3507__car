@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "application/corner_maneuver.h"
@@ -40,7 +41,10 @@ static void set_event(LinePathEvent *event,
 
 static void check_not_reversing(const CornerManeuverOutput *out)
 {
-    CHECK(!(out->request.left_speed < 0 && out->request.right_speed < 0));
+    if (out->request.left_speed < 0 && out->request.right_speed < 0) {
+        (void)fprintf(stderr, "both wheels reverse\n");
+        exit(1);
+    }
 }
 
 static int run_left_probe_sequence(void)
