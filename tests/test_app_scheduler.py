@@ -1,5 +1,8 @@
 from pathlib import Path
+import os
 import re
+import subprocess
+import tempfile
 import unittest
 
 
@@ -85,6 +88,42 @@ class AppSchedulerPipelineContract(unittest.TestCase):
         self.assertIn("LINE_CONTROL_KP (28.0f)", config)
         self.assertIn("LINE_MAX_FORWARD (400)", config)
         self.assertIn("SAFETY_RUNNING_SPEED_LIMIT (450)", safety)
+
+
+class RecoveryReachabilityRuntime(unittest.TestCase):
+    def test_lost_follow_reaches_recovery_without_corner_authority_starvation(self):
+        vsdevcmd = (
+            Path(os.environ["ProgramFiles"])
+            / "Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat"
+        )
+        harness = ROOT.parent / "tests/recovery_reachability_harness.c"
+        corner = ROOT / "application/corner_maneuver.c"
+        recovery = ROOT / "application/line_recovery.c"
+
+        self.assertTrue(vsdevcmd.exists(), "Visual Studio host toolchain missing")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            executable = Path(temp_dir) / "recovery_reachability_harness.exe"
+            compile_command = (
+                f'call "{vsdevcmd}" -arch=x64 >nul && '
+                f'cl /nologo /W4 /TC /I"{ROOT}" "{harness}" '
+                f'"{corner}" "{recovery}" /Fe"{executable}"'
+            )
+            build = subprocess.run(
+                compile_command,
+                capture_output=True,
+                text=True,
+                errors="replace",
+                check=False,
+                shell=True,
+                executable=os.environ["ComSpec"],
+            )
+            self.assertEqual(
+                build.returncode, 0, (build.stdout or "") + build.stderr
+            )
+            run = subprocess.run(
+                [str(executable)], capture_output=True, text=True, check=False
+            )
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
 
 
 if __name__ == "__main__":

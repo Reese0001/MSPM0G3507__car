@@ -212,8 +212,7 @@ bool CornerManeuver_Step(const LineFeatures *features,
         return false;
     }
     if (emergency_stop || !features_are_fresh(features, now_ms) ||
-        !path_event_is_fresh(path_event, now_ms) || follow == 0 ||
-        !follow->valid) {
+        !path_event_is_fresh(path_event, now_ms)) {
         enter_fault(now_ms, out);
         return false;
     }
@@ -226,12 +225,13 @@ bool CornerManeuver_Step(const LineFeatures *features,
     }
 
     if (state == CORNER_MANEUVER_FOLLOW) {
+        /* A fresh ordinary loss belongs to LineRecovery, not corner control. */
+        if (path_event->type == LINE_PATH_LOST) {
+            return true;
+        }
         if (event_rearm_required) {
             if (path_event->type != LINE_PATH_NORMAL) {
-                if (!set_follow_request(follow, now_ms, &out->request)) {
-                    enter_fault(now_ms, out);
-                    return false;
-                }
+                /* Do not replay a latched corner event or steal a later loss. */
                 return true;
             }
             event_rearm_required = false;
@@ -311,6 +311,15 @@ bool CornerManeuver_Step(const LineFeatures *features,
     }
 
     if (state == CORNER_MANEUVER_SETTLE) {
+        /* Abort PD settlement and let normal three-frame loss recovery run. */
+        if (path_event->type == LINE_PATH_LOST) {
+            enter_state(CORNER_MANEUVER_FOLLOW, now_ms);
+            corner_direction = 0;
+            reacquire_frames = 0U;
+            event_rearm_required = false;
+            out->owns_motion = false;
+            return true;
+        }
         if ((uint32_t)(now_ms - state_started_ms) >= CORNER_SETTLE_MS) {
             if (!set_follow_request(follow, now_ms, &out->request)) {
                 enter_fault(now_ms, out);
