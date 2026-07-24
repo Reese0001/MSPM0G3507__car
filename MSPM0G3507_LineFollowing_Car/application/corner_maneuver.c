@@ -8,7 +8,7 @@ static uint8_t reacquire_frames;
 static uint16_t last_feature_sequence;
 static uint32_t maneuver_started_ms;
 static uint32_t state_started_ms;
-static bool completion_pending;
+static bool event_rearm_required;
 
 static float absolute_value(float value)
 {
@@ -118,6 +118,7 @@ static void enter_fault(uint32_t now_ms, CornerManeuverOutput *out)
     enter_state(CORNER_MANEUVER_FAULT, now_ms);
     invalidate_request(&out->request, now_ms);
     out->owns_motion = true;
+    out->completed = false;
     out->fault = true;
 }
 
@@ -138,7 +139,7 @@ static bool confirmed_direction(const LinePathEvent *path_event,
 static bool feature_is_centered(const LineFeatures *features)
 {
     return features->active_count >= 1U &&
-           features->active_count <= 2U &&
+           features->active_count <= 3U &&
            features->confidence >= CORNER_MIN_CONFIDENCE &&
            absolute_value(features->centroid_error) <= CORNER_CENTER_ERROR;
 }
@@ -176,7 +177,7 @@ void CornerManeuver_Init(void)
     last_feature_sequence = 0U;
     maneuver_started_ms = 0U;
     state_started_ms = 0U;
-    completion_pending = false;
+    event_rearm_required = false;
 }
 
 void CornerManeuver_Reset(void)
@@ -203,9 +204,8 @@ bool CornerManeuver_Step(const LineFeatures *features,
     }
     invalidate_request(&out->request, now_ms);
     out->owns_motion = false;
-    out->completed = completion_pending;
+    out->completed = false;
     out->fault = false;
-    completion_pending = false;
 
     if (state == CORNER_MANEUVER_FAULT) {
         enter_fault(now_ms, out);
@@ -226,6 +226,16 @@ bool CornerManeuver_Step(const LineFeatures *features,
     }
 
     if (state == CORNER_MANEUVER_FOLLOW) {
+        if (event_rearm_required) {
+            if (path_event->type != LINE_PATH_NORMAL) {
+                if (!set_follow_request(follow, now_ms, &out->request)) {
+                    enter_fault(now_ms, out);
+                    return false;
+                }
+                return true;
+            }
+            event_rearm_required = false;
+        }
         if (confirmed_direction(path_event, &detected_direction)) {
             start_maneuver(detected_direction, now_ms, features);
             enter_state(CORNER_MANEUVER_BRAKE, now_ms);
@@ -302,10 +312,16 @@ bool CornerManeuver_Step(const LineFeatures *features,
 
     if (state == CORNER_MANEUVER_SETTLE) {
         if ((uint32_t)(now_ms - state_started_ms) >= CORNER_SETTLE_MS) {
+            if (!set_follow_request(follow, now_ms, &out->request)) {
+                enter_fault(now_ms, out);
+                return false;
+            }
             enter_state(CORNER_MANEUVER_FOLLOW, now_ms);
             corner_direction = 0;
             reacquire_frames = 0U;
-            completion_pending = true;
+            event_rearm_required = true;
+            out->completed = true;
+            return true;
         }
         if (!set_follow_request(follow, now_ms, &out->request)) {
             enter_fault(now_ms, out);

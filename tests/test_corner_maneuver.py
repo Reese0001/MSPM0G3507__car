@@ -1,4 +1,7 @@
 import re
+import os
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -58,6 +61,41 @@ class CornerManeuverContract(unittest.TestCase):
             r"if\s*\(left\s*<\s*0\s*&&\s*right\s*<\s*0\)"
             r"[\s\S]{0,160}invalidate_request",
         )
+
+
+class CornerManeuverRuntime(unittest.TestCase):
+    def test_host_harness_exercises_corner_state_machine(self):
+        vsdevcmd = (
+            Path(os.environ["ProgramFiles"])
+            / "Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat"
+        )
+        harness = ROOT.parent / "tests/corner_maneuver_harness.c"
+        source = ROOT / "application/corner_maneuver.c"
+
+        self.assertTrue(vsdevcmd.exists(), "Visual Studio host toolchain missing")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            executable = Path(temp_dir) / "corner_maneuver_harness.exe"
+            compile_command = (
+                f'call "{vsdevcmd}" -arch=x64 >nul && '
+                f'cl /nologo /W4 /TC /I"{ROOT}" "{harness}" "{source}" '
+                f'/Fe"{executable}"'
+            )
+            build = subprocess.run(
+                compile_command,
+                capture_output=True,
+                text=True,
+                errors="replace",
+                check=False,
+                shell=True,
+                executable=os.environ["ComSpec"],
+            )
+            self.assertEqual(
+                build.returncode, 0, (build.stdout or "") + build.stderr
+            )
+            run = subprocess.run(
+                [str(executable)], capture_output=True, text=True, check=False
+            )
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
 
 
 if __name__ == "__main__":
