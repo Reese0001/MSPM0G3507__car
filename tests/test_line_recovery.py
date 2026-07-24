@@ -18,64 +18,50 @@ class LineRecoveryContract(unittest.TestCase):
             ROOT / "application/config/line_recovery_config.h"
         ).read_text(encoding="utf-8")
 
-    def test_recovery_states_and_trend_input_match_sequence_design(self):
+    def test_recovery_has_no_backtrack_state_or_request(self):
+        self.assertNotIn("LINE_RECOVERY_BACKTRACK", self.header)
+        self.assertNotIn("set_backtrack_request", self.source)
+        self.assertNotIn("LINE_BACKTRACK_MS", self.config)
+
+    def test_recovery_uses_forward_then_pause_then_rotate(self):
         for token in (
-            "LINE_RECOVERY_FOLLOW",
-            "LINE_RECOVERY_LOSS_CONFIRM",
-            "LINE_RECOVERY_CORNER_PIVOT",
             "LINE_RECOVERY_FORWARD_SEARCH",
-            "LINE_RECOVERY_REVERSAL_PAUSE",
-            "LINE_RECOVERY_BACKTRACK",
+            "LINE_RECOVERY_ROTATION_PAUSE",
+            "LINE_RECOVERY_ROTATE_SEARCH",
             "LINE_RECOVERY_ALIGN",
-            "LINE_RECOVERY_FAULT",
-            "const LineTrendResult *trend",
         ):
-            self.assertIn(token, self.header + self.source)
-        self.assertIn("LINE_TREND_RIGHT_ANGLE_LEFT", self.source)
-        self.assertIn("LINE_TREND_RIGHT_ANGLE_RIGHT", self.source)
-        self.assertNotIn("LINE_RECOVERY_PIVOT_LEFT", self.header)
-        self.assertNotIn("LINE_RECOVERY_PIVOT_RIGHT", self.header)
-
-    def test_timing_and_commands_match_safe_recovery_plan(self):
-        expected = (
-            ("LINE_LOSS_CONFIRM_COUNT", "3U"),
-            ("LINE_REACQUIRE_COUNT", "3U"),
-            ("LINE_FORWARD_SEARCH_MS", "500U"),
-            ("LINE_REVERSAL_PAUSE_MS", "120U"),
-            ("LINE_BACKTRACK_MS", "700U"),
-            ("LINE_ALIGN_DURATION_MS", "300U"),
-            ("LINE_RECOVERY_TOTAL_TIMEOUT_MS", "3000U"),
-            ("LINE_SEARCH_INNER_COMMAND", "80"),
-            ("LINE_SEARCH_OUTER_COMMAND", "120"),
-            ("LINE_CORNER_INNER_COMMAND", "-80"),
-            ("LINE_CORNER_OUTER_COMMAND", "120"),
-        )
-        for name, value in expected:
-            self.assertRegex(self.config, rf"{name}\s+\({re.escape(value)}\)")
-
-    def test_forward_pause_backtrack_and_corner_requests_are_explicit(self):
-        for helper in (
-            "set_search_request",
-            "set_pause_request",
-            "set_backtrack_request",
-            "set_corner_request",
+            self.assertIn(token, self.header)
+        for token in (
+            "LINE_FORWARD_SEARCH_MS (500U)",
+            "LINE_ROTATION_PAUSE_MS (120U)",
+            "LINE_ROTATE_SEARCH_MS (700U)",
+            "LINE_ROTATE_INNER_COMMAND (-60)",
+            "LINE_ROTATE_OUTER_COMMAND (100)",
         ):
-            self.assertIn(helper, self.source)
-        self.assertRegex(
+            self.assertIn(token, self.config)
+
+    def test_no_recovery_helper_commands_both_wheels_negative(self):
+        pairs = [
+            tuple(map(int, pair))
+            for pair in re.findall(
+                r"publish_request\(\s*(-?\d+|LINE_[A-Z_]+),\s*"
+                r"(-?\d+|LINE_[A-Z_]+)",
+                self.source,
+            )
+            if all(value.lstrip("-").isdigit() for value in pair)
+        ]
+        self.assertFalse(any(left < 0 and right < 0 for left, right in pairs))
+        self.assertNotRegex(
             self.source,
-            r"set_pause_request[\s\S]{0,300}left_speed\s*=\s*0"
-            r"[\s\S]{0,120}right_speed\s*=\s*0"
-            r"[\s\S]{0,120}valid\s*=\s*true",
+            r"publish_request\(\s*-LINE_SEARCH_[A-Z_]+,\s*"
+            r"-LINE_SEARCH_[A-Z_]+",
         )
-        for command in (
-            "LINE_SEARCH_INNER_COMMAND",
-            "LINE_SEARCH_OUTER_COMMAND",
-            "-LINE_SEARCH_INNER_COMMAND",
-            "-LINE_SEARCH_OUTER_COMMAND",
-            "LINE_CORNER_INNER_COMMAND",
-            "LINE_CORNER_OUTER_COMMAND",
-        ):
-            self.assertIn(command, self.source)
+
+    def test_corner_handling_is_not_owned_by_line_recovery(self):
+        self.assertNotIn("LINE_RECOVERY_CORNER", self.header + self.source)
+        self.assertNotIn("trend_is_right_angle", self.source)
+        self.assertNotIn("set_corner_request", self.source)
+        self.assertNotIn("LINE_CORNER_", self.config)
 
     def test_reacquisition_and_faults_are_bounded(self):
         self.assertIn("line_is_trustworthy", self.source)
@@ -83,6 +69,7 @@ class LineRecoveryContract(unittest.TestCase):
         self.assertIn("absolute_value(line->error) <= LINE_RECOVERY_CENTER_ERROR", self.source)
         self.assertIn("reacquire_count >= LINE_REACQUIRE_COUNT", self.source)
         self.assertIn("LINE_RECOVERY_TOTAL_TIMEOUT_MS", self.source)
+        self.assertIn("LINE_ROTATE_SEARCH_MS", self.source)
         self.assertIn("if (emergency_stop)", self.source)
         self.assertIn("request->valid = false", self.source)
         self.assertNotIn("last_seen_error", self.source)
@@ -98,7 +85,7 @@ class LineRecoveryContract(unittest.TestCase):
             r"update_reacquisition",
         )
 
-    def test_recovery_direction_is_locked_during_search_and_backtrack(self):
+    def test_recovery_direction_is_locked_during_search(self):
         self.assertRegex(
             self.source,
             r"if\s*\(recovery_state\s*==\s*LINE_RECOVERY_FOLLOW\s*\|\|\s*"
@@ -106,32 +93,33 @@ class LineRecoveryContract(unittest.TestCase):
             r"\s*\{\s*update_direction",
         )
 
-    def test_corner_pivot_observes_reversal_pause(self):
+    def test_forward_search_pauses_before_rotate_search(self):
         self.assertRegex(
             self.source,
-            r"enter_state\(LINE_RECOVERY_CORNER_PIVOT,\s*now_ms\);"
-            r"\s*set_pause_request",
+            r"LINE_RECOVERY_FORWARD_SEARCH[\s\S]{0,500}"
+            r"LINE_RECOVERY_ROTATION_PAUSE",
         )
         self.assertRegex(
             self.source,
-            r"recovery_state\s*==\s*LINE_RECOVERY_CORNER_PIVOT"
-            r"[\s\S]{0,250}LINE_REVERSAL_PAUSE_MS",
+            r"LINE_RECOVERY_ROTATION_PAUSE[\s\S]{0,500}"
+            r"LINE_ROTATION_PAUSE_MS[\s\S]{0,500}"
+            r"LINE_RECOVERY_ROTATE_SEARCH",
         )
 
     def test_every_recovery_command_stays_inside_competition_limit(self):
         values = {
             name: int(value)
             for name, value in re.findall(
-                r"#define\s+(LINE_(?:SEARCH|CORNER)_[A-Z_]+)\s+\((-?\d+)\)",
+                r"#define\s+(LINE_(?:SEARCH|ROTATE)_[A-Z_]+)\s+\((-?\d+)\)",
                 self.config,
             )
         }
-        self.assertGreaterEqual(len(values), 4)
+        self.assertGreaterEqual(len(values), 5)
         for name, value in values.items():
             with self.subTest(name=name):
                 self.assertLessEqual(abs(value), 450)
         pause = re.search(
-            r"LINE_REVERSAL_PAUSE_MS\s+\((\d+)U\)", self.config
+            r"LINE_ROTATION_PAUSE_MS\s+\((\d+)U\)", self.config
         )
         self.assertIsNotNone(pause)
         self.assertGreaterEqual(int(pause.group(1)), 120)

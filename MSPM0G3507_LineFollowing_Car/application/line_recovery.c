@@ -78,44 +78,35 @@ static bool set_follow_request(const LineControlOutput *follow,
     return true;
 }
 
-static void set_search_request(uint32_t now_ms, MotionRequest *request)
+static void set_forward_search(uint32_t now_ms, MotionRequest *request)
 {
     if (recovery_direction < 0) {
         publish_request(LINE_SEARCH_INNER_COMMAND,
                         LINE_SEARCH_OUTER_COMMAND, now_ms, request);
-    } else {
+    } else if (recovery_direction > 0) {
         publish_request(LINE_SEARCH_OUTER_COMMAND,
                         LINE_SEARCH_INNER_COMMAND, now_ms, request);
+    } else {
+        publish_request(LINE_SEARCH_STRAIGHT_COMMAND,
+                        LINE_SEARCH_STRAIGHT_COMMAND, now_ms, request);
     }
 }
 
 static void set_pause_request(uint32_t now_ms, MotionRequest *request)
 {
-    request->left_speed = 0;
-    request->right_speed = 0;
-    request->timestamp_ms = now_ms;
-    request->valid = true;
+    publish_request(0, 0, now_ms, request);
 }
 
-static void set_backtrack_request(uint32_t now_ms, MotionRequest *request)
+static void set_rotate_search(uint32_t now_ms, MotionRequest *request)
 {
     if (recovery_direction < 0) {
-        publish_request(-LINE_SEARCH_INNER_COMMAND,
-                        -LINE_SEARCH_OUTER_COMMAND, now_ms, request);
+        publish_request(LINE_ROTATE_INNER_COMMAND,
+                        LINE_ROTATE_OUTER_COMMAND, now_ms, request);
+    } else if (recovery_direction > 0) {
+        publish_request(LINE_ROTATE_OUTER_COMMAND,
+                        LINE_ROTATE_INNER_COMMAND, now_ms, request);
     } else {
-        publish_request(-LINE_SEARCH_OUTER_COMMAND,
-                        -LINE_SEARCH_INNER_COMMAND, now_ms, request);
-    }
-}
-
-static void set_corner_request(uint32_t now_ms, MotionRequest *request)
-{
-    if (recovery_direction < 0) {
-        publish_request(LINE_CORNER_INNER_COMMAND,
-                        LINE_CORNER_OUTER_COMMAND, now_ms, request);
-    } else {
-        publish_request(LINE_CORNER_OUTER_COMMAND,
-                        LINE_CORNER_INNER_COMMAND, now_ms, request);
+        invalidate_request(request, now_ms);
     }
 }
 
@@ -137,17 +128,11 @@ static void update_direction(const LineEstimate *line,
 {
     if (trend_is_fresh(trend, now_ms) && trend->direction != 0) {
         recovery_direction = trend->direction;
-    } else if (recovery_direction == 0) {
-        recovery_direction = line->predicted_error <= 0.0f ? -1 : 1;
+    } else if (line->predicted_error < 0.0f) {
+        recovery_direction = -1;
+    } else if (line->predicted_error > 0.0f) {
+        recovery_direction = 1;
     }
-}
-
-static bool trend_is_right_angle(const LineTrendResult *trend,
-                                 uint32_t now_ms)
-{
-    return trend_is_fresh(trend, now_ms) &&
-           (trend->type == LINE_TREND_RIGHT_ANGLE_LEFT ||
-            trend->type == LINE_TREND_RIGHT_ANGLE_RIGHT);
 }
 
 static bool update_reacquisition(const LineEstimate *line, bool new_line)
@@ -224,21 +209,12 @@ bool LineRecovery_Step(const LineEstimate *line,
     }
 
     if (recovery_state == LINE_RECOVERY_FOLLOW) {
-        if (trend_is_right_angle(trend, now_ms)) {
-            recovery_direction =
-                trend->type == LINE_TREND_RIGHT_ANGLE_LEFT ? -1 : 1;
+        if (lost && new_line) {
+            loss_count = 1U;
             recovery_started_ms = now_ms;
-            reacquire_count = 0U;
-            enter_state(LINE_RECOVERY_CORNER_PIVOT, now_ms);
-            set_pause_request(now_ms, request);
-            return true;
+            enter_state(LINE_RECOVERY_LOSS_CONFIRM, now_ms);
         }
         if (lost) {
-            if (new_line) {
-                loss_count = 1U;
-                recovery_started_ms = now_ms;
-                enter_state(LINE_RECOVERY_LOSS_CONFIRM, now_ms);
-            }
             return false;
         }
         return set_follow_request(follow, now_ms, request);
@@ -262,7 +238,7 @@ bool LineRecovery_Step(const LineEstimate *line,
         if (loss_count >= LINE_LOSS_CONFIRM_COUNT) {
             reacquire_count = 0U;
             enter_state(LINE_RECOVERY_FORWARD_SEARCH, now_ms);
-            set_search_request(now_ms, request);
+            set_forward_search(now_ms, request);
             return true;
         }
         return false;
@@ -274,44 +250,39 @@ bool LineRecovery_Step(const LineEstimate *line,
         return set_follow_request(follow, now_ms, request);
     }
 
-    if (recovery_state == LINE_RECOVERY_CORNER_PIVOT) {
-        if ((uint32_t)(now_ms - state_started_ms) <
-            LINE_REVERSAL_PAUSE_MS) {
-            set_pause_request(now_ms, request);
-        } else {
-            set_corner_request(now_ms, request);
-        }
-        return true;
-    }
-
     if (recovery_state == LINE_RECOVERY_FORWARD_SEARCH) {
         if ((uint32_t)(now_ms - state_started_ms) >=
             LINE_FORWARD_SEARCH_MS) {
-            enter_state(LINE_RECOVERY_REVERSAL_PAUSE, now_ms);
+            enter_state(LINE_RECOVERY_ROTATION_PAUSE, now_ms);
             set_pause_request(now_ms, request);
         } else {
-            set_search_request(now_ms, request);
+            set_forward_search(now_ms, request);
         }
         return true;
     }
 
-    if (recovery_state == LINE_RECOVERY_REVERSAL_PAUSE) {
+    if (recovery_state == LINE_RECOVERY_ROTATION_PAUSE) {
         if ((uint32_t)(now_ms - state_started_ms) >=
-            LINE_REVERSAL_PAUSE_MS) {
-            enter_state(LINE_RECOVERY_BACKTRACK, now_ms);
-            set_backtrack_request(now_ms, request);
+            LINE_ROTATION_PAUSE_MS) {
+            if (recovery_direction == 0) {
+                enter_fault(now_ms, request);
+                return false;
+            }
+            enter_state(LINE_RECOVERY_ROTATE_SEARCH, now_ms);
+            set_rotate_search(now_ms, request);
         } else {
             set_pause_request(now_ms, request);
         }
         return true;
     }
 
-    if (recovery_state == LINE_RECOVERY_BACKTRACK) {
-        if ((uint32_t)(now_ms - state_started_ms) >= LINE_BACKTRACK_MS) {
+    if (recovery_state == LINE_RECOVERY_ROTATE_SEARCH) {
+        if ((uint32_t)(now_ms - state_started_ms) >=
+            LINE_ROTATE_SEARCH_MS) {
             enter_fault(now_ms, request);
             return false;
         }
-        set_backtrack_request(now_ms, request);
+        set_rotate_search(now_ms, request);
         return true;
     }
 
