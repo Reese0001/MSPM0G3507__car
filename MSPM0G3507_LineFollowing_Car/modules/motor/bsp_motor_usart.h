@@ -4,7 +4,7 @@
 #include "ti_msp_dl_config.h"
 #include "app_motor_usart.h"
 
-#define MOTOR_UART_TX_WAIT_LIMIT (1000U)
+#define MOTOR_UART_TX_TIMEOUT_US (5000U)
 
 void Motor_Usart_init (void);
 void Send_Motor_U8(uint8_t Data);

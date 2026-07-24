@@ -1,4 +1,5 @@
 #include "bsp_motor_usart.h"
+#include "../../bsp/time/timer.h"
 
 // 电机串口初始化
 void Motor_Usart_init(void)
@@ -41,29 +42,29 @@ bool Motor_Usart_SendArrayBounded(const uint8_t *data, uint16_t length)
     uint16_t index;
 
     for (index = 0U; index < length; index++) {
-        uint32_t wait_count = MOTOR_UART_TX_WAIT_LIMIT;
+        uint32_t started_us = BSP_Time_GetUs();
 
-        while ((DL_UART_isBusy(Motor_INST) == true) && (wait_count > 0U)) {
-            wait_count--;
-        }
-        if (wait_count == 0U) {
-            DL_UART_Main_disable(Motor_INST);
-            DL_UART_Main_enable(Motor_INST);
-            return false;
+        while (DL_UART_Main_isTXFIFOFull(Motor_INST)) {
+            if ((uint32_t)(BSP_Time_GetUs() - started_us) >=
+                MOTOR_UART_TX_TIMEOUT_US) {
+                DL_UART_Main_disable(Motor_INST);
+                DL_UART_Main_enable(Motor_INST);
+                return false;
+            }
         }
         DL_UART_Main_transmitData(Motor_INST, data[index]);
     }
 
     {
-        uint32_t wait_count = MOTOR_UART_TX_WAIT_LIMIT;
+        uint32_t started_us = BSP_Time_GetUs();
 
-        while ((DL_UART_isBusy(Motor_INST) == true) && (wait_count > 0U)) {
-            wait_count--;
-        }
-        if (wait_count == 0U) {
-            DL_UART_Main_disable(Motor_INST);
-            DL_UART_Main_enable(Motor_INST);
-            return false;
+        while (DL_UART_isBusy(Motor_INST)) {
+            if ((uint32_t)(BSP_Time_GetUs() - started_us) >=
+                MOTOR_UART_TX_TIMEOUT_US) {
+                DL_UART_Main_disable(Motor_INST);
+                DL_UART_Main_enable(Motor_INST);
+                return false;
+            }
         }
     }
     return true;
