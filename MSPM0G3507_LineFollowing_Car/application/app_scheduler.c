@@ -7,6 +7,7 @@
 #include "../bsp/time/timer.h"
 #include "../modules/line_tracking/line_controller.h"
 #include "../modules/line_tracking/line_estimator.h"
+#include "../modules/line_tracking/line_features.h"
 #include "../modules/line_tracking/line_scanner.h"
 #include "../modules/line_tracking/line_trend_detector.h"
 #include "../modules/motor/motor_adapter.h"
@@ -14,6 +15,7 @@
 
 static MotionRequest mission_request = {0};
 static LineEstimate line_estimate = {0};
+static LineFeatures line_features = {0};
 static LineTrendResult line_trend = {0};
 static LineControlOutput line_control = {0};
 static bool start_requested = false;
@@ -21,6 +23,7 @@ static bool start_requested = false;
 static void AppScheduler_Start(void)
 {
     LineController_Reset();
+    LineFeatureExtractor_Reset();
     LineTrendDetector_Reset();
     LineRecovery_Reset();
     SafetySupervisor_Reinitialize();
@@ -35,8 +38,12 @@ static void AppScheduler_RunLineControl(uint32_t now_ms)
     bool trend_ready = false;
 
     if (LineScanner_GetSnapshot(&scanner)) {
-        estimate_ready = LineEstimator_Update(&scanner, now_ms) &&
-                         LineEstimator_Get(&line_estimate);
+        if (LineFeatureExtractor_Update(&scanner, now_ms, &line_features)) {
+            estimate_ready = LineEstimator_Update(&line_features, now_ms) &&
+                             LineEstimator_Get(&line_estimate);
+        } else {
+            (void)LineEstimator_Update(0, now_ms);
+        }
     }
     if (estimate_ready) {
         trend_ready = LineTrendDetector_Update(
@@ -100,6 +107,7 @@ void AppScheduler_Init(uint32_t now_ms)
     LineControlConfig line_config = LineControlConfig_Default();
 
     LineScanner_Init();
+    LineFeatureExtractor_Init();
     LineEstimator_Init();
     LineTrendDetector_Init();
     (void)LineController_Init(&line_config);
@@ -108,6 +116,7 @@ void AppScheduler_Init(uint32_t now_ms)
 
     mission_request = (MotionRequest){0};
     line_estimate = (LineEstimate){0};
+    line_features = (LineFeatures){0};
     line_trend = (LineTrendResult){0};
     line_control = (LineControlOutput){0};
     start_requested = false;

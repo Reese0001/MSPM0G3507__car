@@ -98,6 +98,7 @@ bool LineFeatureExtractor_Update(const LineSensorSnapshot *snapshot,
     } else {
         out->centroid_error = has_history ? previous_error : 0.0f;
     }
+    /* 序号和时间都推进才计算导数，避免重复帧放大瞬时误差。 */
     out->error_rate = 0.0f;
     if (has_history &&
         snapshot->status.sequence != previous_sequence &&
@@ -109,6 +110,7 @@ bool LineFeatureExtractor_Update(const LineSensorSnapshot *snapshot,
             (float)delta_ms;
     }
 
+    /* 多段、过宽或质心突变均降低置信度，并限制在 0 到 100。 */
     if (out->segment_count > 1U) {
         confidence -= (int16_t)(out->segment_count - 1U) *
                       LINE_FEATURE_GROUP_PENALTY;
@@ -124,6 +126,7 @@ bool LineFeatureExtractor_Update(const LineSensorSnapshot *snapshot,
     }
     out->confidence = clamp_confidence(confidence);
 
+    /* 仅记录新的非空帧；丢线与重复帧保留最近可靠质心。 */
     if (out->active_count != 0U &&
         (!has_history ||
          (snapshot->status.sequence != previous_sequence &&
