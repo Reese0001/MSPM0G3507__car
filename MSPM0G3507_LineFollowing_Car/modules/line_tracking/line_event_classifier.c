@@ -151,16 +151,7 @@ bool LineEventClassifier_Update(const LineFeatures *features,
         }
         if (wide_frames >= LINE_EVENT_WIDE_CONFIRM_FRAMES) {
             corner_candidate = true;
-            direction_score += frame_direction_score(features);
-            if (direction_score <= -LINE_EVENT_DIRECTION_THRESHOLD) {
-                latched_corner = LINE_PATH_RIGHT_ANGLE_LEFT;
-                type = latched_corner;
-            } else if (direction_score >= LINE_EVENT_DIRECTION_THRESHOLD) {
-                latched_corner = LINE_PATH_RIGHT_ANGLE_RIGHT;
-                type = latched_corner;
-            } else {
-                type = LINE_PATH_WIDE_PENDING;
-            }
+            type = LINE_PATH_WIDE_PENDING;
         }
     } else {
         stable_single_frames = 0U;
