@@ -201,7 +201,7 @@ class ModularArchitectureContract(unittest.TestCase):
         self.assertIn("stop_pending = 1U", disarm.group(1))
         self.assertIsNotNone(safety_service)
         self.assertIn("if (stop_pending != 0U)", safety_service.group(1))
-        self.assertIn("Contrl_Speed(0, 0, 0, 0)", safety_service.group(1))
+        self.assertIn("apply_speed(0, 0, 0, 0)", safety_service.group(1))
 
 
 if __name__ == "__main__":

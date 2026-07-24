@@ -11,6 +11,8 @@
 #define MOTOR_SAFETY_POST_STEP_MS           (100U)
 #define MOTOR_SAFETY_POST_STEP_PERCENT      (10U)
 #define MOTOR_SAFETY_WATCHDOG_MS            (200U)
+/* Each wheel must stay at zero before changing its applied direction. */
+#define MOTOR_SAFETY_DIRECTION_CHANGE_PAUSE_MS (120U)
 
 void Motor_Safety_Init(void);
 void Motor_Safety_Arm(void);
