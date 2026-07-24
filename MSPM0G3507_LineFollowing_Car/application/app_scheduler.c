@@ -200,7 +200,7 @@ void AppScheduler_Run(uint32_t now_ms)
     uint32_t index;
     uint32_t now_us = BSP_Time_GetUs();
 
-    LineScanner_Service(now_us);
+    LineScanner_Service(now_us, now_ms);
 
     for (index = 0U;
          index < (uint32_t)(sizeof(app_tasks) / sizeof(app_tasks[0]));

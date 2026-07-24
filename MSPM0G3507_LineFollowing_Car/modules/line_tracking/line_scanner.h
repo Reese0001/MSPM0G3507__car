@@ -12,7 +12,7 @@ typedef struct {
 } LineSensorSnapshot;
 
 void LineScanner_Init(void);
-void LineScanner_Service(uint32_t now_us);
+void LineScanner_Service(uint32_t now_us, uint32_t now_ms);
 bool LineScanner_GetSnapshot(LineSensorSnapshot *out);
 
 #endif

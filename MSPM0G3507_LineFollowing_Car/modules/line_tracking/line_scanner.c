@@ -28,7 +28,7 @@ void LineScanner_Init(void)
     published_snapshot.black_bits = 0U;
 }
 
-void LineScanner_Service(uint32_t now_us)
+void LineScanner_Service(uint32_t now_us, uint32_t now_ms)
 {
     if (scan_state == LINE_SCAN_SELECT) {
         BSP_LineMux_SelectChannel(scan_channel);
@@ -50,7 +50,7 @@ void LineScanner_Service(uint32_t now_us)
     scan_channel++;
     if (scan_channel >= 8U) {
         published_snapshot.black_bits = working_black_bits;
-        published_snapshot.status.timestamp_ms = now_us / 1000U;
+        published_snapshot.status.timestamp_ms = now_ms;
         published_snapshot.status.sequence++;
         published_snapshot.status.valid = true;
         published_snapshot.status.health = MODULE_HEALTH_OK;
