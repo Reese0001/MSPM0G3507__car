@@ -13,6 +13,7 @@ typedef enum {
     LINE_TREND_TIGHT_RIGHT,
     LINE_TREND_HAIRPIN_LEFT,
     LINE_TREND_HAIRPIN_RIGHT,
+    /* Retained for callers while LineEventClassifier owns direct wide corners. */
     LINE_TREND_RIGHT_ANGLE_LEFT,
     LINE_TREND_RIGHT_ANGLE_RIGHT
 } LineTrendType;

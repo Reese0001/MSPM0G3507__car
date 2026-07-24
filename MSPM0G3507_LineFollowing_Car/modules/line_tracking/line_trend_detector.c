@@ -10,8 +10,6 @@ static uint8_t hairpin_frames;
 static uint8_t stable_reacquire_frames;
 static float previous_error;
 static float maximum_absolute_error;
-static uint32_t outer_seen_ms;
-static bool outer_seen;
 
 static float absolute_error(float value)
 {
@@ -47,8 +45,6 @@ static void clear_direction_evidence(void)
     hairpin_frames = 0U;
     stable_reacquire_frames = 0U;
     maximum_absolute_error = 0.0f;
-    outer_seen_ms = 0U;
-    outer_seen = false;
 }
 
 static void publish_invalid(LineTrendResult *result, uint32_t now_ms)
@@ -98,7 +94,6 @@ bool LineTrendDetector_Update(const LineEstimate *estimate,
     int8_t sample_direction;
     float current_absolute_error;
     LineTrendType type = LINE_TREND_NORMAL;
-    bool corner_window_active;
     bool completion_event;
     uint8_t active_count;
 
@@ -147,16 +142,8 @@ bool LineTrendDetector_Update(const LineEstimate *estimate,
         if (current_absolute_error > maximum_absolute_error) {
             maximum_absolute_error = current_absolute_error;
         }
-        if (!completion_event &&
-            current_absolute_error >= LINE_TREND_OUTER_ERROR) {
-            outer_seen = true;
-            outer_seen_ms = now_ms;
-        }
     }
 
-    corner_window_active = outer_seen &&
-                           (uint32_t)(now_ms - outer_seen_ms) <=
-                               LINE_TREND_CORNER_WINDOW_MS;
     if (trend_direction != 0 && outward_steps >= LINE_TREND_OUTWARD_STEPS) {
         if (estimate->event == LINE_EVENT_HARD_LEFT ||
             estimate->event == LINE_EVENT_HARD_RIGHT) {
@@ -171,14 +158,6 @@ bool LineTrendDetector_Update(const LineEstimate *estimate,
             }
         } else {
             hairpin_frames = 0U;
-        }
-
-        if (type == LINE_TREND_NORMAL && corner_window_active &&
-            (estimate->event == LINE_EVENT_LOST ||
-             estimate->event == LINE_EVENT_WIDE_BLACK ||
-             active_count >= LINE_TREND_CROSSLINE_ACTIVE_COUNT)) {
-            type = trend_direction < 0 ? LINE_TREND_RIGHT_ANGLE_LEFT :
-                                         LINE_TREND_RIGHT_ANGLE_RIGHT;
         }
 
         if (type == LINE_TREND_NORMAL &&

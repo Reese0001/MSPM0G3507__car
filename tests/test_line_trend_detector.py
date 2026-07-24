@@ -32,8 +32,6 @@ def classify_trace(samples):
             hairpin_frames += 1
             if hairpin_frames >= 3:
                 return "hairpin_left" if direction < 0 else "hairpin_right"
-        if event in ("lost", "wide") and outer_seen and outward_steps >= 2:
-            return "right_angle_left" if direction < 0 else "right_angle_right"
         previous_error = error
 
     if direction and outward_steps >= 2 and abs(previous_error) >= 3:
@@ -44,14 +42,6 @@ def classify_trace(samples):
 class LineTrendDetectorContract(unittest.TestCase):
     def test_photographed_track_scenarios_and_mirrors(self):
         cases = {
-            "SQUARE_LEFT": (
-                ((-1, "none"), (-3, "none"), (-5, "none"), (0, "wide")),
-                "right_angle_left",
-            ),
-            "SQUARE_RIGHT": (
-                ((1, "none"), (3, "none"), (5, "none"), (0, "wide")),
-                "right_angle_right",
-            ),
             "HAIRPIN_LEFT": (
                 ((-1, "none"), (-3, "none"), (-5, "none"),
                  (-7, "hard"), (-7, "hard"), (-7, "hard")),
@@ -77,14 +67,11 @@ class LineTrendDetectorContract(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertEqual(classify_trace(trace), expected)
 
-    def test_same_square_trace_is_identical_after_reset(self):
-        square_left = (
+    def test_wide_completion_stays_out_of_trend_classification(self):
+        direct_wide = (
             (-1, "none"), (-3, "none"), (-5, "none"), (0, "wide")
         )
-        first_lap = classify_trace(square_left)
-        second_lap_after_reset = classify_trace(square_left)
-        self.assertEqual(first_lap, "right_angle_left")
-        self.assertEqual(second_lap_after_reset, first_lap)
+        self.assertEqual(classify_trace(direct_wide), "normal")
 
     def test_three_stable_frames_clear_old_corner_evidence(self):
         source = (ROOT / "modules/line_tracking/line_trend_detector.c").read_text(
@@ -143,7 +130,6 @@ class LineTrendDetectorContract(unittest.TestCase):
         )
         for token in (
             "outward_steps",
-            "outer_seen_ms",
             "hairpin_frames",
             "count_active_bits",
             "LINE_EVENT_WIDE_BLACK",
@@ -163,7 +149,26 @@ class LineTrendDetectorContract(unittest.TestCase):
             r"\s*!completion_event",
         )
 
-    def test_trace_classifications_require_an_outward_sequence(self):
+    def test_wide_features_are_owned_by_the_event_classifier(self):
+        trend = (ROOT / "modules/line_tracking/line_trend_detector.c").read_text(
+            encoding="utf-8"
+        )
+        classifier = (
+            ROOT / "modules/line_tracking/line_event_classifier.c"
+        ).read_text(encoding="utf-8")
+        header = (
+            ROOT / "modules/line_tracking/line_event_classifier.h"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("LINE_TREND_RIGHT_ANGLE", trend)
+        self.assertIn("LineEventClassifier_Update", header)
+        self.assertRegex(
+            classifier,
+            r"features->active_count\s*>=\s*LINE_EVENT_WIDE_ACTIVE_COUNT"
+            r"[\s\S]{0,200}stable_single_frames\s*>=\s*"
+            r"LINE_EVENT_STABLE_SINGLE_FRAMES",
+        )
+
+    def test_tight_and_hairpin_classifications_require_an_outward_sequence(self):
         cases = {
             "LEFT_TIGHT": (
                 ((-1, "none"), (-3, "none"), (-5, "none")),
@@ -173,14 +178,6 @@ class LineTrendDetectorContract(unittest.TestCase):
                 ((1, "none"), (3, "none"), (5, "none"),
                  (7, "hard"), (7, "hard"), (7, "hard")),
                 "hairpin_right",
-            ),
-            "LEFT_LOST_CORNER": (
-                ((-1, "none"), (-3, "none"), (-5, "hard"), (-5, "lost")),
-                "right_angle_left",
-            ),
-            "RIGHT_WIDE_CORNER": (
-                ((1, "none"), (3, "none"), (5, "hard"), (0, "wide")),
-                "right_angle_right",
             ),
             "NOISE_NOT_CORNER": (
                 ((0, "none"), (7, "hard"), (0, "none"), (0, "lost")),
