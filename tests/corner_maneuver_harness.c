@@ -179,10 +179,85 @@ static int run_right_mirror_and_faults(void)
     return 0;
 }
 
+static int run_timeout_boundaries_and_follow_safety(void)
+{
+    LineFeatures features;
+    LinePathEvent event;
+    LineControlOutput follow = {200, 0, true};
+    LineControlOutput reverse_follow = {-100, 0, true};
+    LineControlOutput over_limit_follow = {450, 450, true};
+    CornerManeuverOutput out;
+
+    CornerManeuver_Init();
+    set_features(&features, 0U, 1U, 4U);
+    set_event(&event, 0U, LINE_PATH_WIDE_PENDING);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 0U, &out));
+    set_features(&features, 79U, 2U, 4U);
+    set_event(&event, 79U, LINE_PATH_NORMAL);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 79U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_FORWARD_PROBE);
+    CHECK(out.request.valid);
+    CHECK(out.request.left_speed == 100 && out.request.right_speed == 100);
+    check_not_reversing(&out);
+    set_features(&features, 80U, 3U, 4U);
+    set_event(&event, 80U, LINE_PATH_NORMAL);
+    CHECK(!CornerManeuver_Step(&features, &event, &follow, false, 80U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_FAULT);
+    CHECK(out.fault && !out.completed && !out.request.valid);
+    CHECK(out.request.left_speed == 0 && out.request.right_speed == 0);
+
+    CornerManeuver_Init();
+    set_features(&features, 0U, 1U, 4U);
+    set_event(&event, 0U, LINE_PATH_RIGHT_ANGLE_LEFT);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 0U, &out));
+    set_features(&features, 120U, 2U, 4U);
+    set_event(&event, 120U, LINE_PATH_NORMAL);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 120U, &out));
+    set_features(&features, 220U, 3U, 4U);
+    set_event(&event, 220U, LINE_PATH_NORMAL);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 220U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SEEK);
+    set_features(&features, 1119U, 4U, 4U);
+    set_event(&event, 1119U, LINE_PATH_NORMAL);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 1119U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SEEK);
+    CHECK(out.request.left_speed == -80 && out.request.right_speed == 120);
+    check_not_reversing(&out);
+    set_features(&features, 1120U, 5U, 4U);
+    set_event(&event, 1120U, LINE_PATH_NORMAL);
+    CHECK(!CornerManeuver_Step(&features, &event, &follow, false, 1120U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_FAULT);
+    CHECK(out.fault && !out.completed && !out.request.valid);
+    CHECK(out.request.left_speed == 0 && out.request.right_speed == 0);
+
+    CornerManeuver_Init();
+    set_features(&features, 0U, 1U, 2U);
+    set_event(&event, 0U, LINE_PATH_NORMAL);
+    CHECK(!CornerManeuver_Step(&features, &event, &reverse_follow,
+                               false, 0U, &out));
+    CHECK(out.fault && !out.completed && !out.request.valid);
+    CHECK(out.request.left_speed == 0 && out.request.right_speed == 0);
+
+    CornerManeuver_Init();
+    set_features(&features, 0U, 1U, 2U);
+    set_event(&event, 0U, LINE_PATH_NORMAL);
+    CHECK(CornerManeuver_Step(&features, &event, &over_limit_follow,
+                              false, 0U, &out));
+    CHECK(!out.fault && out.request.valid && !out.owns_motion);
+    CHECK(out.request.left_speed == 0 && out.request.right_speed == 450);
+    CHECK(out.request.left_speed >= -450 && out.request.left_speed <= 450);
+    CHECK(out.request.right_speed >= -450 && out.request.right_speed <= 450);
+    check_not_reversing(&out);
+    return 0;
+}
+
 int main(void)
 {
     if (run_left_probe_sequence() != 0) {
         return 1;
     }
-    return run_right_mirror_and_faults();
+    if (run_right_mirror_and_faults() != 0) {
+        return 1;
+    }
+    return run_timeout_boundaries_and_follow_safety();
 }
