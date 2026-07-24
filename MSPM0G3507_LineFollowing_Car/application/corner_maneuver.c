@@ -10,11 +10,6 @@ static uint32_t maneuver_started_ms;
 static uint32_t state_started_ms;
 static bool event_rearm_required;
 
-static float absolute_value(float value)
-{
-    return value < 0.0f ? -value : value;
-}
-
 static int16_t limit_command(int16_t value)
 {
     if (value > 450) {
@@ -136,12 +131,11 @@ static bool confirmed_direction(const LinePathEvent *path_event,
     return false;
 }
 
-static bool feature_is_centered(const LineFeatures *features)
+static bool feature_has_reliable_line(const LineFeatures *features)
 {
     return features->active_count >= 1U &&
            features->active_count <= 3U &&
-           features->confidence >= CORNER_MIN_CONFIDENCE &&
-           absolute_value(features->centroid_error) <= CORNER_CENTER_ERROR;
+           features->confidence >= CORNER_MIN_CONFIDENCE;
 }
 
 static bool update_reacquisition(const LineFeatures *features)
@@ -150,7 +144,7 @@ static bool update_reacquisition(const LineFeatures *features)
         return false;
     }
     last_feature_sequence = features->status.sequence;
-    if (feature_is_centered(features)) {
+    if (feature_has_reliable_line(features)) {
         if (reacquire_frames < CORNER_REACQUIRE_FRAMES) {
             reacquire_frames++;
         }

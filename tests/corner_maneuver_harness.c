@@ -92,24 +92,28 @@ static int run_left_probe_sequence(void)
     check_not_reversing(&out);
 
     set_features(&features, 230U, 3U, 1U);
+    features.centroid_error = 6.0f;
     set_event(&event, 230U, LINE_PATH_NORMAL);
     CHECK(CornerManeuver_Step(&features, &event, &follow, false, 230U, &out));
     CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SEEK);
     check_not_reversing(&out);
 
     set_features(&features, 235U, 3U, 1U);
+    features.centroid_error = 6.0f;
     set_event(&event, 235U, LINE_PATH_NORMAL);
     CHECK(CornerManeuver_Step(&features, &event, &follow, false, 235U, &out));
     CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SEEK);
     check_not_reversing(&out);
 
     set_features(&features, 240U, 4U, 2U);
+    features.centroid_error = 6.0f;
     set_event(&event, 240U, LINE_PATH_NORMAL);
     CHECK(CornerManeuver_Step(&features, &event, &follow, false, 240U, &out));
     CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SEEK);
     check_not_reversing(&out);
 
     set_features(&features, 245U, 5U, 3U);
+    features.centroid_error = 6.0f;
     set_event(&event, 245U, LINE_PATH_NORMAL);
     CHECK(CornerManeuver_Step(&features, &event, &follow, false, 245U, &out));
     CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SETTLE);
@@ -148,6 +152,24 @@ static int run_right_mirror_and_faults(void)
     set_event(&event, 120U, LINE_PATH_RIGHT_ANGLE_RIGHT);
     CHECK(CornerManeuver_Step(&features, &event, &follow, false, 120U, &out));
     CHECK(out.request.left_speed == 120 && out.request.right_speed == -80);
+    check_not_reversing(&out);
+    set_features(&features, 220U, 3U, 4U);
+    set_event(&event, 220U, LINE_PATH_NORMAL);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 220U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SEEK);
+    set_features(&features, 225U, 4U, 2U);
+    features.centroid_error = -6.0f;
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 225U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SEEK);
+    set_features(&features, 230U, 5U, 2U);
+    features.centroid_error = -6.0f;
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 230U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SEEK);
+    set_features(&features, 235U, 6U, 2U);
+    features.centroid_error = -6.0f;
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 235U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SETTLE);
+    CHECK(out.owns_motion && out.request.valid);
     check_not_reversing(&out);
 
     CornerManeuver_Init();
