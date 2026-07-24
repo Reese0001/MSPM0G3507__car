@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 #include "motor_safety.h"
@@ -16,6 +17,7 @@ static uint32_t zero_frame_count;
 static uint32_t critical_depth;
 static uint8_t inject_watchdog_tick;
 static uint8_t watchdog_tick_injected;
+static uint8_t fail_next_frame;
 
 uint32_t Motor_Safety_Host_EnterCritical(void)
 {
@@ -34,9 +36,13 @@ void Motor_Safety_Host_ExitCritical(uint32_t previous_state)
     }
 }
 
-void Contrl_Speed(int16_t motor1, int16_t motor2,
-                  int16_t motor3, int16_t motor4)
+bool Motor_SendSpeedFrame(int16_t motor1, int16_t motor2,
+                          int16_t motor3, int16_t motor4)
 {
+    if (fail_next_frame != 0U) {
+        fail_next_frame = 0U;
+        return false;
+    }
     if (inject_watchdog_tick != 0U && critical_depth == 0U &&
         watchdog_tick_injected == 0U) {
         watchdog_tick_injected = 1U;
@@ -49,12 +55,13 @@ void Contrl_Speed(int16_t motor1, int16_t motor2,
     if (motor1 == 0 && motor2 == 0 && motor3 == 0 && motor4 == 0) {
         zero_frame_count++;
     }
+    return true;
 }
 
-void Motor_EmergencyStop_FromISR(void)
+bool Motor_EmergencyStop_FromISR(void)
 {
     emergency_stop_count++;
-    Contrl_Speed(0, 0, 0, 0);
+    return Motor_SendSpeedFrame(0, 0, 0, 0);
 }
 
 void LED_ON(void)
@@ -82,6 +89,7 @@ static void init_and_arm(void)
     critical_depth = 0U;
     inject_watchdog_tick = 0U;
     watchdog_tick_injected = 0U;
+    fail_next_frame = 0U;
     Motor_Safety_Init();
     Motor_Safety_Arm();
 }
@@ -112,6 +120,8 @@ static int positive_to_negative_is_per_wheel_and_exactly_120ms(void)
     CHECK(output[1] == 0);
     CHECK(output[3] > 0);
     service_ms(1U);
+    CHECK(output[1] == 0);
+    service_ms(1U);
     CHECK(output[1] < 0);
     CHECK(output[3] > 0);
     return 0;
@@ -129,6 +139,8 @@ static int negative_to_positive_requires_the_same_pause(void)
     CHECK(output[1] == 0);
     CHECK(output[3] < 0);
     service_ms(119U);
+    CHECK(output[1] == 0);
+    service_ms(1U);
     CHECK(output[1] == 0);
     service_ms(1U);
     CHECK(output[1] > 0);
@@ -149,6 +161,8 @@ static int right_wheel_is_an_independent_mirror(void)
     CHECK(output[3] == 0);
     service_ms(119U);
     CHECK(output[1] > 0);
+    CHECK(output[3] == 0);
+    service_ms(1U);
     CHECK(output[3] == 0);
     service_ms(1U);
     CHECK(output[1] > 0);
@@ -184,7 +198,7 @@ static int existing_zero_time_is_credited_and_startup_is_not_delayed(void)
     Motor_Safety_RequestSpeed(0, 0, 0, 0);
     Motor_Safety_Service();
     CHECK(output[1] == 0);
-    service_ms(120U);
+    service_ms(121U);
     Motor_Safety_RequestSpeed(0, 100, 0, 0);
     Motor_Safety_Service();
     CHECK(output[1] > 0);
@@ -204,8 +218,6 @@ static int zero_disarm_and_watchdog_stay_dominant(void)
     Motor_Safety_Disarm();
     CHECK(output[0] == 0 && output[1] == 0 &&
           output[2] == 0 && output[3] == 0);
-    Motor_Safety_RequestSpeed(0, -100, 0, -100);
-    Motor_Safety_Service();
     CHECK(output[0] == 0 && output[1] == 0 &&
           output[2] == 0 && output[3] == 0);
 
@@ -220,6 +232,13 @@ static int zero_disarm_and_watchdog_stay_dominant(void)
           output[2] == 0 && output[3] == 0);
     Motor_Safety_RequestSpeed(0, -100, 0, -100);
     Motor_Safety_Service();
+    CHECK(output[0] == 0 && output[1] == 0 &&
+          output[2] == 0 && output[3] == 0);
+    Motor_Safety_Disarm();
+    Motor_Safety_Arm();
+    Motor_Safety_RequestSpeed(0, -100, 0, -100);
+    Motor_Safety_Service();
+    CHECK(Motor_Safety_IsFaultLatched() == 1U);
     CHECK(output[0] == 0 && output[1] == 0 &&
           output[2] == 0 && output[3] == 0);
     return 0;
@@ -265,6 +284,24 @@ static int watchdog_cannot_interleave_or_be_bypassed_by_a_uart_frame(void)
     return 0;
 }
 
+static int failed_uart_frame_latches_fault_and_keeps_zero_output(void)
+{
+    init_and_arm();
+    if (establish_sign(100) != 0) {
+        return 1;
+    }
+    fail_next_frame = 1U;
+    Motor_Safety_Service();
+    CHECK(Motor_Safety_IsFaultLatched() == 1U);
+    CHECK(output[0] == 0 && output[1] == 0 &&
+          output[2] == 0 && output[3] == 0);
+    Motor_Safety_RequestSpeed(0, 100, 0, 100);
+    Motor_Safety_Service();
+    CHECK(output[0] == 0 && output[1] == 0 &&
+          output[2] == 0 && output[3] == 0);
+    return 0;
+}
+
 int main(void)
 {
     if (positive_to_negative_is_per_wheel_and_exactly_120ms() != 0) {
@@ -286,6 +323,9 @@ int main(void)
         return 1;
     }
     if (watchdog_cannot_interleave_or_be_bypassed_by_a_uart_frame() != 0) {
+        return 1;
+    }
+    if (failed_uart_frame_latches_fault_and_keeps_zero_output() != 0) {
         return 1;
     }
     return clamp_and_ramp_remain_enforced();

@@ -41,6 +41,8 @@ void send_wheel_diameter(float data);
 void send_motor_PID(float P,float I,float D);
 void send_upload_data(bool ALLEncoder_Switch,bool TenEncoder_Switch,bool Speed_Switch);
 void Contrl_Speed(int16_t M1_speed,int16_t M2_speed,int16_t M3_speed,int16_t M4_speed);
+bool Motor_SendSpeedFrame(int16_t M1_speed, int16_t M2_speed,
+                          int16_t M3_speed, int16_t M4_speed);
 void Contrl_Pwm(int16_t M1_pwm,int16_t M2_pwm,int16_t M3_pwm,int16_t M4_pwm);
 
 void Deal_Control_Rxtemp(uint8_t rxtemp);

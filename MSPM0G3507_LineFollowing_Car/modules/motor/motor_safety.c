@@ -1,9 +1,10 @@
 #include "motor_safety.h"
+#include <stdbool.h>
 
 #ifdef MOTOR_SAFETY_HOST_TEST
-void Contrl_Speed(int16_t motor1, int16_t motor2,
-                  int16_t motor3, int16_t motor4);
-void Motor_EmergencyStop_FromISR(void);
+bool Motor_SendSpeedFrame(int16_t motor1, int16_t motor2,
+                          int16_t motor3, int16_t motor4);
+bool Motor_EmergencyStop_FromISR(void);
 void LED_ON(void);
 void LED_OFF(void);
 uint32_t Motor_Safety_Host_EnterCritical(void);
@@ -94,8 +95,22 @@ static void apply_speed(int motor1, int motor2, int motor3, int motor4)
     uart_frame_active = 1U;
     motor_safety_exit_critical(previous_irq_state);
 
-    Contrl_Speed((int16_t)output[0], (int16_t)output[1],
-                 (int16_t)output[2], (int16_t)output[3]);
+    if (!Motor_SendSpeedFrame((int16_t)output[0], (int16_t)output[1],
+                              (int16_t)output[2], (int16_t)output[3])) {
+        previous_irq_state = motor_safety_enter_critical();
+        uart_frame_active = 0U;
+        safety_state = MOTOR_SAFETY_FAULT_LATCHED;
+        fault_stop_deferred = 0U;
+        motor_safety_exit_critical(previous_irq_state);
+        LED_ON();
+        if (Motor_SendSpeedFrame(0, 0, 0, 0)) {
+            applied_speed[0] = 0;
+            applied_speed[1] = 0;
+            applied_speed[2] = 0;
+            applied_speed[3] = 0;
+        }
+        return;
+    }
 
     previous_irq_state = motor_safety_enter_critical();
     uart_frame_active = 0U;
@@ -113,11 +128,12 @@ static void apply_speed(int motor1, int motor2, int motor3, int motor4)
     motor_safety_exit_critical(previous_irq_state);
 
     if (send_deferred_stop != 0U) {
-        Contrl_Speed(0, 0, 0, 0);
-        applied_speed[0] = 0;
-        applied_speed[1] = 0;
-        applied_speed[2] = 0;
-        applied_speed[3] = 0;
+        if (Motor_SendSpeedFrame(0, 0, 0, 0)) {
+            applied_speed[0] = 0;
+            applied_speed[1] = 0;
+            applied_speed[2] = 0;
+            applied_speed[3] = 0;
+        }
     }
 }
 
@@ -140,7 +156,7 @@ static uint8_t direction_change_is_blocked(uint8_t index, int command)
         requested_sign == last_applied_sign[index]) {
         return 0U;
     }
-    return (zero_elapsed_ms[index] < MOTOR_SAFETY_DIRECTION_CHANGE_PAUSE_MS) ?
+    return (zero_elapsed_ms[index] <= MOTOR_SAFETY_DIRECTION_CHANGE_PAUSE_MS) ?
            1U : 0U;
 }
 
@@ -209,11 +225,16 @@ void Motor_Safety_Arm(void)
 
 void Motor_Safety_Disarm(void)
 {
-    safety_state = MOTOR_SAFETY_DISARMED;
+    uint32_t previous_irq_state = motor_safety_enter_critical();
+
+    if (safety_state != MOTOR_SAFETY_FAULT_LATCHED) {
+        safety_state = MOTOR_SAFETY_DISARMED;
+    }
     armed_elapsed_ms = 0U;
     watchdog_elapsed_ms = 0U;
     clear_requested_speed();
     stop_pending = 1U;
+    motor_safety_exit_critical(previous_irq_state);
     apply_speed(0, 0, 0, 0);
 }
 
@@ -234,6 +255,11 @@ void Motor_Safety_Service(void)
     int output[4];
     uint8_t index;
 
+    if (safety_state == MOTOR_SAFETY_FAULT_LATCHED) {
+        /* Retry bounded zero frames until one is confirmed complete. */
+        apply_speed(0, 0, 0, 0);
+        return;
+    }
     if (stop_pending != 0U) {
         apply_speed(0, 0, 0, 0);
         stop_pending = 0U;
@@ -256,7 +282,7 @@ void Motor_Safety_Tick1ms(void)
 
     for (index = 0U; index < 4U; index++) {
         if (applied_speed[index] == 0 && last_applied_sign[index] != 0 &&
-            zero_elapsed_ms[index] < MOTOR_SAFETY_DIRECTION_CHANGE_PAUSE_MS) {
+            zero_elapsed_ms[index] <= MOTOR_SAFETY_DIRECTION_CHANGE_PAUSE_MS) {
             zero_elapsed_ms[index]++;
         }
     }
@@ -269,11 +295,12 @@ void Motor_Safety_Tick1ms(void)
         if (uart_frame_active != 0U) {
             fault_stop_deferred = 1U;
         } else {
-            Motor_EmergencyStop_FromISR();
-            applied_speed[0] = 0;
-            applied_speed[1] = 0;
-            applied_speed[2] = 0;
-            applied_speed[3] = 0;
+            if (Motor_EmergencyStop_FromISR()) {
+                applied_speed[0] = 0;
+                applied_speed[1] = 0;
+                applied_speed[2] = 0;
+                applied_speed[3] = 0;
+            }
         }
     }
 }

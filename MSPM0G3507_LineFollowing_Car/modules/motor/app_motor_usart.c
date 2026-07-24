@@ -72,6 +72,18 @@ void Contrl_Speed(int16_t M1_speed,int16_t M2_speed,int16_t M3_speed,int16_t M4_
 	Send_Motor_ArrayU8(send_buff, strlen((char*)send_buff));
 }
 
+bool Motor_SendSpeedFrame(int16_t M1_speed, int16_t M2_speed,
+                          int16_t M3_speed, int16_t M4_speed)
+{
+    int length = sprintf((char *)send_buff, "$spd:%d,%d,%d,%d#",
+                         M1_speed, M2_speed, M3_speed, M4_speed);
+
+    if (length <= 0 || length >= (int)sizeof(send_buff)) {
+        return false;
+    }
+    return Motor_Usart_SendArrayBounded(send_buff, (uint16_t)length);
+}
+
 
 //控制pwm	Control PWM
 void Contrl_Pwm(int16_t M1_pwm,int16_t M2_pwm,int16_t M3_pwm,int16_t M4_pwm)

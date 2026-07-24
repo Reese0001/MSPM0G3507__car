@@ -36,19 +36,45 @@ void Send_Motor_ArrayU8(uint8_t *pData, uint16_t Length)
 	}
 }
 
-/* 中断失控保护：固定零速帧，等待次数有上限，禁止格式化和无限阻塞。 */
-void Motor_EmergencyStop_FromISR(void)
+bool Motor_Usart_SendArrayBounded(const uint8_t *data, uint16_t length)
 {
-    static const uint8_t stop_frame[] = "$spd:0,0,0,0#";
     uint16_t index;
-    for (index = 0U; index < (uint16_t)(sizeof(stop_frame) - 1U); index++) {
-        uint32_t wait_count = 1000U;
+
+    for (index = 0U; index < length; index++) {
+        uint32_t wait_count = MOTOR_UART_TX_WAIT_LIMIT;
+
         while ((DL_UART_isBusy(Motor_INST) == true) && (wait_count > 0U)) {
             wait_count--;
         }
-        if (wait_count == 0U) return;
-        DL_UART_Main_transmitData(Motor_INST, stop_frame[index]);
+        if (wait_count == 0U) {
+            DL_UART_Main_disable(Motor_INST);
+            DL_UART_Main_enable(Motor_INST);
+            return false;
+        }
+        DL_UART_Main_transmitData(Motor_INST, data[index]);
     }
+
+    {
+        uint32_t wait_count = MOTOR_UART_TX_WAIT_LIMIT;
+
+        while ((DL_UART_isBusy(Motor_INST) == true) && (wait_count > 0U)) {
+            wait_count--;
+        }
+        if (wait_count == 0U) {
+            DL_UART_Main_disable(Motor_INST);
+            DL_UART_Main_enable(Motor_INST);
+            return false;
+        }
+    }
+    return true;
+}
+
+/* 中断失控保护：固定零速帧，等待次数有上限，禁止格式化和无限阻塞。 */
+bool Motor_EmergencyStop_FromISR(void)
+{
+    static const uint8_t stop_frame[] = "$spd:0,0,0,0#";
+    return Motor_Usart_SendArrayBounded(stop_frame,
+                                        (uint16_t)(sizeof(stop_frame) - 1U));
 }
 
 
