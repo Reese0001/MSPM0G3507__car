@@ -34,14 +34,12 @@ class SysConfigContractTests(unittest.TestCase):
         self.assertIn('TIMER1.timerPeriod        = "1 ms"', self.syscfg)
         self.assertIn('TIMER1.timerMode          = "PERIODIC"', self.syscfg)
 
-    def test_unfitted_modules_do_not_initialize_peripherals(self):
+    def test_other_unfitted_modules_do_not_initialize_peripherals(self):
         for token in (
             "YBIMU_I2C",
             "ULTRASONIC_TRIG",
             "ULTRASONIC_ECHO",
             'UART3.$name                    = "K230"',
-            '"PA12"',
-            '"PA13"',
             '"PA21"',
             '"PA22"',
             '"PA26"',

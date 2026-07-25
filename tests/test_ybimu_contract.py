@@ -90,8 +90,8 @@ class YbImuContract(unittest.TestCase):
         self.assertIn("length > BSP_I2C_MAX_TRANSFER", combined)
         for token in (
             "ti_msp_dl_config.h",
-            "YBIMU_I2C_SCL_PIN",
-            "YBIMU_I2C_SDA_PIN",
+            "MPU6050_I2C_SCL_PIN",
+            "MPU6050_I2C_SDA_PIN",
             "DL_GPIO_disableOutput",
             "BSP_I2C_STATUS_BUSY",
             "BSP_I2C_TRANSACTION_TIMEOUT_US",
