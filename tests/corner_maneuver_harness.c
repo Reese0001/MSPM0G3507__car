@@ -277,12 +277,64 @@ static int run_timeout_boundaries_and_follow_safety(void)
     return 0;
 }
 
+static int run_settle_loss_reseek(void)
+{
+    LineFeatures features;
+    LinePathEvent event;
+    LineControlOutput follow = {200, 0, true};
+    LineControlOutput invalid_follow = {0, 0, false};
+    CornerManeuverOutput out;
+
+    CornerManeuver_Init();
+    set_features(&features, 0U, 1U, 4U);
+    set_event(&event, 0U, LINE_PATH_RIGHT_ANGLE_LEFT);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 0U, &out));
+
+    set_features(&features, 120U, 2U, 4U);
+    set_event(&event, 120U, LINE_PATH_RIGHT_ANGLE_LEFT);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 120U, &out));
+
+    set_features(&features, 220U, 3U, 4U);
+    set_event(&event, 220U, LINE_PATH_RIGHT_ANGLE_LEFT);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 220U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SEEK);
+
+    set_features(&features, 225U, 4U, 2U);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 225U, &out));
+    set_features(&features, 230U, 5U, 2U);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 230U, &out));
+    set_features(&features, 235U, 6U, 2U);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 235U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SETTLE);
+
+    set_features(&features, 240U, 7U, 0U);
+    set_event(&event, 240U, LINE_PATH_RIGHT_ANGLE_LEFT);
+    CHECK(CornerManeuver_Step(&features, &event, &invalid_follow,
+                              false, 240U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SEEK);
+    CHECK(!out.fault && out.owns_motion && out.request.valid);
+    CHECK(out.request.left_speed == -80 && out.request.right_speed == 120);
+
+    set_features(&features, 245U, 8U, 2U);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 245U, &out));
+    set_features(&features, 250U, 9U, 2U);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 250U, &out));
+    set_features(&features, 255U, 10U, 2U);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 255U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SETTLE);
+    CHECK(!out.fault && out.owns_motion && out.request.valid);
+    return 0;
+}
+
 int main(void)
 {
     if (run_left_probe_sequence() != 0) {
         return 1;
     }
     if (run_right_mirror_and_faults() != 0) {
+        return 1;
+    }
+    if (run_settle_loss_reseek() != 0) {
         return 1;
     }
     return run_timeout_boundaries_and_follow_safety();

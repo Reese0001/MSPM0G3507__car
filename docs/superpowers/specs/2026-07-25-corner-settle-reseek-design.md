@@ -20,12 +20,13 @@ D1 常亮、D2 闪烁。
 在 `CORNER_MANEUVER_SETTLE` 中，把短暂无效的循迹控制视为“接管失败，需要继续
 找线”，而不是永久故障：
 
-1. 若 `path_event` 明确报告丢线，或 `follow` 为空/无效：
+1. 若 `path_event` 明确报告丢线，保持现有行为并释放给 `LineRecovery`。
+2. 若直角事件仍锁存，但 `follow` 为空/无效：
    - 清零重新捕获帧计数；
    - 回到 `CORNER_MANEUVER_SEEK`；
    - 保持本次直角的原转向并继续原地寻线。
-2. 再次获得连续三帧可靠黑线后重新进入 `SETTLE`。
-3. 保留 `CORNER_TOTAL_TIMEOUT_MS = 2000U` 总超时；持续无法稳定接管时仍安全停车。
+3. 再次获得连续三帧可靠黑线后重新进入 `SETTLE`。
+4. 保留 `CORNER_TOTAL_TIMEOUT_MS = 2000U` 总超时；持续无法稳定接管时仍安全停车。
 
 不修改速度、KP、转向方向、寻线方式、电机安全层或硬件配置。
 
@@ -38,6 +39,7 @@ D1 常亮、D2 闪烁。
 3. 模拟直角事件仍锁存、但 `follow.valid == false`；
 4. 断言状态回到 `SEEK`、继续输出原方向寻线命令且不进入故障；
 5. 再次连续三帧找到黑线，完成 `SETTLE`；
-6. 保持现有总超时与左右镜像测试通过。
+6. 断言明确的 `LINE_PATH_LOST` 仍能释放给 `LineRecovery`；
+7. 保持现有总超时与左右镜像测试通过。
 
 随后运行全部宿主测试、TI Arm Clang 编译链接，并重新生成 UniFlash HEX/TI-TXT。

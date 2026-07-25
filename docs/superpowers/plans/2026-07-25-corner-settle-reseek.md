@@ -64,12 +64,11 @@ Expected: FAIL because current `SETTLE` calls `enter_fault()` when
 
 - [ ] **Step 3: Implement the minimum state transition**
 
-In the `CORNER_MANEUVER_SETTLE` branch, replace the existing explicit
-`LINE_PATH_LOST` abort and the later invalid-follow fault with one early guard:
+In the `CORNER_MANEUVER_SETTLE` branch, preserve the existing explicit
+`LINE_PATH_LOST` release to `LineRecovery`. Add a separate early guard after it:
 
 ```c
-if (path_event->type == LINE_PATH_LOST ||
-    follow == 0 || !follow->valid) {
+if (follow == 0 || !follow->valid) {
     reacquire_frames = 0U;
     enter_state(CORNER_MANEUVER_SEEK, now_ms);
     set_pivot(now_ms, &out->request);
@@ -77,7 +76,8 @@ if (path_event->type == LINE_PATH_LOST ||
 }
 ```
 
-Keep the normal 300 ms settlement and completion path unchanged.
+Keep the normal 300 ms settlement, explicit loss release, and completion path
+unchanged.
 
 - [ ] **Step 4: Verify GREEN and regression coverage**
 

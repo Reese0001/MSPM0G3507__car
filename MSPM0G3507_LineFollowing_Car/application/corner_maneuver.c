@@ -305,13 +305,20 @@ bool CornerManeuver_Step(const LineFeatures *features,
     }
 
     if (state == CORNER_MANEUVER_SETTLE) {
-        /* Abort PD settlement and let normal three-frame loss recovery run. */
+        /* A confirmed loss belongs to the normal recovery state machine. */
         if (path_event->type == LINE_PATH_LOST) {
             enter_state(CORNER_MANEUVER_FOLLOW, now_ms);
             corner_direction = 0;
             reacquire_frames = 0U;
             event_rearm_required = false;
             out->owns_motion = false;
+            return true;
+        }
+        /* A latched corner can hide a brief loss; keep seeking, not faulting. */
+        if (follow == 0 || !follow->valid) {
+            reacquire_frames = 0U;
+            enter_state(CORNER_MANEUVER_SEEK, now_ms);
+            set_pivot(now_ms, &out->request);
             return true;
         }
         if ((uint32_t)(now_ms - state_started_ms) >= CORNER_SETTLE_MS) {
