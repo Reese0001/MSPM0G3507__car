@@ -23,6 +23,38 @@ static int16_t minimum(int16_t left, int16_t right)
     return left < right ? left : right;
 }
 
+static int16_t clamp_turn(float value, int16_t limit)
+{
+    if (value > (float)limit) {
+        return limit;
+    }
+    if (value < (float)-limit) {
+        return (int16_t)-limit;
+    }
+    return (int16_t)value;
+}
+
+static int16_t apply_yaw_assist(int16_t base_turn,
+                                int16_t turn_limit,
+                                float yaw_rate_dps,
+                                bool yaw_fresh)
+{
+    float assist;
+    float target_rate;
+
+    if (!yaw_fresh) {
+        return base_turn;
+    }
+    target_rate = (float)base_turn * control_config.yaw_rate_per_command;
+    assist = (target_rate - yaw_rate_dps) * control_config.yaw_rate_kp;
+    if (assist > (float)control_config.yaw_assist_limit) {
+        assist = (float)control_config.yaw_assist_limit;
+    } else if (assist < (float)-control_config.yaw_assist_limit) {
+        assist = (float)-control_config.yaw_assist_limit;
+    }
+    return clamp_turn((float)base_turn + assist, turn_limit);
+}
+
 static bool stable_straight_frame(const LineEstimate *estimate,
                                   const LineTrendResult *trend,
                                   bool trend_fresh)
@@ -199,6 +231,10 @@ bool LineController_Init(const LineControlConfig *settings)
         settings->straight_error_threshold <= 0.0f ||
         settings->straight_error_threshold >=
             settings->curve_error_threshold ||
+        settings->yaw_rate_per_command <= 0.0f ||
+        settings->yaw_rate_kp < 0.0f ||
+        settings->yaw_assist_limit < 0 ||
+        settings->yaw_assist_limit > settings->max_forward ||
         settings->straight_confirm_frames == 0U ||
         settings->estimate_stale_ms == 0U) {
         config_valid = false;
@@ -275,7 +311,9 @@ bool LineController_Step(const LineEstimate *estimate,
         } else {
             turn_limit = 0;
         }
-        turn = slew_turn(trend_turn_target(trend->type), turn_limit);
+        turn = apply_yaw_assist(trend_turn_target(trend->type),
+                                turn_limit, yaw_rate_dps, yaw_fresh);
+        turn = slew_turn(turn, turn_limit);
     } else {
         forward = slew_forward(plan_target_speed(estimate, yaw_rate_dps,
                                                   yaw_fresh,
@@ -292,13 +330,9 @@ bool LineController_Step(const LineEstimate *estimate,
             turn_limit = (int16_t)(((int32_t)forward *
                                     control_config.turn_limit_percent) / 100);
         }
-        if (raw_turn > (float)turn_limit) {
-            turn = turn_limit;
-        } else if (raw_turn < (float)-turn_limit) {
-            turn = (int16_t)-turn_limit;
-        } else {
-            turn = (int16_t)raw_turn;
-        }
+        turn = clamp_turn(raw_turn, turn_limit);
+        turn = apply_yaw_assist(turn, turn_limit,
+                                yaw_rate_dps, yaw_fresh);
         turn = slew_turn(turn, turn_limit);
     }
     {

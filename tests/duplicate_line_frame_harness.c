@@ -74,6 +74,7 @@ static void duplicate_frame_does_not_enable_straight_boost(void)
         300, 180, 140, 100, 100, 100, 80, 200,
         100, 100, 50, 120, 60U, 300, 300, 300,
         1.0f, 0.0f, 1.0f, 1.0f, 3.0f, 6.0f, 100.0f,
+        1.0f, 0.0f, 0,
         20U, 40U, 3U, 20U
     };
     LineControlOutput output = {0};

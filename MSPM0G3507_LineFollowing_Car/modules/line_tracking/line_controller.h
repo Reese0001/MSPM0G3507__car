@@ -37,6 +37,9 @@ typedef struct {
     float curve_error_threshold;
     float hard_curve_error_threshold;
     float high_yaw_rate_dps;
+    float yaw_rate_per_command;
+    float yaw_rate_kp;
+    int16_t yaw_assist_limit;
     uint8_t low_confidence;
     uint8_t medium_confidence;
     uint8_t straight_confirm_frames;
