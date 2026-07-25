@@ -35,5 +35,13 @@ bool CornerManeuver_Step(const LineFeatures *features,
                          bool emergency_stop,
                          uint32_t now_ms,
                          CornerManeuverOutput *out);
+bool CornerManeuver_StepWithYaw(const LineFeatures *features,
+                                const LinePathEvent *path_event,
+                                const LineControlOutput *follow,
+                                float yaw_rate_dps,
+                                bool yaw_fresh,
+                                bool emergency_stop,
+                                uint32_t now_ms,
+                                CornerManeuverOutput *out);
 
 #endif

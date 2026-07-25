@@ -91,14 +91,24 @@ static void set_brake(uint32_t now_ms, MotionRequest *request)
     publish_request(0, 0, now_ms, request);
 }
 
-static void set_pivot(uint32_t now_ms, MotionRequest *request)
+static void set_pivot(float yaw_rate_dps,
+                      bool yaw_fresh,
+                      uint32_t now_ms,
+                      MotionRequest *request)
 {
+    float directional_yaw =
+        yaw_rate_dps * (float)(-corner_direction);
+    int16_t inner = CORNER_INNER_COMMAND;
+    int16_t outer = CORNER_OUTER_COMMAND;
+
+    if (yaw_fresh && directional_yaw >= CORNER_HIGH_YAW_RATE_DPS) {
+        inner = CORNER_SLOW_INNER_COMMAND;
+        outer = CORNER_SLOW_OUTER_COMMAND;
+    }
     if (corner_direction < 0) {
-        publish_request(CORNER_INNER_COMMAND,
-                        CORNER_OUTER_COMMAND, now_ms, request);
+        publish_request(inner, outer, now_ms, request);
     } else {
-        publish_request(CORNER_OUTER_COMMAND,
-                        CORNER_INNER_COMMAND, now_ms, request);
+        publish_request(outer, inner, now_ms, request);
     }
 }
 
@@ -184,12 +194,14 @@ CornerManeuverState CornerManeuver_GetState(void)
     return state;
 }
 
-bool CornerManeuver_Step(const LineFeatures *features,
-                         const LinePathEvent *path_event,
-                         const LineControlOutput *follow,
-                         bool emergency_stop,
-                         uint32_t now_ms,
-                         CornerManeuverOutput *out)
+bool CornerManeuver_StepWithYaw(const LineFeatures *features,
+                                const LinePathEvent *path_event,
+                                const LineControlOutput *follow,
+                                float yaw_rate_dps,
+                                bool yaw_fresh,
+                                bool emergency_stop,
+                                uint32_t now_ms,
+                                CornerManeuverOutput *out)
 {
     int8_t detected_direction;
 
@@ -272,7 +284,7 @@ bool CornerManeuver_Step(const LineFeatures *features,
     if (state == CORNER_MANEUVER_BRAKE) {
         if ((uint32_t)(now_ms - state_started_ms) >= CORNER_BRAKE_MS) {
             enter_state(CORNER_MANEUVER_COMMIT, now_ms);
-            set_pivot(now_ms, &out->request);
+            set_pivot(yaw_rate_dps, yaw_fresh, now_ms, &out->request);
         } else {
             set_brake(now_ms, &out->request);
         }
@@ -283,7 +295,7 @@ bool CornerManeuver_Step(const LineFeatures *features,
         if ((uint32_t)(now_ms - state_started_ms) >= CORNER_COMMIT_MS) {
             enter_state(CORNER_MANEUVER_SEEK, now_ms);
         }
-        set_pivot(now_ms, &out->request);
+        set_pivot(yaw_rate_dps, yaw_fresh, now_ms, &out->request);
         return true;
     }
 
@@ -300,7 +312,7 @@ bool CornerManeuver_Step(const LineFeatures *features,
             }
             return true;
         }
-        set_pivot(now_ms, &out->request);
+        set_pivot(yaw_rate_dps, yaw_fresh, now_ms, &out->request);
         return true;
     }
 
@@ -318,7 +330,7 @@ bool CornerManeuver_Step(const LineFeatures *features,
         if (follow == 0 || !follow->valid) {
             reacquire_frames = 0U;
             enter_state(CORNER_MANEUVER_SEEK, now_ms);
-            set_pivot(now_ms, &out->request);
+            set_pivot(yaw_rate_dps, yaw_fresh, now_ms, &out->request);
             return true;
         }
         if ((uint32_t)(now_ms - state_started_ms) >= CORNER_SETTLE_MS) {
@@ -342,4 +354,16 @@ bool CornerManeuver_Step(const LineFeatures *features,
 
     enter_fault(now_ms, out);
     return false;
+}
+
+bool CornerManeuver_Step(const LineFeatures *features,
+                         const LinePathEvent *path_event,
+                         const LineControlOutput *follow,
+                         bool emergency_stop,
+                         uint32_t now_ms,
+                         CornerManeuverOutput *out)
+{
+    return CornerManeuver_StepWithYaw(
+        features, path_event, follow, 0.0f, false,
+        emergency_stop, now_ms, out);
 }

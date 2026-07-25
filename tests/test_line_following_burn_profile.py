@@ -13,7 +13,10 @@ class LineFollowingBurnProfileContract(unittest.TestCase):
         for token in (
             "LINE_FOLLOWING_POWER_QUALIFIED (1)",
             "LINE_FOLLOWING_USE_ULTRASONIC (0)",
-            "LINE_FOLLOWING_USE_IMU (0)",
+            "LINE_FOLLOWING_USE_IMU (1)",
+            "LINE_FOLLOWING_REQUIRE_IMU (0)",
+            "LINE_FOLLOWING_IMU_STARTUP_TIMEOUT_MS (2600U)",
+            "LINE_FOLLOWING_IMU_DEGRADED_LIMIT (180)",
             "LINE_FOLLOWING_USE_VISION (0)",
         ):
             self.assertIn(token, profile)

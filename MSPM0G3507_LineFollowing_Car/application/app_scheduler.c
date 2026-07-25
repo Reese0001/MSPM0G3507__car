@@ -5,6 +5,7 @@
 #include "corner_maneuver.h"
 #include "line_recovery.h"
 #include "safety_supervisor.h"
+#include "../bsp/bsp_i2c.h"
 #include "../bsp/time/timer.h"
 #include "../modules/line_tracking/line_controller.h"
 #include "../modules/line_tracking/line_estimator.h"
@@ -15,6 +16,8 @@
 #include "../modules/led/led.h"
 #include "../modules/motor/motor_adapter.h"
 #include "../modules/motor/motor_safety.h"
+#include "../modules/mpu6050/mpu6050.h"
+#include "../modules/mpu6050/mpu6050_config.h"
 
 static MotionRequest mission_request = {0};
 static LineEstimate line_estimate = {0};
@@ -23,8 +26,60 @@ static LineTrendResult line_trend = {0};
 static LinePathEvent path_event = {0};
 static LineControlOutput line_control = {0};
 static CornerManeuverOutput corner_output = {0};
+static Mpu6050Snapshot imu_snapshot = {0};
 static bool start_requested = false;
 static bool control_fault_latched = false;
+static uint32_t imu_started_ms = 0U;
+
+static int16_t AppScheduler_LimitSigned(int16_t value, int16_t limit)
+{
+    if (value > limit) {
+        return limit;
+    }
+    if (value < -limit) {
+        return (int16_t)-limit;
+    }
+    return value;
+}
+
+static void AppScheduler_LimitImuDegradedRequest(void)
+{
+    if (!mission_request.valid) {
+        return;
+    }
+    mission_request.left_speed = AppScheduler_LimitSigned(
+        mission_request.left_speed, LINE_FOLLOWING_IMU_DEGRADED_LIMIT);
+    mission_request.right_speed = AppScheduler_LimitSigned(
+        mission_request.right_speed, LINE_FOLLOWING_IMU_DEGRADED_LIMIT);
+}
+
+static bool AppScheduler_GetYawRate(uint32_t now_ms, float *yaw_rate_dps)
+{
+    if (yaw_rate_dps == 0 || LINE_FOLLOWING_USE_IMU == 0 ||
+        Mpu6050_GetState() != MPU6050_STATE_READY ||
+        !Mpu6050_GetSnapshot(&imu_snapshot) ||
+        !ModuleStatus_IsFresh(&imu_snapshot.status, now_ms,
+                              MPU6050_STALE_MS)) {
+        return false;
+    }
+    *yaw_rate_dps = imu_snapshot.yaw_rate_dps;
+    return true;
+}
+
+static bool AppScheduler_ImuStartupHold(uint32_t now_ms)
+{
+    Mpu6050State imu_state;
+
+    if (LINE_FOLLOWING_USE_IMU == 0 ||
+        (uint32_t)(now_ms - imu_started_ms) >=
+            LINE_FOLLOWING_IMU_STARTUP_TIMEOUT_MS) {
+        return false;
+    }
+    imu_state = Mpu6050_GetState();
+    return imu_state == MPU6050_STATE_STARTUP ||
+           imu_state == MPU6050_STATE_CALIBRATING ||
+           imu_state == MPU6050_STATE_DEGRADED;
+}
 
 static void AppScheduler_ResetLineControlHistory(void)
 {
@@ -54,6 +109,8 @@ static void AppScheduler_Start(void)
 static void AppScheduler_RunLineControl(uint32_t now_ms)
 {
     LineSensorSnapshot scanner = {0};
+    float yaw_rate_dps = 0.0f;
+    bool yaw_fresh = AppScheduler_GetYawRate(now_ms, &yaw_rate_dps);
     bool feature_ready = false;
     bool estimate_ready = false;
     bool trend_ready = false;
@@ -62,6 +119,16 @@ static void AppScheduler_RunLineControl(uint32_t now_ms)
         CornerManeuver_GetState() == CORNER_MANEUVER_FAULT;
     bool recovery_fault =
         LineRecovery_GetState() == LINE_RECOVERY_FAULT;
+
+    if (AppScheduler_ImuStartupHold(now_ms)) {
+        AppScheduler_ResetLineControlHistory();
+        corner_output = (CornerManeuverOutput){0};
+        mission_request.left_speed = 0;
+        mission_request.right_speed = 0;
+        mission_request.timestamp_ms = now_ms;
+        mission_request.valid = false;
+        return;
+    }
 
     if (LineScanner_GetSnapshot(&scanner)) {
         feature_ready = LineFeatureExtractor_Update(&scanner, now_ms,
@@ -85,15 +152,17 @@ static void AppScheduler_RunLineControl(uint32_t now_ms)
     }
     if (event_ready) {
         (void)LineController_Step(
-            &line_estimate, &line_trend, 0.0F, false, now_ms, &line_control);
-        (void)CornerManeuver_Step(
-            &line_features, &path_event, &line_control, false,
-            now_ms, &corner_output);
+            &line_estimate, &line_trend, yaw_rate_dps, yaw_fresh,
+            now_ms, &line_control);
+        (void)CornerManeuver_StepWithYaw(
+            &line_features, &path_event, &line_control,
+            yaw_rate_dps, yaw_fresh, false, now_ms, &corner_output);
         if (corner_output.owns_motion) {
             mission_request = corner_output.request;
         } else {
             (void)LineRecovery_Step(
-                &line_estimate, &line_trend, &line_control, 0.0F, false,
+                &line_estimate, &line_trend, &line_control,
+                yaw_rate_dps, yaw_fresh,
                 false, now_ms, &mission_request);
         }
         corner_fault = corner_fault || corner_output.fault ||
@@ -127,6 +196,8 @@ static void AppScheduler_RunLineControl(uint32_t now_ms)
         mission_request.timestamp_ms = now_ms;
         mission_request.valid = false;
         LED_ON();
+    } else if (LINE_FOLLOWING_USE_IMU != 0 && !yaw_fresh) {
+        AppScheduler_LimitImuDegradedRequest();
     }
 }
 
@@ -136,7 +207,7 @@ static void AppScheduler_RunSafety(uint32_t now_ms)
     SafetyDecision decision = {0};
 
     inputs.ultrasonic_required = LINE_FOLLOWING_USE_ULTRASONIC != 0;
-    inputs.imu_required = LINE_FOLLOWING_USE_IMU != 0;
+    inputs.imu_required = LINE_FOLLOWING_REQUIRE_IMU != 0;
     inputs.vision_required = LINE_FOLLOWING_USE_VISION != 0;
     inputs.start_pressed = start_requested;
     inputs.reset_pressed = false;
@@ -172,6 +243,9 @@ void AppScheduler_Init(uint32_t now_ms)
     LineRecovery_Init();
     CornerManeuver_Init();
     SafetySupervisor_Init();
+    if (LINE_FOLLOWING_USE_IMU != 0) {
+        Mpu6050_Init(now_ms);
+    }
 
     mission_request = (MotionRequest){0};
     line_estimate = (LineEstimate){0};
@@ -180,8 +254,10 @@ void AppScheduler_Init(uint32_t now_ms)
     path_event = (LinePathEvent){0};
     line_control = (LineControlOutput){0};
     corner_output = (CornerManeuverOutput){0};
+    imu_snapshot = (Mpu6050Snapshot){0};
     start_requested = false;
     control_fault_latched = false;
+    imu_started_ms = now_ms;
 
     for (index = 0U;
          index < (uint32_t)(sizeof(app_tasks) / sizeof(app_tasks[0]));
@@ -201,6 +277,10 @@ void AppScheduler_Run(uint32_t now_ms)
     uint32_t now_us = BSP_Time_GetUs();
 
     LineScanner_Service(now_us, now_ms);
+    if (LINE_FOLLOWING_USE_IMU != 0) {
+        BSP_I2C_Service(now_us);
+        Mpu6050_Service(now_ms);
+    }
 
     for (index = 0U;
          index < (uint32_t)(sizeof(app_tasks) / sizeof(app_tasks[0]));

@@ -46,6 +46,17 @@ class CornerManeuverContract(unittest.TestCase):
         self.assertIn("CORNER_OUTER_COMMAND (120)", self.config)
         self.assertIn("corner_direction < 0", self.source)
 
+    def test_high_directional_yaw_uses_reduced_pivot(self):
+        for token in (
+            "CORNER_HIGH_YAW_RATE_DPS",
+            "CORNER_SLOW_INNER_COMMAND",
+            "CORNER_SLOW_OUTER_COMMAND",
+        ):
+            self.assertIn(token, self.config)
+        self.assertIn("CornerManeuver_StepWithYaw", self.header)
+        self.assertIn("yaw_fresh", self.source)
+        self.assertIn("directional_yaw", self.source)
+
     def test_completion_requires_three_new_centered_frames(self):
         self.assertIn("CORNER_REACQUIRE_FRAMES (3U)", self.config)
         self.assertIn("last_feature_sequence", self.source)

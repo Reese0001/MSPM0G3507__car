@@ -326,6 +326,41 @@ static int run_settle_loss_reseek(void)
     return 0;
 }
 
+static int run_yaw_braking(void)
+{
+    LineFeatures features;
+    LinePathEvent event;
+    LineControlOutput follow = {200, 0, true};
+    CornerManeuverOutput out;
+    int16_t normal_difference;
+    int16_t reduced_difference;
+
+    CornerManeuver_Init();
+    set_features(&features, 0U, 1U, 4U);
+    set_event(&event, 0U, LINE_PATH_RIGHT_ANGLE_LEFT);
+    CHECK(CornerManeuver_StepWithYaw(
+        &features, &event, &follow, 0.0f, false, false, 0U, &out));
+
+    set_features(&features, 120U, 2U, 4U);
+    set_event(&event, 120U, LINE_PATH_RIGHT_ANGLE_LEFT);
+    CHECK(CornerManeuver_StepWithYaw(
+        &features, &event, &follow, 120.0f, false, false, 120U, &out));
+    normal_difference =
+        (int16_t)(out.request.right_speed - out.request.left_speed);
+    CHECK(out.request.left_speed == -80);
+    CHECK(out.request.right_speed == 120);
+
+    set_features(&features, 121U, 3U, 4U);
+    set_event(&event, 121U, LINE_PATH_RIGHT_ANGLE_LEFT);
+    CHECK(CornerManeuver_StepWithYaw(
+        &features, &event, &follow, 120.0f, true, false, 121U, &out));
+    reduced_difference =
+        (int16_t)(out.request.right_speed - out.request.left_speed);
+    CHECK(reduced_difference > 0);
+    CHECK(reduced_difference < normal_difference);
+    return 0;
+}
+
 int main(void)
 {
     if (run_left_probe_sequence() != 0) {
@@ -335,6 +370,9 @@ int main(void)
         return 1;
     }
     if (run_settle_loss_reseek() != 0) {
+        return 1;
+    }
+    if (run_yaw_braking() != 0) {
         return 1;
     }
     return run_timeout_boundaries_and_follow_safety();

@@ -89,6 +89,27 @@ class AppSchedulerPipelineContract(unittest.TestCase):
         self.assertIn("LINE_MAX_FORWARD (400)", config)
         self.assertIn("SAFETY_RUNNING_SPEED_LIMIT (450)", safety)
 
+    def test_optional_mpu6050_is_serviced_and_fails_soft(self):
+        for token in (
+            "Mpu6050_Init",
+            "BSP_I2C_Service",
+            "Mpu6050_Service",
+            "Mpu6050_GetSnapshot",
+            "MPU6050_STATE_CALIBRATING",
+            "ModuleStatus_IsFresh",
+            "LINE_FOLLOWING_IMU_DEGRADED_LIMIT",
+            "CornerManeuver_StepWithYaw",
+        ):
+            self.assertIn(token, self.source)
+        self.assertIn(
+            "inputs.imu_required = LINE_FOLLOWING_REQUIRE_IMU != 0",
+            self.source,
+        )
+        self.assertNotIn(
+            "inputs.imu_required = LINE_FOLLOWING_USE_IMU != 0",
+            self.source,
+        )
+
 
 class RecoveryReachabilityRuntime(unittest.TestCase):
     def test_lost_follow_reaches_recovery_without_corner_authority_starvation(self):

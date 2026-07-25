@@ -146,15 +146,16 @@ class YbImuContract(unittest.TestCase):
         self.assertIn("calibration_value = 0x01U", source)
         self.assertIn("service_calibration", source)
 
-    def test_minimal_burn_profile_does_not_service_unfitted_imu(self):
+    def test_active_profile_uses_mpu6050_not_ybimu(self):
         scheduler = (ROOT / "application/app_scheduler.c").read_text(
             encoding="utf-8"
         )
         profile = (ROOT / "application/config/line_following_profile.h").read_text(
             encoding="utf-8"
         )
-        self.assertIn("LINE_FOLLOWING_USE_IMU (0)", profile)
-        self.assertNotIn("BSP_I2C_Service", scheduler)
+        self.assertIn("LINE_FOLLOWING_USE_IMU (1)", profile)
+        self.assertIn("BSP_I2C_Service", scheduler)
+        self.assertIn("Mpu6050_Service", scheduler)
         self.assertNotIn("YbImu_Service", scheduler)
 
     def test_magnetic_heading_has_plausibility_and_change_gates(self):
