@@ -28,6 +28,38 @@ class Mpu6050Contract(unittest.TestCase):
         ]
         self.assertNotIn("bsp/bsp_i2c.c", exclusion)
 
+    def test_driver_is_minimal_nonblocking_and_timestamped(self):
+        header = (ROOT / "modules/mpu6050/mpu6050.h").read_text(
+            encoding="utf-8"
+        )
+        source = (ROOT / "modules/mpu6050/mpu6050.c").read_text(
+            encoding="utf-8"
+        )
+        config = (ROOT / "modules/mpu6050/mpu6050_config.h").read_text(
+            encoding="utf-8"
+        )
+        for token in (
+            "Mpu6050Snapshot",
+            "ModuleStatus status",
+            "yaw_rate_dps",
+            "Mpu6050_Init",
+            "Mpu6050_Service",
+            "Mpu6050_GetState",
+            "Mpu6050_GetSnapshot",
+        ):
+            self.assertIn(token, header)
+        for token in ("0x75U", "0x6BU", "0x1AU", "0x1BU", "0x19U", "0x47U"):
+            self.assertIn(token, source)
+        for token in (
+            "MPU6050_CALIBRATION_MS",
+            "MPU6050_FILTER_ALPHA",
+            "MPU6050_YAW_SIGN",
+            "MPU6050_MAX_CONSECUTIVE_ERRORS",
+        ):
+            self.assertIn(token, config)
+        self.assertNotIn("delay_", source)
+        self.assertNotRegex(source, r"while\s*\(")
+
 
 if __name__ == "__main__":
     unittest.main()
