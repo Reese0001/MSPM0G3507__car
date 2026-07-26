@@ -25,10 +25,11 @@ class SysConfigContractTests(unittest.TestCase):
         self.assertIn('UART2.peripheral.rxPin.$assign         = "PB7"', self.syscfg)
         self.assertIn("UART2.targetBaudRate                   = 115200", self.syscfg)
 
-    def test_debug_uart_pins_and_baud(self):
-        self.assertIn('UART1.peripheral.txPin.$assign = "PA10"', self.syscfg)
-        self.assertIn('UART1.peripheral.rxPin.$assign = "PA11"', self.syscfg)
-        self.assertIn("UART1.targetBaudRate           = 115200", self.syscfg)
+    def test_pa10_pa11_serve_the_oled_not_debug_uart(self):
+        self.assertNotIn('"UART_0"', self.syscfg)
+        self.assertIn('"PA10"', self.syscfg)
+        self.assertIn('"PA11"', self.syscfg)
+        self.assertIn("OLED_I2C", self.syscfg)
 
     def test_watchdog_timer_period_is_one_millisecond(self):
         self.assertIn('TIMER1.timerPeriod        = "1 ms"', self.syscfg)
