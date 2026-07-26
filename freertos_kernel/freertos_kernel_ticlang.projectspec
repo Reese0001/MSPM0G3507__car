@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectSpec>
+    <applicability>
+        <when>
+            <context deviceFamily="ARM" deviceId="MSPM0G3507" />
+        </when>
+    </applicability>
+
+    <project
+        title="Static-only FreeRTOS kernel for MSPM0G3507 car"
+        name="freertos_kernel_ticlang"
+        device="MSPM0G3507"
+        toolChain="TICLANG"
+        outputType="staticLibrary"
+        ignoreDefaultDeviceSettings="true"
+        ignoreDefaultCCSSettings="true"
+        compilerBuildOptions="
+            -D__MSPM0G3507__
+            -I${WORKSPACE_LOC}/MSPM0G3507_LineFollowing_Car
+            -I${COM_TI_MSPM0_SDK_INSTALL_DIR}/kernel/freertos/Source/include
+            -I${COM_TI_MSPM0_SDK_INSTALL_DIR}/kernel/freertos/Source/portable/TI_ARM_CLANG/ARM_CM0
+            -I${COM_TI_MSPM0_SDK_INSTALL_DIR}/source/third_party/CMSIS/Core/Include
+            -I${COM_TI_MSPM0_SDK_INSTALL_DIR}/source
+            -gdwarf-3
+            -mcpu=cortex-m0plus
+            -march=thumbv6m
+            -mfloat-abi=soft
+            -mthumb
+            -Wall
+        "
+        description="Builds official SDK FreeRTOS sources with the car's shared static-only FreeRTOSConfig.h.">
+        <!-- Shared configuration: ${WORKSPACE_LOC}/MSPM0G3507_LineFollowing_Car/FreeRTOSConfig.h -->
+        <property name="products" value="MSPM0-SDK"/>
+        <file path="${COM_TI_MSPM0_SDK_INSTALL_DIR}/kernel/freertos/Source/tasks.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="freertos" />
+        <file path="${COM_TI_MSPM0_SDK_INSTALL_DIR}/kernel/freertos/Source/list.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="freertos" />
+        <file path="${COM_TI_MSPM0_SDK_INSTALL_DIR}/kernel/freertos/Source/portable/TI_ARM_CLANG/ARM_CM0/port.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="freertos/portable/TI_ARM_CLANG/ARM_CM0" />
+        <file path="${COM_TI_MSPM0_SDK_INSTALL_DIR}/kernel/freertos/Source/portable/TI_ARM_CLANG/ARM_CM0/portasm.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="freertos/portable/TI_ARM_CLANG/ARM_CM0" />
+    </project>
+</projectSpec>

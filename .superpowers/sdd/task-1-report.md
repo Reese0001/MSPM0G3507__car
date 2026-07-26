@@ -93,3 +93,63 @@ configuration-dependent, so the imported dependency must be rebuilt with the
 same `FreeRTOSConfig.h` before a target flash/link can be considered safe.
 This task leaves that external project untouched rather than copying or
 forking the kernel.
+
+## Approved review resolution: matching kernel build
+
+Review identified that the SDK release archive used a different FreeRTOS
+configuration from the application.  In particular, it enabled dynamic
+allocation and software timers, which makes its `StaticTask_t` layout unsafe
+for the application-owned static task buffers.  The approved resolution
+replaces that archive reference with the repository-owned
+`freertos_kernel/freertos_kernel_ticlang.projectspec` and matching
+`freertos_kernel/Makefile`.
+
+The project definition and Makefile link, rather than copy or modify, these
+official SDK FreeRTOS 11.2.0 sources:
+
+- `tasks.c`
+- `list.c`
+- `portable/TI_ARM_CLANG/ARM_CM0/port.c`
+- `portable/TI_ARM_CLANG/ARM_CM0/portasm.c`
+
+Both paths put `MSPM0G3507_LineFollowing_Car/FreeRTOSConfig.h` first on the
+include path.  No `heap_*.c`, `timers.c`, queue, event-group, stream-buffer,
+or POSIX support unit is compiled.  The car CCS metadata now references only
+`freertos_kernel_ticlang.lib`; it no longer references the incompatible SDK
+release project/library.
+
+### Resolution TDD and verification evidence
+
+The expanded kernel-agreement contract test was run RED before adding the
+project files:
+
+```text
+FileNotFoundError: .../freertos_kernel/freertos_kernel_ticlang.projectspec
+```
+
+After implementation:
+
+| Check | Result |
+| --- | --- |
+| `python -m unittest tests.test_freertos_contract -v` | PASS (2 tests) |
+| `python -m unittest discover -s tests -v` | PASS (171 tests) |
+| `gmake -C freertos_kernel -j4 all` | PASS; built `Debug/freertos_kernel_ticlang.lib` from the four selected SDK sources |
+| `gmake -C MSPM0G3507_LineFollowing_Car/Debug -j4 all` | Still blocked by the pre-existing stale generated `Debug` makefiles |
+| `git diff --check` | PASS |
+
+The kernel build emitted one SDK `port.c` warning for an unused vector-table
+local while `configASSERT` is not enabled.  It did not fail the build.
+
+The car gmake failure occurs before it can consume the new library because
+the checked-in generated Debug files still omit the FreeRTOS include path and
+the application task source:
+
+```text
+../empty.c:4:10: fatal error: 'FreeRTOS.h' file not found
+../BSP/delay.c:2:10: fatal error: 'timer.h' file not found
+```
+
+Per the approved scope, those generated files were not hand-edited.  Import
+the repository kernel projectspec into CCS as `freertos_kernel_ticlang`, then
+regenerate/rebuild the car Debug configuration so its generated makefiles
+reflect the committed `.project` and `.cproject` metadata.

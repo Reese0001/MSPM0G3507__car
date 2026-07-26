@@ -3,7 +3,7 @@
 	<name>MSPM0G3507_LineFollowing_Car</name>
 	<comment></comment>
 	<projects>
-		<project>freertos_builds_LP_MSPM0G3507_release_ticlang</project>
+		<project>freertos_kernel_ticlang</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
