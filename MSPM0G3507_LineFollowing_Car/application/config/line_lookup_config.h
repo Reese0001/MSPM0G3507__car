@@ -30,4 +30,11 @@
 /* Yaw limiting only applies near the edges: |position| >= this. */
 #define LINE_LOOKUP_YAW_LIMIT_MIN_POSITION (5)
 
+/* Without a fresh IMU sample, every wheel command is capped here. */
+#define LINE_LOOKUP_IMU_DEGRADED_LIMIT (280)
+
+/* SafetyTask latches D1 when a task heartbeat goes silent this long. */
+#define APP_CONTROL_HEARTBEAT_TIMEOUT_MS (30U)
+#define APP_SENSOR_HEARTBEAT_TIMEOUT_MS (20U)
+
 #endif

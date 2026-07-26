@@ -13,6 +13,17 @@ typedef struct {
  * with the differential sign mirrored. */
 static const LineLookupEntry table[8] = {LINE_LOOKUP_TABLE_ENTRIES};
 
+static int16_t clamp_degraded(int16_t value)
+{
+    if (value > LINE_LOOKUP_IMU_DEGRADED_LIMIT) {
+        return (int16_t)LINE_LOOKUP_IMU_DEGRADED_LIMIT;
+    }
+    if (value < -LINE_LOOKUP_IMU_DEGRADED_LIMIT) {
+        return (int16_t)-LINE_LOOKUP_IMU_DEGRADED_LIMIT;
+    }
+    return value;
+}
+
 static int16_t clamp_command(int32_t value)
 {
     if (value > LINE_LOOKUP_COMMAND_LIMIT) {
@@ -57,6 +68,11 @@ LineLookupCommand LineLookupControl_Step(int8_t position,
     command.diff = diff;
     command.left = clamp_command((int32_t)command.base - diff);
     command.right = clamp_command((int32_t)command.base + diff);
+    if (!yaw_fresh) {
+        /* A stale IMU cannot supervise sharp corners: degrade speed. */
+        command.left = clamp_degraded(command.left);
+        command.right = clamp_degraded(command.right);
+    }
     command.valid = true;
     return command;
 }

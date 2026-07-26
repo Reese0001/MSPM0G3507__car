@@ -60,19 +60,34 @@ int main(void)
     /* ... but never reverses the requested turn direction. */
     CHECK(limited.diff > 0);
     CHECK(limited.left < limited.right);
+    /* Opposite-direction yaw also never reverses the turn. */
+    limited = LineLookupControl_Step(-7, -150.0f, true);
+    CHECK(limited.diff > 0);
+    CHECK(limited.left < limited.right);
 
-    /* Stale yaw never modifies the table output. */
-    stale = LineLookupControl_Step(-7, 150.0f, false);
-    CHECK(stale.left == left_edge.left && stale.right == left_edge.right);
-
-    /* Low yaw never modifies the table output. */
+    /* Low fresh yaw never modifies the fresh table output. */
     stale = LineLookupControl_Step(-7, 10.0f, true);
-    CHECK(stale.left == left_edge.left && stale.right == left_edge.right);
+    limited = LineLookupControl_Step(-7, 0.0f, true);
+    CHECK(stale.left == limited.left && stale.right == limited.right);
 
     /* Yaw limiting only applies near the edges (|position| >= 5). */
     stale = LineLookupControl_Step(-4, 150.0f, true);
-    limited = LineLookupControl_Step(-4, 0.0f, false);
+    limited = LineLookupControl_Step(-4, 0.0f, true);
     CHECK(stale.left == limited.left && stale.right == limited.right);
+
+    /* A stale IMU degrades every wheel command to the 280 cap. */
+    for (position = -7; position <= 7; position++) {
+        LineLookupCommand degraded =
+            LineLookupControl_Step(position, 0.0f, false);
+        CHECK(degraded.valid);
+        CHECK(abs16(degraded.left) <= 280 && abs16(degraded.right) <= 280);
+    }
+    /* Degradation caps magnitude but keeps the steering direction. */
+    stale = LineLookupControl_Step(-7, 0.0f, false);
+    CHECK(stale.left < stale.right);
+    /* A fresh IMU allows the full table speed again. */
+    limited = LineLookupControl_Step(0, 0.0f, true);
+    CHECK(limited.left > 280 && limited.right > 280);
 
     /* Out-of-range positions produce an invalid zero command. */
     limited = LineLookupControl_Step(8, 0.0f, false);
