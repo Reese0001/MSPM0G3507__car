@@ -153,3 +153,21 @@ Per the approved scope, those generated files were not hand-edited.  Import
 the repository kernel projectspec into CCS as `freertos_kernel_ticlang`, then
 regenerate/rebuild the car Debug configuration so its generated makefiles
 reflect the committed `.project` and `.cproject` metadata.
+
+## Handler binding review fix
+
+The CM0+ handler aliases were previously guarded by
+`#ifndef __TI_COMPILER_VERSION__`, which prevented TI Arm Clang from binding
+the FreeRTOS port symbols to the CMSIS startup handlers.  The guard was
+removed so `xPortPendSVHandler`, `vPortSVCHandler`, and
+`xPortSysTickHandler` are always mapped to `PendSV_Handler`, `SVC_Handler`,
+and `SysTick_Handler` respectively.
+
+The new handler contract was run RED first and failed because the TI compiler
+guard was present.  After the minimal configuration change it passed:
+
+| Check | Result |
+| --- | --- |
+| `python -m unittest tests.test_freertos_contract -v` | PASS (3 tests) |
+| `python -m unittest discover -s tests -v` | PASS (172 tests) |
+| `git diff --check` | PASS |

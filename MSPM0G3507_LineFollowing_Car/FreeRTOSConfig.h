@@ -48,10 +48,8 @@
     (configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY << (8 - configPRIO_BITS))
 
 /* The TI startup source provides the CMSIS exception names. */
-#ifndef __TI_COMPILER_VERSION__
 #define xPortPendSVHandler PendSV_Handler
 #define vPortSVCHandler SVC_Handler
 #define xPortSysTickHandler SysTick_Handler
-#endif
 
 #endif

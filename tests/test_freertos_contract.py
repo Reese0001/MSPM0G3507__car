@@ -19,6 +19,17 @@ class FreeRtosContract(unittest.TestCase):
         self.assertIn("Motor_Safety_Disarm()", tasks)
         self.assertIn("vTaskStartScheduler()", main)
 
+    def test_cm0_handlers_are_bound_for_ti_arm_clang(self):
+        config = (ROOT / "FreeRTOSConfig.h").read_text(encoding="utf-8")
+
+        for definition in (
+            "#define xPortPendSVHandler PendSV_Handler",
+            "#define vPortSVCHandler SVC_Handler",
+            "#define xPortSysTickHandler SysTick_Handler",
+        ):
+            self.assertIn(definition, config)
+        self.assertNotIn("#ifndef __TI_COMPILER_VERSION__", config)
+
     def test_kernel_build_shares_static_only_configuration(self):
         kernel = REPOSITORY / "freertos_kernel"
         project = (kernel / "freertos_kernel_ticlang.projectspec").read_text(
