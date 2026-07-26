@@ -301,8 +301,14 @@ bool CornerManeuver_StepWithYaw(const LineFeatures *features,
 
     if (state == CORNER_MANEUVER_SEEK) {
         if ((uint32_t)(now_ms - state_started_ms) >= CORNER_SEEK_MAX_MS) {
-            enter_fault(now_ms, out);
-            return false;
+            /* Seek exhaustion is ordinary line loss: hand motion back to
+             * LineRecovery instead of latching a permanent fault. */
+            CornerManeuver_Reset();
+            out->owns_motion = false;
+            out->completed = false;
+            out->fault = false;
+            invalidate_request(&out->request, now_ms);
+            return true;
         }
         if (update_reacquisition(features)) {
             enter_state(CORNER_MANEUVER_SETTLE, now_ms);

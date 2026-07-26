@@ -117,8 +117,6 @@ static void AppScheduler_RunLineControl(uint32_t now_ms)
     bool event_ready = false;
     bool corner_fault =
         CornerManeuver_GetState() == CORNER_MANEUVER_FAULT;
-    bool recovery_fault =
-        LineRecovery_GetState() == LINE_RECOVERY_FAULT;
 
     if (AppScheduler_ImuStartupHold(now_ms)) {
         AppScheduler_ResetLineControlHistory();
@@ -167,8 +165,6 @@ static void AppScheduler_RunLineControl(uint32_t now_ms)
         }
         corner_fault = corner_fault || corner_output.fault ||
             CornerManeuver_GetState() == CORNER_MANEUVER_FAULT;
-        recovery_fault = recovery_fault ||
-            LineRecovery_GetState() == LINE_RECOVERY_FAULT;
     } else {
         mission_request.left_speed = 0;
         mission_request.right_speed = 0;
@@ -185,10 +181,18 @@ static void AppScheduler_RunLineControl(uint32_t now_ms)
         CornerManeuver_Reset();
         corner_output = (CornerManeuverOutput){0};
     }
-    if (corner_fault || recovery_fault) {
-        control_fault_latched = true;
+    if (corner_fault) {
+        /* Recoverable: restart the pipeline and keep trying; only a
+         * latched motor fault below stops the car permanently. */
         AppScheduler_ResetLineControlHistory();
         corner_output = (CornerManeuverOutput){0};
+        mission_request.left_speed = 0;
+        mission_request.right_speed = 0;
+        mission_request.timestamp_ms = now_ms;
+        mission_request.valid = false;
+    }
+    if (Motor_Safety_IsFaultLatched() != 0U) {
+        control_fault_latched = true;
     }
     if (control_fault_latched) {
         mission_request.left_speed = 0;

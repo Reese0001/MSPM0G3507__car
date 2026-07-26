@@ -151,7 +151,7 @@ MotionResult MotionPrimitive_StepWithContext(uint32_t now_ms,
 
     if (active_type == MOTION_PRIMITIVE_FOLLOW_LINE) {
         if (!step_follow(now_ms, context, request) &&
-            LineRecovery_GetState() == LINE_RECOVERY_FAULT) {
+            LineRecovery_GetState() == LINE_RECOVERY_STOPPED) {
             return finish_primitive(MOTION_FAILED, now_ms, request);
         }
         return MOTION_RUNNING;
@@ -246,7 +246,7 @@ MotionResult MotionPrimitive_StepWithContext(uint32_t now_ms,
             return finish_primitive(MOTION_COMPLETE, now_ms, request);
         }
         if (!step_follow(now_ms, context, request) &&
-            LineRecovery_GetState() == LINE_RECOVERY_FAULT) {
+            LineRecovery_GetState() == LINE_RECOVERY_STOPPED) {
             return finish_primitive(MOTION_FAILED, now_ms, request);
         }
         return MOTION_RUNNING;

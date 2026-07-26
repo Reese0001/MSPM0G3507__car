@@ -14,7 +14,9 @@ typedef enum {
     LINE_RECOVERY_ROTATION_PAUSE,
     LINE_RECOVERY_ROTATE_SEARCH,
     LINE_RECOVERY_ALIGN,
-    LINE_RECOVERY_FAULT
+    /* Exhausted search: motors stop, but trustworthy line frames
+     * resume control; ordinary loss never latches a permanent fault. */
+    LINE_RECOVERY_STOPPED
 } LineRecoveryState;
 
 void LineRecovery_Init(void);

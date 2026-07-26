@@ -140,7 +140,27 @@ static int test_forward_pause_rotate_and_lock(void)
     set_line(&line, now_ms, sequence++, LINE_EVENT_LOST, 0.0f, 0.0f, 0U);
     CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
     CHECK(!owns_motion && !request.valid);
-    CHECK(LineRecovery_GetState() == LINE_RECOVERY_FAULT);
+    CHECK(request.left_speed == 0 && request.right_speed == 0);
+    CHECK(LineRecovery_GetState() == LINE_RECOVERY_STOPPED);
+
+    /* STOPPED is recoverable: trustworthy frames resume via ALIGN. */
+    now_ms += 5U;
+    set_line(&line, now_ms, sequence++, LINE_EVENT_NONE, 0.0f, 0.0f, 60U);
+    CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
+    CHECK(LineRecovery_GetState() == LINE_RECOVERY_STOPPED);
+    now_ms += 5U;
+    set_line(&line, now_ms, sequence++, LINE_EVENT_NONE, 0.0f, 0.0f, 60U);
+    CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
+    CHECK(LineRecovery_GetState() == LINE_RECOVERY_STOPPED);
+    now_ms += 5U;
+    set_line(&line, now_ms, sequence++, LINE_EVENT_NONE, 0.0f, 0.0f, 60U);
+    CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
+    CHECK(owns_motion && request.valid);
+    CHECK(LineRecovery_GetState() == LINE_RECOVERY_ALIGN);
+    now_ms += 300U;
+    set_line(&line, now_ms, sequence++, LINE_EVENT_NONE, 0.0f, 0.0f, 60U);
+    CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
+    CHECK(LineRecovery_GetState() == LINE_RECOVERY_FOLLOW);
     return 0;
 }
 
@@ -231,19 +251,19 @@ static int test_duplicate_missing_direction_and_faults(void)
     set_line(&line, now_ms, sequence++, LINE_EVENT_LOST, 0.0f, 0.0f, 0U);
     CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
     CHECK(!owns_motion && !request.valid);
-    CHECK(LineRecovery_GetState() == LINE_RECOVERY_FAULT);
+    CHECK(LineRecovery_GetState() == LINE_RECOVERY_STOPPED);
 
     LineRecovery_Init();
     set_line(&line, 0U, 1U, LINE_EVENT_NONE, 0.0f, 0.0f, 60U);
     set_trend(&trend, 0U, 0);
     CHECK(step(&line, &trend, 21U, false, &request, &owns_motion) == 0);
-    CHECK(!owns_motion && LineRecovery_GetState() == LINE_RECOVERY_FAULT);
+    CHECK(!owns_motion && LineRecovery_GetState() == LINE_RECOVERY_STOPPED);
 
     LineRecovery_Init();
     set_line(&line, 0U, 1U, LINE_EVENT_NONE, 0.0f, 0.0f, 60U);
     set_trend(&trend, 0U, 0);
     CHECK(step(&line, &trend, 0U, true, &request, &owns_motion) == 0);
-    CHECK(!owns_motion && LineRecovery_GetState() == LINE_RECOVERY_FAULT);
+    CHECK(!owns_motion && LineRecovery_GetState() == LINE_RECOVERY_STOPPED);
 
     now_ms = 0U;
     sequence = 1U;
@@ -252,7 +272,56 @@ static int test_duplicate_missing_direction_and_faults(void)
     now_ms = 2000U;
     set_line(&line, now_ms, sequence++, LINE_EVENT_LOST, 0.0f, 0.0f, 0U);
     CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
-    CHECK(!owns_motion && LineRecovery_GetState() == LINE_RECOVERY_FAULT);
+    CHECK(!owns_motion && LineRecovery_GetState() == LINE_RECOVERY_STOPPED);
+    return 0;
+}
+
+/* Plan regression: stable left line, loss, blind forward-left search,
+ * same-direction rotate, reacquisition -> ALIGN -> FOLLOW, no fault. */
+static int test_left_loss_recovers_without_latching(void)
+{
+    LineEstimate line;
+    LineTrendResult trend;
+    MotionRequest request;
+    bool owns_motion;
+    uint32_t now_ms = 0U;
+    uint16_t sequence = 1U;
+
+    LineRecovery_Init();
+    set_trend(&trend, now_ms, -1);
+    set_line(&line, now_ms, sequence++, LINE_EVENT_NONE, -5.0f, -5.0f, 60U);
+    CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
+    CHECK(owns_motion && LineRecovery_GetState() == LINE_RECOVERY_FOLLOW);
+
+    CHECK(enter_forward_search(-1, &now_ms, &sequence, &line, &trend,
+                               &request) == 0);
+    CHECK(request.valid && request.left_speed == 80 &&
+          request.right_speed == 120);
+
+    now_ms += 500U;
+    set_line(&line, now_ms, sequence++, LINE_EVENT_LOST, 0.0f, 0.0f, 0U);
+    CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
+    now_ms += 120U;
+    set_line(&line, now_ms, sequence++, LINE_EVENT_LOST, 0.0f, 0.0f, 0U);
+    CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
+    CHECK(LineRecovery_GetState() == LINE_RECOVERY_ROTATE_SEARCH);
+    CHECK(request.left_speed == -60 && request.right_speed == 100);
+
+    now_ms += 5U;
+    set_line(&line, now_ms, sequence++, LINE_EVENT_NONE, -2.0f, -2.0f, 60U);
+    CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
+    now_ms += 5U;
+    set_line(&line, now_ms, sequence++, LINE_EVENT_NONE, -2.0f, -2.0f, 60U);
+    CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
+    now_ms += 5U;
+    set_line(&line, now_ms, sequence++, LINE_EVENT_NONE, -2.0f, -2.0f, 60U);
+    CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
+    CHECK(LineRecovery_GetState() == LINE_RECOVERY_ALIGN);
+
+    now_ms += 300U;
+    set_line(&line, now_ms, sequence++, LINE_EVENT_NONE, -2.0f, -2.0f, 60U);
+    CHECK(step(&line, &trend, now_ms, false, &request, &owns_motion) == 0);
+    CHECK(owns_motion && LineRecovery_GetState() == LINE_RECOVERY_FOLLOW);
     return 0;
 }
 
@@ -264,5 +333,8 @@ int main(void)
     if (test_right_pivot_and_reacquisition() != 0) {
         return 1;
     }
-    return test_duplicate_missing_direction_and_faults();
+    if (test_duplicate_missing_direction_and_faults() != 0) {
+        return 1;
+    }
+    return test_left_loss_recovers_without_latching();
 }

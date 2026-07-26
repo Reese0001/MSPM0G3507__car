@@ -92,7 +92,8 @@ class LineTrendDetectorContract(unittest.TestCase):
         self.assertGreaterEqual(scheduler.count("LineTrendDetector_Reset();"), 2)
         self.assertRegex(
             scheduler,
-            r"LINE_RECOVERY_FAULT[\s\S]{0,400}LineTrendDetector_Reset\(\)",
+            r"if\s*\(corner_fault\)\s*\{[\s\S]{0,240}"
+            r"AppScheduler_ResetLineControlHistory\(\)",
         )
 
     def test_public_types_and_thresholds_exist(self):

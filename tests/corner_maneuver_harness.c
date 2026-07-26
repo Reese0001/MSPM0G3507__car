@@ -249,11 +249,13 @@ static int run_timeout_boundaries_and_follow_safety(void)
     CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_SEEK);
     CHECK(out.request.left_speed == -80 && out.request.right_speed == 120);
     check_not_reversing(&out);
+    /* Seek exhaustion is not a fault: hand motion back to LineRecovery. */
     set_features(&features, 1120U, 5U, 4U);
     set_event(&event, 1120U, LINE_PATH_NORMAL);
-    CHECK(!CornerManeuver_Step(&features, &event, &follow, false, 1120U, &out));
-    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_FAULT);
-    CHECK(out.fault && !out.completed && !out.request.valid);
+    CHECK(CornerManeuver_Step(&features, &event, &follow, false, 1120U, &out));
+    CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_FOLLOW);
+    CHECK(!out.fault && !out.completed && !out.owns_motion);
+    CHECK(!out.request.valid);
     CHECK(out.request.left_speed == 0 && out.request.right_speed == 0);
 
     CornerManeuver_Init();

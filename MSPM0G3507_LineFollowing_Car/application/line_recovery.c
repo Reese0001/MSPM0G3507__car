@@ -116,9 +116,10 @@ static void enter_state(LineRecoveryState state, uint32_t now_ms)
     state_started_ms = now_ms;
 }
 
-static void enter_fault(uint32_t now_ms, MotionRequest *request)
+static void enter_stopped(uint32_t now_ms, MotionRequest *request)
 {
-    enter_state(LINE_RECOVERY_FAULT, now_ms);
+    enter_state(LINE_RECOVERY_STOPPED, now_ms);
+    reacquire_count = 0U;
     invalidate_request(request, now_ms);
 }
 
@@ -189,15 +190,12 @@ bool LineRecovery_Step(const LineEstimate *line,
         return false;
     }
     invalidate_request(request, now_ms);
-    if (recovery_state == LINE_RECOVERY_FAULT) {
-        return false;
-    }
     if (emergency_stop) {
-        enter_fault(now_ms, request);
+        enter_stopped(now_ms, request);
         return false;
     }
     if (!line_is_fresh(line, now_ms)) {
-        enter_fault(now_ms, request);
+        enter_stopped(now_ms, request);
         return false;
     }
 
@@ -206,6 +204,16 @@ bool LineRecovery_Step(const LineEstimate *line,
     if (recovery_state == LINE_RECOVERY_FOLLOW ||
         recovery_state == LINE_RECOVERY_LOSS_CONFIRM) {
         update_direction(line, trend, now_ms);
+    }
+
+    if (recovery_state == LINE_RECOVERY_STOPPED) {
+        if (update_reacquisition(line, new_line)) {
+            /* A reacquired line restarts the recovery time budget. */
+            recovery_started_ms = now_ms;
+            enter_state(LINE_RECOVERY_ALIGN, now_ms);
+            return set_follow_request(follow, now_ms, request);
+        }
+        return false;
     }
 
     if (recovery_state == LINE_RECOVERY_FOLLOW) {
@@ -222,7 +230,7 @@ bool LineRecovery_Step(const LineEstimate *line,
 
     if ((uint32_t)(now_ms - recovery_started_ms) >=
         LINE_RECOVERY_TOTAL_TIMEOUT_MS) {
-        enter_fault(now_ms, request);
+        enter_stopped(now_ms, request);
         return false;
     }
 
@@ -265,7 +273,7 @@ bool LineRecovery_Step(const LineEstimate *line,
         if ((uint32_t)(now_ms - state_started_ms) >=
             LINE_ROTATION_PAUSE_MS) {
             if (recovery_direction == 0) {
-                enter_fault(now_ms, request);
+                enter_stopped(now_ms, request);
                 return false;
             }
             enter_state(LINE_RECOVERY_ROTATE_SEARCH, now_ms);
@@ -279,7 +287,7 @@ bool LineRecovery_Step(const LineEstimate *line,
     if (recovery_state == LINE_RECOVERY_ROTATE_SEARCH) {
         if ((uint32_t)(now_ms - state_started_ms) >=
             LINE_ROTATE_SEARCH_MS) {
-            enter_fault(now_ms, request);
+            enter_stopped(now_ms, request);
             return false;
         }
         set_rotate_search(now_ms, request);
@@ -302,6 +310,6 @@ bool LineRecovery_Step(const LineEstimate *line,
         return set_follow_request(follow, now_ms, request);
     }
 
-    enter_fault(now_ms, request);
+    enter_stopped(now_ms, request);
     return false;
 }

@@ -41,10 +41,13 @@ class AppSchedulerPipelineContract(unittest.TestCase):
         ):
             self.assertGreaterEqual(self.source.count(token), 2)
 
-    def test_corner_or_recovery_fault_fails_closed(self):
+    def test_corner_fault_fails_closed_without_latching(self):
         self.assertIn("corner_output.fault", self.source)
-        self.assertIn(
-            "LineRecovery_GetState() == LINE_RECOVERY_FAULT", self.source
+        self.assertNotIn("LINE_RECOVERY_FAULT", self.source)
+        self.assertRegex(
+            self.source,
+            r"if\s*\(corner_fault\)\s*\{\s*"
+            r"[\s\S]{0,240}AppScheduler_ResetLineControlHistory\(\);",
         )
         self.assertRegex(
             self.source,
@@ -60,13 +63,19 @@ class AppSchedulerPipelineContract(unittest.TestCase):
             self.source,
         )
 
-    def test_pipeline_fault_remains_fail_closed_until_start_reset(self):
+    def test_only_motor_fault_latches_control(self):
         self.assertIn("static bool control_fault_latched = false", self.source)
         self.assertRegex(
             self.source,
-            r"if\s*\(corner_fault\s*\|\|\s*recovery_fault\)\s*\{"
+            r"if\s*\(Motor_Safety_IsFaultLatched\(\)\s*!=\s*0U\)\s*\{"
             r"\s*control_fault_latched\s*=\s*true;",
         )
+        self.assertNotRegex(
+            self.source,
+            r"if\s*\(corner_fault[\s\S]{0,80}"
+            r"control_fault_latched\s*=\s*true;",
+        )
+        self.assertNotIn("recovery_fault", self.source)
         self.assertRegex(
             self.source,
             r"if\s*\(control_fault_latched\)\s*\{[\s\S]{0,240}"
