@@ -46,6 +46,9 @@
                                     <listOptionValue value="${PROJECT_ROOT}/application"/>
                                     <listOptionValue value="${PROJECT_ROOT}/application/legacy_task"/>
                                     <listOptionValue value="${PROJECT_ROOT}/application/legacy_questions"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/common"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/mpu6050"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/motor"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/legacy_mpu6050/driver"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/legacy_mpu6050/empl"/>
