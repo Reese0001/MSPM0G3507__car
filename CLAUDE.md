@@ -34,18 +34,24 @@ python -m unittest discover -s tests -v
 - `tests/test_*_contract.py` 直接对源码文本做合同检查（架构、编码、SysConfig 等）。
 - `test_text_encoding.py` 强制 `MSPM0G3507_LineFollowing_Car/` 与 `docs/` 下所有文本文件为**合法 UTF-8**。
 
-### CCS 构建
+### CCS 构建（烧录以此为准）
 
-- CCS Theia 中 **Project → Clean** 后 **Build Project**；或命令行（工作目录必须是 Debug）：
+- CCS Theia 中 **Project → Clean** 后 **Build Project**，产物 `Debug/MSPM0G3507_LineFollowing_Car.out`。
+- CCS Theia **没有无头构建命令**（旧的 `eclipsec -application projectBuild` 已移除），`Debug/*.mk` 由 IDE 生成，直接 `gmake -C Debug` 会用到过期的源码目录表而失败。
+
+### 命令行构建（离线验证用）
+
+`MSPM0G3507_LineFollowing_Car/Makefile` 复刻 CCS Debug 配置（同编译器、同参数、同 SysConfig 产物、同 `.cproject` 源码排除表），产物写入被 git 忽略的 `Build_LineFollowing/`：
 
 ```powershell
-Set-Location MSPM0G3507_LineFollowing_Car\Debug
-& 'D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe' clean
-& 'D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe' -j4 all
+& 'D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe' -C MSPM0G3507_LineFollowing_Car -j4 all
+& 'D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe' -C MSPM0G3507_LineFollowing_Car images
 ```
 
+`images` 额外生成 `firmware/*.hex` 与 TI-TXT `firmware/*.txt`（均不入库）。**改了源码目录结构或 `.cproject` 排除表，要同步改这个 Makefile 的 `SOURCES` / `CPPFLAGS`。**
+
 - 工具链：`ti-cgt-armllvm 4.0.4`，`-mcpu=cortex-m0plus -mthumb -mfloat-abi=soft`；SDK `mspm0_sdk_2_10_00_04`；SysConfig 1.26。
-- FreeRTOS 静态内核库在 `freertos_kernel/`（TI Arm Clang 编译的 `Debug/freertos_kernel_ticlang.lib`）。
+- FreeRTOS 静态内核库在 `freertos_kernel/`（TI Arm Clang 编译的 `Debug/freertos_kernel_ticlang.lib`，用 `freertos_kernel/Makefile` 构建）。
 
 ### 烧录
 

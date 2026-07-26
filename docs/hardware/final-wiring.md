@@ -58,15 +58,21 @@
 
 底盘资料中的另一款“八路巡线”使用 SDA/SCL（PA16/PA15），与当前 AD0/AD1/AD2/OUT 型模块不是同一种接口。未看到实际模块正反面和插座丝印前，**不要按 SDA/SCL 示例接线**。
 
-## 5. 电机驱动与调试串口
+## 5. 电机驱动与 SSD1306 OLED
+
+> 2026-07-26 FreeRTOS 迁移后，PA10/PA11 不再是调试串口（UART0 已从
+> SysConfig 删除），改作 SSD1306 OLED 软件 I2C。调试信息看 OLED 仪表页。
 
 | 功能 | MSPM0 | 对端 |
 |---|---|---|
 | 电机 UART TX | PB6 | 驱动板 RX |
 | 电机 UART RX | PB7 | 驱动板 TX |
-| 调试 UART TX | PA10 | USB-TTL RX |
-| 调试 UART RX | PA11 | USB-TTL TX |
+| OLED SCL | PA10 | SSD1306 SCL（地址 0x3C） |
+| OLED SDA | PA11 | SSD1306 SDA |
+| OLED VCC | 3.3V | 禁止接 5V |
 | 地 | GND | 所有逻辑板 GND |
+
+OLED 掉线只会使仪表页停止刷新（故障码 OLED-I2C），不会影响循迹与电机。
 
 只使用 M2/M4 两个驱动轮通道。首次接电机前确认零速帧、方向、0→30% soft-start、200ms watchdog 和急停断电手段。
 

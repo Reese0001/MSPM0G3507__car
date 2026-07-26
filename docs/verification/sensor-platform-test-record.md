@@ -83,3 +83,68 @@
 
 最终结论：**HOLD - 等待 CCS 完整构建、实物照片、电源带载和分级上车测试**
 
+---
+
+## G. FreeRTOS 查表控制验收（2026-07-26 迁移，Task 8）
+
+固件：`main` 分支 FreeRTOS 四任务 + 15 位置查表控制（取代 PID）。
+
+### G.1 软件验证
+
+| 项目 | 判据 | 结果 | 证据 |
+|---|---|---|---|
+| 离线测试 | 全部通过 | PASS | 192/192（含 FreeRTOS 调度、OLED、故障诊断合同） |
+| TI clean build | 无错误链接 | PASS | `gmake -C MSPM0G3507_LineFollowing_Car all`；text 29144 / bss 6381 字节 |
+| 静态内核 | 四个静态任务栈，无应用堆 | PASS | map 中 control 0x300 / display 0x280 / safety 0x280 / sensor 0x280 + idle 0x180，无 `ucHeap` |
+| 中断归属 | PendSV/SVC/SysTick 由 FreeRTOS port 提供 | PASS | map：三个 handler 均来自 `freertos_kernel_ticlang.lib : port.o` |
+| HEX/TI-TXT 一致性 | 两种格式地址/数据字节一致 | PASS | 各 29144 字节，逐地址比对完全相同 |
+
+构建方式：CCS Theia 无无头构建命令，且 `Debug/*.mk` 由 IDE 重新生成，因此新增
+`MSPM0G3507_LineFollowing_Car/Makefile` 复刻 CCS Debug 配置（同编译器、同参数、
+同 SysConfig 产物、同源码排除表），产物写入 `Build_LineFollowing/`。
+**烧录前仍以 CCS GUI 构建为准。**
+
+### G.2 当前查表参数（待实测调整）
+
+15 位置表（存 0..7 非负半区，负位置镜像差速；`line_lookup_config.h`）：
+
+| \|位置\| | base | diff |
+|---|---|---|
+| 0 | 420 | 0 |
+| 1 | 400 | 30 |
+| 2 | 370 | 65 |
+| 3 | 330 | 100 |
+| 4 | 285 | 135 |
+| 5 | 235 | 165 |
+| 6 | 175 | 195 |
+| 7 | 120 | 220 |
+
+阈值：`LINE_LOOKUP_HIGH_YAW_DPS = 95.0`（|位置|≥5 时差速×3/4）；
+IMU 过期限速 `LINE_LOOKUP_IMU_DEGRADED_LIMIT = 280`；
+心跳超时 SENS 20ms / CTRL 30ms（超时锁存 D1）；
+电机帧限频 `MOTOR_UART_MIN_PERIOD_MS = 5`（零速命令立即发）。
+
+### G.3 分级实测（需实车，逐项填写）
+
+| 阶段 | 判据 | 结果 | 备注 |
+|---|---|---|---|
+| 1. 仅 USB | OLED 仪表页出现、D2 心跳、8 位灰度实时、MPU 状态 READY | 待测 | 12.6V 断开 |
+| 2. 架空轮 | 0→30% soft-start；断请求 200ms 内零速 | 待测 | |
+| 3. 低速落地 | 15 个位置转向方向全部正确 | 待测 | |
+| 4. 丢线 | 按最近稳定方向盲走+同向旋转；不锁存 D1（STOPPED 可恢复） | 待测 | |
+| 5. 直角/急弯 | 两帧稳定重捕获，无过弯后振荡 | 待测 | |
+| 6. 全程 | 只上调中心区 base，不超过 450 | 待测 | |
+
+### G.4 固件指纹（2026-07-26 生成，`gmake images`）
+
+`firmware/` 不入库，需要时用 `gmake -C MSPM0G3507_LineFollowing_Car images` 重新生成。
+
+| 文件 | SHA-256 |
+|---|---|
+| firmware/MSPM0G3507_LineFollowing_Car.hex | `3075705169e4e0379cb14ebb61789b3200a9577e8f4aa64b3402808ccbc90ba0` |
+| firmware/MSPM0G3507_LineFollowing_Car.txt | `7812d34bdceb9f865019344223746fbb3cf5a057dec2c4a6d58da2e7fcdefca4` |
+
+两者携带的地址/数据字节完全一致（各 29144 字节），仅容器格式不同。
+
+最大任务延迟（实测）：待测——需要上电后读 OLED 仪表页。
+

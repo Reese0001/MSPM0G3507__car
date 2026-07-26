@@ -58,7 +58,7 @@
 - Consumes: `SYSCFG_DL_init()`, `Motor_Safety_Init()`, `Motor_Safety_Disarm()`, `Timer_Init()`.
 - Produces: `bool AppTasks_Create(void)` and static task handles for later tasks.
 
-- [ ] **Step 1: Write the failing source-contract test**
+- [x] **Step 1: Write the failing source-contract test**
 
 ```python
 from pathlib import Path
@@ -79,13 +79,13 @@ class FreeRtosContract(unittest.TestCase):
         self.assertIn("vTaskStartScheduler()", main)
 ```
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run: `python -m unittest tests.test_freertos_contract -v`
 
 Expected: FAIL because `FreeRTOSConfig.h` and `application/freertos/app_tasks.c` do not exist.
 
-- [ ] **Step 3: Add the minimal static kernel configuration**
+- [x] **Step 3: Add the minimal static kernel configuration**
 
 Use the SDK file `C:\ti\mspm0_sdk_2_10_00_04\kernel\freertos\builds\LP_MSPM0G3507\release\FreeRTOSConfig.h` as the port reference, with these application settings:
 
@@ -176,7 +176,7 @@ freertos_builds_LP_MSPM0G3507_release_ticlang.lib
 
 Do not copy or fork the kernel.
 
-- [ ] **Step 4: Verify host contract and TI build**
+- [x] **Step 4: Verify host contract and TI build**
 
 Run:
 
@@ -187,7 +187,7 @@ gmake -C MSPM0G3507_LineFollowing_Car/Debug -j4 all
 
 Expected: contract PASS; TI link succeeds with no undefined `vTaskStartScheduler`, PendSV, SVC, or SysTick symbols. On a USB-only bench flash, D2 may heartbeat but motors remain stopped.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```powershell
 git add MSPM0G3507_LineFollowing_Car/FreeRTOSConfig.h MSPM0G3507_LineFollowing_Car/application/freertos MSPM0G3507_LineFollowing_Car/empty.c MSPM0G3507_LineFollowing_Car/empty.syscfg MSPM0G3507_LineFollowing_Car/application/app_main.c MSPM0G3507_LineFollowing_Car/bsp/delay.c MSPM0G3507_LineFollowing_Car/.project MSPM0G3507_LineFollowing_Car/.cproject tests/test_freertos_contract.py
@@ -230,7 +230,7 @@ void LinePosition_Reset(void);
 LinePositionResult LinePosition_Update(uint8_t black_bits);
 ```
 
-- [ ] **Step 1: Write the failing C harness**
+- [x] **Step 1: Write the failing C harness**
 
 The harness must assert:
 
@@ -246,13 +246,13 @@ CHECK(LinePosition_Update(0x00U).type == LINE_PATTERN_LOST);
 
 It must also prove that `-7 -> +7` is rejected on the first frame and accepted on the second identical frame, while `-7 -> -6` is accepted immediately.
 
-- [ ] **Step 2: Run the harness and verify RED**
+- [x] **Step 2: Run the harness and verify RED**
 
 Run: `python -m unittest tests.test_line_position -v`
 
 Expected: FAIL because `line_position.c` is missing.
 
-- [ ] **Step 3: Implement the fixed decoder**
+- [x] **Step 3: Implement the fixed decoder**
 
 Use one 256-entry signed lookup initialized only for the 15 legal patterns:
 
@@ -275,7 +275,7 @@ else if (candidate == previous_candidate && candidate_frames >= 2U) accept_now()
 else hold_stable();
 ```
 
-- [ ] **Step 4: Run focused and full tests**
+- [x] **Step 4: Run focused and full tests**
 
 Run:
 
@@ -286,7 +286,7 @@ python -m unittest discover -s tests -v
 
 Expected: new harness PASS and existing suite has zero failures.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```powershell
 git add MSPM0G3507_LineFollowing_Car/modules/line_tracking/line_position.* MSPM0G3507_LineFollowing_Car/application/config/line_lookup_config.h tests/line_position_harness.c tests/test_line_position.py
@@ -323,7 +323,7 @@ LineLookupCommand LineLookupControl_Step(int8_t position,
                                         bool yaw_fresh);
 ```
 
-- [ ] **Step 1: Write the failing table tests**
+- [x] **Step 1: Write the failing table tests**
 
 Assert symmetry and bounds:
 
@@ -341,13 +341,13 @@ CHECK(abs(left_edge.left) <= 450 && abs(left_edge.right) <= 450);
 Also assert that high correct-direction yaw reduces the magnitude of the edge command but never reverses the requested turn.
 Assert steering direction explicitly: at `-7`, left wheel is slower than right; at `+7`, right wheel is slower than left.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `python -m unittest tests.test_line_lookup_control -v`
 
 Expected: FAIL because the lookup controller is missing.
 
-- [ ] **Step 3: Implement one symmetric table**
+- [x] **Step 3: Implement one symmetric table**
 
 Store only the eight non-negative entries and mirror negative positions:
 
@@ -378,7 +378,7 @@ if (yaw_fresh && abs(position) >= 5 &&
 
 Calculate `left = clamp(base - diff, -450, 450)` and `right = clamp(base + diff, -450, 450)`. Do not add PID state, derivative filters, or integral terms.
 
-- [ ] **Step 4: Run focused/full tests**
+- [x] **Step 4: Run focused/full tests**
 
 Run:
 
@@ -389,7 +389,7 @@ python -m unittest discover -s tests -v
 
 Expected: all tests PASS.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```powershell
 git add MSPM0G3507_LineFollowing_Car/modules/line_tracking/line_lookup_control.* MSPM0G3507_LineFollowing_Car/application/config/line_lookup_config.h tests/line_lookup_control_harness.c tests/test_line_lookup_control.py
@@ -415,7 +415,7 @@ git push origin main
 - Consumes: last stable position and new `LinePositionResult`.
 - Produces: `LINE_RECOVERY_STOPPED` for an exhausted search; never reports a permanent control fault for ordinary line loss.
 
-- [ ] **Step 1: Change tests first**
+- [x] **Step 1: Change tests first**
 
 Replace timeout expectations:
 
@@ -430,7 +430,7 @@ Add a regression sequence: stable `-5`, lost frames, forward-left blind search, 
 
 Add a scheduler assertion that only `Motor_Safety_IsFaultLatched()` causes `control_fault_latched`.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run:
 
@@ -440,7 +440,7 @@ python -m unittest tests.test_line_recovery tests.test_corner_maneuver tests.tes
 
 Expected: FAIL on old permanent fault states.
 
-- [ ] **Step 3: Implement recoverable timeout semantics**
+- [x] **Step 3: Implement recoverable timeout semantics**
 
 Add:
 
@@ -468,7 +468,7 @@ if (seek_expired) {
 
 Remove permanent latching for `CornerManeuver`/`LineRecovery` timeouts from `AppScheduler_RunLineControl`. Keep D1 latching for motor UART and task-heartbeat failures only.
 
-- [ ] **Step 4: Run focused/full tests**
+- [x] **Step 4: Run focused/full tests**
 
 Run:
 
@@ -479,7 +479,7 @@ python -m unittest discover -s tests -v
 
 Expected: all tests PASS; old tests expecting ordinary search to become `FAULT` are updated to `STOPPED`.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```powershell
 git add MSPM0G3507_LineFollowing_Car/application tests/line_recovery_harness.c tests/corner_maneuver_harness.c tests/test_app_scheduler.py
@@ -508,7 +508,7 @@ git push origin main
 - `SafetyTask`: runs every 1 ms, applies request and checks heartbeats.
 - `AppMailbox_*`: copies fixed structs inside `taskENTER_CRITICAL()` / `taskEXIT_CRITICAL()`.
 
-- [ ] **Step 1: Write failing schedule-contract tests**
+- [x] **Step 1: Write failing schedule-contract tests**
 
 Assert:
 
@@ -521,13 +521,13 @@ self.assertIn("MOTOR_UART_MIN_PERIOD_MS (5U)", config)
 self.assertNotIn("AppScheduler_Run(now_ms)", main)
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `python -m unittest tests.test_freertos_schedule -v`
 
 Expected: FAIL because cooperative polling is still active.
 
-- [ ] **Step 3: Implement the four task loops**
+- [x] **Step 3: Implement the four task loops**
 
 Use fixed priorities so freshly published sensor data immediately preempts the sensor task:
 
@@ -559,7 +559,7 @@ The loop is bounded to 1 ms. SafetyTask can preempt it; after the line snapshot 
 
 The hardware TIMER_0 ISR continues to call `Motor_Safety_Tick1ms()` and must not call any FreeRTOS API.
 
-- [ ] **Step 4: Verify tests and build**
+- [x] **Step 4: Verify tests and build**
 
 Run:
 
@@ -571,7 +571,7 @@ gmake -C MSPM0G3507_LineFollowing_Car/Debug -j4 all
 
 Expected: all host tests PASS; TI build succeeds; map file contains four static task stacks and no application heap symbol.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```powershell
 git add MSPM0G3507_LineFollowing_Car/application/freertos MSPM0G3507_LineFollowing_Car/application/app_main.c MSPM0G3507_LineFollowing_Car/application/app_scheduler.* MSPM0G3507_LineFollowing_Car/modules/line_tracking/line_scanner.* tests/test_freertos_schedule.py
@@ -598,17 +598,17 @@ git push origin main
 - Consumes: diagnostic mailbox snapshot.
 - Produces: `bool Ssd1306_Init(void)`, `bool Ssd1306_WritePage(uint8_t page, const uint8_t data[128])`, and `void Dashboard_Render(const AppDiagnostics *data)`.
 
-- [ ] **Step 1: Write failing pin/address/display tests**
+- [x] **Step 1: Write failing pin/address/display tests**
 
 Assert PA10/PA11 are GPIO named `OLED_I2C_SCL`/`OLED_I2C_SDA`, UART0 is absent, address is `0x3C`, display period is 200 ms, and OLED failure does not call `Motor_Safety_Disarm()`.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run: `python -m unittest tests.test_oled_contract -v`
 
 Expected: FAIL because the OLED modules are missing and PA10/PA11 are still UART0.
 
-- [ ] **Step 3: Implement the minimal display**
+- [x] **Step 3: Implement the minimal display**
 
 Change SysConfig only through `empty.syscfg`; regenerate `ti_msp_dl_config.*`. Configure PA10/PA11 released-high GPIO. Implement open-drain behavior by switching output-low and input/released-high.
 
@@ -622,7 +622,7 @@ SSD1306 requirements:
 
 Keep one 1024-byte framebuffer plus an 8-bit dirty-page mask. DisplayTask wakes every 200 ms and writes only dirty pages. Render fixed fields: run state, eight bits, stable/candidate position, left/right command, MPU state, recovery state, and fault code. Do not add menus, animation, proportional fonts, or a second screen.
 
-- [ ] **Step 4: Verify tests, SysConfig, and build**
+- [x] **Step 4: Verify tests, SysConfig, and build**
 
 Run:
 
@@ -634,7 +634,7 @@ gmake -C MSPM0G3507_LineFollowing_Car/Debug -j4 all
 
 Expected: all tests PASS; generated config contains PA10/PA11 OLED GPIO and no UART0; TI build succeeds.
 
-- [ ] **Step 5: USB-only hardware check**
+- [x] **Step 5: USB-only hardware check**
 
 With 12.6 V disconnected:
 
@@ -643,7 +643,7 @@ With 12.6 V disconnected:
 3. Confirm the dashboard appears and D2 continues blinking.
 4. Disconnect OLED and confirm line/motor tasks continue without D1.
 
-- [ ] **Step 6: Commit and push**
+- [x] **Step 6: Commit and push**
 
 ```powershell
 git add MSPM0G3507_LineFollowing_Car/empty.syscfg MSPM0G3507_LineFollowing_Car/bsp/bsp_oled_i2c.* MSPM0G3507_LineFollowing_Car/modules/display MSPM0G3507_LineFollowing_Car/application/diagnostics MSPM0G3507_LineFollowing_Car/application/freertos/app_tasks.c tests/test_oled_contract.py
@@ -667,11 +667,11 @@ git push origin main
 - Consumes: fresh MPU yaw rate and per-task heartbeat counters.
 - Produces: non-latching `C-SEARCH`, `L-LOST`, `OLED-I2C`; latching `M-UART`, `CTRL-HB`, `SENS-HB`.
 
-- [ ] **Step 1: Add failing tests**
+- [x] **Step 1: Add failing tests**
 
 Test that high same-direction yaw reduces `diff`, opposite yaw does not reverse direction, stale MPU caps speed at 280, and display-only failure never stops motors. Test that control/sensor heartbeat expiry does stop and latch D1.
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run:
 
@@ -681,7 +681,7 @@ python -m unittest tests.test_line_lookup_control tests.test_fault_diagnostics -
 
 Expected: FAIL for missing diagnostic classification and degraded speed cap.
 
-- [ ] **Step 3: Implement minimal supervision**
+- [x] **Step 3: Implement minimal supervision**
 
 Use constants:
 
@@ -694,7 +694,7 @@ Use constants:
 
 Do not create a yaw PID. Limit only the lookup result and publish one enum fault code to the dashboard.
 
-- [ ] **Step 4: Run full verification**
+- [x] **Step 4: Run full verification**
 
 Run:
 
@@ -705,7 +705,7 @@ gmake -C MSPM0G3507_LineFollowing_Car/Debug -j4 all
 
 Expected: zero host-test failures and successful TI link.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```powershell
 git add MSPM0G3507_LineFollowing_Car/modules/line_tracking/line_lookup_control.c MSPM0G3507_LineFollowing_Car/application/freertos/app_tasks.c MSPM0G3507_LineFollowing_Car/application/diagnostics/dashboard.c MSPM0G3507_LineFollowing_Car/application/config/line_lookup_config.h tests/line_lookup_control_harness.c tests/test_fault_diagnostics.py
@@ -727,7 +727,7 @@ git push origin main
 - Consumes: verified TI `.out`.
 - Produces: matching Intel HEX and TI-TXT images for UniFlash; firmware remains untracked.
 
-- [ ] **Step 1: Run software verification**
+- [x] **Step 1: Run software verification**
 
 ```powershell
 python -m unittest discover -s tests -v
@@ -737,7 +737,7 @@ git diff --check
 
 Expected: zero test failures, successful clean TI build, no whitespace errors.
 
-- [ ] **Step 2: Generate and compare UniFlash files**
+- [x] **Step 2: Generate and compare UniFlash files**
 
 Use TI Arm Objcopy/Hex utility from TI Arm Clang 4.0.4 to generate both formats. Parse both outputs and assert identical address/data bytes. Record SHA-256 hashes; do not add `firmware/` to git.
 
@@ -754,7 +754,7 @@ Use TI Arm Objcopy/Hex utility from TI Arm Clang 4.0.4 to generate both formats.
 
 Update the verification record with final 15 table entries, yaw threshold, observed maximum task latency, firmware hashes, and pass/fail for each bench stage.
 
-- [ ] **Step 5: Commit and push documentation**
+- [x] **Step 5: Commit and push documentation**
 
 ```powershell
 git add docs/hardware/final-wiring.md docs/verification/sensor-platform-test-record.md
