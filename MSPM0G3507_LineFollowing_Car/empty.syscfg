@@ -18,7 +18,6 @@ const GPIO5   = GPIO.addInstance();
 const PWM     = scripting.addModule("/ti/driverlib/PWM", {}, false);
 const PWM1    = PWM.addInstance();
 const SYSCTL  = scripting.addModule("/ti/driverlib/SYSCTL");
-const SYSTICK = scripting.addModule("/ti/driverlib/SYSTICK");
 const TIMER   = scripting.addModule("/ti/driverlib/TIMER", {}, false);
 const TIMER1  = TIMER.addInstance();
 const TIMER2  = TIMER.addInstance();
@@ -90,10 +89,6 @@ PWM1.ccp3PinConfig.$name        = "ti_driverlib_gpio_GPIOPinGeneric4";
 
 SYSCTL.forceDefaultClkConfig = true;
 SYSCTL.clockTreeEn           = true;
-
-SYSTICK.periodEnable  = true;
-SYSTICK.systickEnable = true;
-SYSTICK.period        = 80;
 
 TIMER1.$name              = "TIMER_0";
 TIMER1.timerPeriod        = "1 ms";

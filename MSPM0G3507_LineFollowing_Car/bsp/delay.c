@@ -1,45 +1,15 @@
 #include "delay.h"
+#include "timer.h"
 
-//使用滴答定时器实现的精确us延时
-//Accurate us delay with tick timer
 void delay_us(unsigned long __us)
 {
-    uint32_t ticks;
-    uint32_t told, tnow, tcnt = 38;
+    uint32_t started_us = BSP_Time_GetUs();
 
-    // 计算需要的时钟数 = 延迟微秒数 * 每微秒时钟数
-	// Calculate the number of clocks required = delay microseconds * number of clocks per microsecond
-    ticks = __us * (80000000 / 1000000);
-
-    // 获取当前的SysTick值
-	// Get the current SysTick value
-    told = SysTick->VAL;
-
-    while (1)
-    {
-        // 反复刷新获取当前的SysTick值
-		// Repeatedly refresh to get the current SysTick value
-        tnow = SysTick->VAL;
-
-        if (tnow != told)
-        {
-            if (tnow < told)
-                tcnt += told - tnow;
-            else
-                tcnt += SysTick->LOAD - tnow + told;
-
-            told = tnow;
-
-            // 如果达到需要的时钟数量就退出循环
-			// If the required number of clocks is reached, exit the loop
-            if (tcnt >= ticks)
-                break;
-        }
+    while ((uint32_t)(BSP_Time_GetUs() - started_us) < (uint32_t)__us) {
     }
 }
-//使用滴答定时器实现的精确ms延时
-//Accurate ms delay with tick timer
+
 void delay_ms(unsigned long ms)
 {
-	delay_us( ms * 1000 );
+    delay_us(ms * 1000UL);
 }

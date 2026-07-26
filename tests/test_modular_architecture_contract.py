@@ -68,7 +68,9 @@ class ModularArchitectureContract(unittest.TestCase):
     def test_main_delegates_to_application(self):
         main = (ROOT / "empty.c").read_text(encoding="utf-8")
         self.assertIn("App_Main_Init();", main)
-        self.assertIn("App_Main_RunOnce();", main)
+        self.assertIn("AppTasks_Create()", main)
+        self.assertIn("vTaskStartScheduler();", main)
+        self.assertNotIn("App_Main_RunOnce", main)
         self.assertNotIn("LineWalking();", main)
         self.assertNotIn("delay_ms(", main)
 
@@ -89,21 +91,13 @@ class ModularArchitectureContract(unittest.TestCase):
     def test_application_main_keeps_motor_disarmed(self):
         source = (ROOT / "application/app_main.c").read_text(encoding="utf-8")
         init_start = source.index("void App_Main_Init")
-        run_start = source.index("void App_Main_RunOnce")
-        init_body = source[init_start:run_start]
-        run_body = source[run_start:]
+        init_body = source[init_start:]
         self.assertIn("Timer_Init()", init_body)
         self.assertIn("Motor_Safety_Init()", init_body)
         self.assertIn("Set_Motor(5)", init_body)
-        self.assertIn("AppScheduler_Init(Get_Time())", init_body)
+        self.assertNotIn("AppScheduler_Init", init_body)
         self.assertNotIn("Motor_Safety_Arm()", source)
-        self.assertIn("uint32_t now_ms = Get_Time()", run_body)
-        self.assertIn("AppScheduler_Run(now_ms)", run_body)
-        self.assertIn("Motor_Safety_Service()", run_body)
-        self.assertLess(
-            run_body.index("AppScheduler_Run(now_ms)"),
-            run_body.index("Motor_Safety_Service()"),
-        )
+        self.assertNotIn("App_Main_RunOnce", source)
 
     def test_scheduled_euler_update_is_non_blocking(self):
         source = (ROOT / "modules/legacy_mpu6050/driver/app_mpu6050.c").read_text(

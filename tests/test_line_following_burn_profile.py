@@ -33,7 +33,7 @@ class LineFollowingBurnProfileContract(unittest.TestCase):
         self.assertNotIn("KEY_EVENT_", scheduler)
         self.assertNotIn("AppScheduler_RunKey", scheduler)
 
-    def test_d2_heartbeat_reports_running_main_loop(self):
+    def test_bootstrap_defers_heartbeat_to_a_later_task(self):
         app_main = (ROOT / "application/app_main.c").read_text(encoding="utf-8")
         led_header = (ROOT / "modules/led/led.h").read_text(encoding="utf-8")
         led_source = (ROOT / "modules/led/led.c").read_text(encoding="utf-8")
@@ -43,7 +43,7 @@ class LineFollowingBurnProfileContract(unittest.TestCase):
         self.assertIn("DL_GPIO_togglePins(LED_PORT, LED_D2_PIN)", led_source)
         self.assertNotIn("delay_", led_source)
         self.assertIn("LED_HeartbeatInit();", app_main)
-        self.assertIn("LED_HeartbeatService(now_ms);", app_main)
+        self.assertNotIn("LED_HeartbeatService", app_main)
 
     def test_tracking_timing_matches_pre_stop_go_baseline(self):
         config = (ROOT / "application/config/line_control_config.h").read_text(

@@ -43,12 +43,14 @@ class MotorSafetyContractTests(unittest.TestCase):
         main = read("empty.c")
         app_main = read("application/app_main.c")
         self.assertIn("App_Main_Init();", main)
-        self.assertIn("App_Main_RunOnce();", main)
+        self.assertIn("AppTasks_Create()", main)
+        self.assertIn("vTaskStartScheduler();", main)
+        self.assertIn("Motor_Safety_Disarm();", main)
         self.assertIn("Set_Motor(5)", app_main)
         self.assertNotIn("Set_Motor(1)", app_main)
         self.assertNotIn("motor_init_count", app_main)
         self.assertNotIn("Motor_Safety_Arm()", app_main)
-        self.assertIn("Motor_Safety_Service()", app_main)
+        self.assertNotIn("Motor_Safety_Service()", app_main)
 
     def test_timer_starts_irq_and_ticks_watchdog(self):
         timer_c = read("bsp/time/timer.c")

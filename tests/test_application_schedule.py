@@ -13,6 +13,7 @@ class ApplicationScheduleTests(unittest.TestCase):
             encoding="utf-8"
         )
         cls.main = (PROJECT / "application/app_main.c").read_text(encoding="utf-8")
+        cls.entry = (PROJECT / "empty.c").read_text(encoding="utf-8")
         cls.syscfg = (PROJECT / "empty.syscfg").read_text(encoding="utf-8")
 
     def test_minimal_line_following_services_are_registered(self):
@@ -44,18 +45,12 @@ class ApplicationScheduleTests(unittest.TestCase):
         self.assertIn('TIMER2.peripheral.$assign = "TIMG12"', self.syscfg)
         self.assertIn("BSP_Time_GetUs", self.scheduler)
 
-    def test_boot_automatically_arms_but_keeps_supervised_output_path(self):
+    def test_boot_stays_disarmed_until_later_tasks_are_added(self):
         self.assertNotIn("Motor_Safety_Arm", self.main)
-        init = self.scheduler[self.scheduler.index("void AppScheduler_Init"):]
-        init = init[:init.index("void AppScheduler_Run")]
-        self.assertIn("AppScheduler_Start();", init)
-        self.assertNotIn("Key_PollEvent", self.scheduler)
-        self.assertIn("Motor_Safety_Arm", self.scheduler)
-        self.assertNotIn("Motor_Safety_Disarm", self.scheduler)
-        self.assertIn(
-            "power_qualified = LINE_FOLLOWING_POWER_QUALIFIED",
-            self.scheduler,
-        )
+        self.assertNotIn("AppScheduler_Init", self.main)
+        self.assertIn("AppTasks_Create()", self.entry)
+        self.assertIn("vTaskStartScheduler();", self.entry)
+        self.assertIn("Motor_Safety_Disarm();", self.entry)
 
     def test_safety_tick_and_line_control_are_the_only_active_tasks(self):
         task_table = self.scheduler[self.scheduler.index("static AppTask app_tasks"):]

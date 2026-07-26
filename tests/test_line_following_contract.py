@@ -12,18 +12,16 @@ def read(relative: str) -> str:
 
 
 class LineFollowingContractTests(unittest.TestCase):
-    def test_main_runs_tracking_and_safety_service(self):
+    def test_main_starts_static_scheduler_with_motors_disarmed(self):
         main = read("empty.c")
         app_main = read("application/app_main.c")
         scheduler = read("application/app_scheduler.c")
-        self.assertIn("App_Main_RunOnce();", main)
-        self.assertIn("uint32_t now_ms = Get_Time();", app_main)
-        self.assertIn("AppScheduler_Run(now_ms);", app_main)
-        self.assertIn("Motor_Safety_Service();", app_main)
-        self.assertLess(
-            app_main.index("AppScheduler_Run(now_ms);"),
-            app_main.index("Motor_Safety_Service();"),
-        )
+        self.assertIn("AppTasks_Create()", main)
+        self.assertIn("vTaskStartScheduler();", main)
+        self.assertIn("Motor_Safety_Disarm();", main)
+        self.assertNotIn("App_Main_RunOnce", main)
+        self.assertNotIn("AppScheduler_Init", app_main)
+        self.assertNotIn("Motor_Safety_Arm()", app_main)
         self.assertNotIn("Key_PollEvent", scheduler)
         self.assertIn("AppScheduler_Start();", scheduler)
         self.assertIn("LineRecovery_Step", scheduler)
