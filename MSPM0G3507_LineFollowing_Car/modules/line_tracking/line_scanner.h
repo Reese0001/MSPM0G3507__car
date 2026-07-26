@@ -14,5 +14,7 @@ typedef struct {
 void LineScanner_Init(void);
 void LineScanner_Service(uint32_t now_us, uint32_t now_ms);
 bool LineScanner_GetSnapshot(LineSensorSnapshot *out);
+/* Scan all eight channels in one bounded call (< LINE_SCAN_FRAME_BUDGET_US). */
+bool LineScanner_ReadFrame(uint32_t now_ms, LineSensorSnapshot *out);
 
 #endif

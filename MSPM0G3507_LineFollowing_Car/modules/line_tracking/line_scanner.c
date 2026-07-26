@@ -1,6 +1,7 @@
 #include "line_scanner.h"
 
 #include "../../bsp/bsp_line_mux.h"
+#include "../../bsp/time/timer.h"
 #include "line_tracking_config.h"
 
 typedef enum {
@@ -67,4 +68,26 @@ bool LineScanner_GetSnapshot(LineSensorSnapshot *out)
     }
     *out = published_snapshot;
     return true;
+}
+
+bool LineScanner_ReadFrame(uint32_t now_ms, LineSensorSnapshot *out)
+{
+    uint32_t started_us = BSP_Time_GetUs();
+    uint16_t start_sequence = published_snapshot.status.sequence;
+
+    scan_state = LINE_SCAN_SELECT;
+    scan_channel = 0U;
+    working_black_bits = 0U;
+    for (;;) {
+        uint32_t now_us = BSP_Time_GetUs();
+
+        if ((uint32_t)(now_us - started_us) >= LINE_SCAN_FRAME_BUDGET_US) {
+            return false;
+        }
+        LineScanner_Service(now_us, now_ms);
+        if (published_snapshot.status.sequence != start_sequence) {
+            break;
+        }
+    }
+    return LineScanner_GetSnapshot(out);
 }

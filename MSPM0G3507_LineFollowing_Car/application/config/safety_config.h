@@ -14,4 +14,8 @@
 #define SAFETY_RUNNING_SPEED_LIMIT (450)
 #define SAFETY_LIMITED_SPEED_LIMIT (180)
 
+/* Motor UART frames leave at most once per period; an immediate zero
+ * (stop or unapproved) command bypasses the limit. */
+#define MOTOR_UART_MIN_PERIOD_MS (5U)
+
 #endif
