@@ -21,22 +21,22 @@ CCS 工程目录：[`MSPM0G3507_LineFollowing_Car/`](MSPM0G3507_LineFollowing_Ca
 3. 确认 MSPM0 SDK 和 TI Arm Clang 版本正确。
 4. 执行 **Project → Clean**，然后 **Build Project**。
 
-`MSPM0G3507_LineFollowing_Car/empty.syscfg` 是外设配置的唯一真实来源。不要手改 `Debug/` 或 `Build_LineFollowing/` 中的 SysConfig 生成文件。
+`MSPM0G3507_LineFollowing_Car/empty.syscfg` 是外设配置的唯一真实来源。不要手改 `Debug/` 或 `build/cli/` 中的 SysConfig 生成文件。
 
 命令行复现构建：
 
 ```powershell
-& 'D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe' -C MSPM0G3507_LineFollowing_Car clean all
-& 'D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe' -C MSPM0G3507_LineFollowing_Car images
+ & 'D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe' -C MSPM0G3507_LineFollowing_Car rebuild
 ```
 
 产物：
 
-- CCS/XDS110：`MSPM0G3507_LineFollowing_Car/Build_LineFollowing/MSPM0G3507_LineFollowing_Car.out`
-- Intel HEX：`firmware/MSPM0G3507_LineFollowing_Car.hex`
-- UniFlash TI-TXT：`firmware/MSPM0G3507_LineFollowing_Car.txt`
+- CCS/XDS110：`MSPM0G3507_LineFollowing_Car/Debug/MSPM0G3507_LineFollowing_Car.out`
+- CLI：`build/cli/MSPM0G3507_LineFollowing_Car/MSPM0G3507_LineFollowing_Car.out`
+- Intel HEX：`dist/firmware/MSPM0G3507_LineFollowing_Car.hex`
+- UniFlash TI-TXT：`dist/firmware/MSPM0G3507_LineFollowing_Car.txt`
 
-`firmware/` 不入库。修改源码后必须重新 clean build 并生成镜像，不能继续烧录旧文件。
+`build/` 和 `dist/` 不入库。修改源码后必须重新 clean build 并生成镜像，不能继续烧录旧文件。
 
 ## 当前接线
 
@@ -48,58 +48,47 @@ CCS 工程目录：[`MSPM0G3507_LineFollowing_Car/`](MSPM0G3507_LineFollowing_Ca
 | 灰度通道选择 | PA15 AD0 / PA16 AD1 / PA17 AD2 | 选择 X1～X8 |
 | 灰度数字输出 | PA18 OUT | 低电平表示黑线；与 BSL Invoke 复用 |
 | LED D1/D2 | PB2 / PB3 | 故障指示 / 心跳 |
-| 按键 K1 | PA2 | GPIO 输入 |
+| 按键 K1 | PA2 | GPIO 输入；不是启动门 |
 | 蜂鸣器 | PB24 | TIMA0 PWM |
 
-X1 是小车前进方向上的最左侧传感器，X8 是最右侧。灰度模块不是通过 I2C 地址读取；固件依次选通 X1～X8，再从 PA18 读取当前通道。
+面向车头时，X1 在右侧、X8 在左侧。灰度模块不是通过 I2C 地址读取；固件依次选通 X1～X8，再从 PA18 读取当前通道。
 
 ## UniFlash 烧录
 
 首次烧录保持 12.6 V 电机电源断开，只连接 USB、MCU 和必要传感器。
 
-1. 运行 `gmake ... images` 生成最新镜像。
+1. 运行 `gmake ... rebuild`，先清理缓存再生成最新镜像。
 2. 关闭 CCS 串口监视器及其他占用目标 COM 口的软件。
 3. 在 UniFlash 中选择 MSPM0G3507 的串口 BSL 连接方式。
-4. 加载 `firmware/MSPM0G3507_LineFollowing_Car.txt`（TI-TXT）。
+4. 只加载并烧录 `dist/firmware/MSPM0G3507_LineFollowing_Car.txt`（TI-TXT）。
 5. 进入 BSL、执行下载并确认 Verify 成功。
 6. 退出 BSL，重新上电运行。
 
 PA18 同时连接灰度模块 OUT 和芯片 BSL Invoke。若无法进入 BSL，先断电，临时断开灰度模块的 PA18 信号线，完成烧录后再恢复。不要带电插拔。
 
-## OLED 诊断页
+## OLED 运行日志与 RESET 启动
 
-固件已经包含 SSD1306 驱动和固定诊断页。正常启动后，128×64 OLED 每 200 ms 更新一次：
+OLED 是启动和运行时的流动行为日志，不是固定诊断页。按下 RESET 后固件自动启动；K1 不是启动门，不需要按 K1 或等待循迹有效帧才允许电机进入软启动。正常启动日志必须按以下顺序完整显示：
 
 ```text
-LINE CAR DIAG
-B:xxxxxxxx Tn
-P:+n C:+n
-L:+nnn R:+nnn
-Sn Rn Mn
-F:OK
+0000 BOOT
+0012 OLED OK
+0020 AUTO START
+0022 MOTOR CFG
+0525 CFG OK
+0526 MOTOR ARM
+0626 TX L030 R030
+0726 TX L060 R060
 ```
 
-- `B`：X1～X8 的黑线有效位，X1 显示在最左侧。
-- `T`：当前灰度位型类别。
-- `P/C`：稳定位置和候选位置。
-- `L/R`：左右驱动轮命令。
-- `S/R/M`：安全、丢线恢复和 MPU6050 状态。
-- `F`：`OK` 或 `C-SEARCH`、`L-LOST`、`OLED-I2C`、`M-UART`、`CTRL-HB`、`SENS-HB`。
+首次硬件测试必须先断开或架空驱动轮，再接通 12.6 V，按 RESET，并在放下驱动轮前观察 OLED 完整显示上述日志。OLED 使用 3.3 V 并与 MCU 共地；SCL 接 PA10、SDA 接 PA11，地址为 `0x3C`。调试串口保持 115200。
 
-OLED 不显示时按以下顺序检查：
-
-1. OLED 使用 3.3 V，且与 MCU 共地。
-2. SCL 接 PA10，SDA 接 PA11，没有接反。
-3. 模块地址是 `0x3C`；当前固件未扫描其他地址。
-4. UniFlash 烧录的是刚生成的 `.txt`，而不是旧镜像。
-5. 若页面曾出现后消失，检查是否显示 `OLED-I2C` 或总线接触不良。
-
-OLED 初始化或通信失败属于非锁存故障，不会停止传感、控制和电机安全任务。
+若 OLED 出现 `UART TIMEOUT`、`WATCHDOG`、`DIR WAIT` 或 `LINE LOST`，立即断开 12.6 V 电源并诊断；驱动轮落地时不得反复按 RESET。OLED 不亮时先检查 3.3 V、共地、PA10/PA11 方向、地址和 UniFlash 是否烧录了刚生成的 `.txt`。
 
 ## 循迹控制
 
 - 单个黑点或两个相邻黑点映射为 15 个合法位置：`-7`～`+7`。
-- 从左到右移动黑线时，OLED 的稳定位置应从 `-7` 递增到 `+7`。
+- 面向车头从左侧 X8 移向右侧 X1 时，稳定位置应从 `-7` 递增到 `+7`。
 - 正常控制使用对称查表，偏差越大，基础速度越低、差速越大。
 - 输出限制在 `±450`；MPU6050 过期时进一步限制速度。
 - 普通丢线不会永久锁存 D1：先按最近稳定方向前探，再同向旋转搜索；搜索耗尽后停车。
@@ -139,6 +128,6 @@ USB-only 诊断 → 架空轮 → 低速落地 → 丢线测试 → 直角/急�
 python -m unittest discover -s tests -v
 ```
 
-当前软件基线已通过 192 项离线测试、TI Arm Clang clean build，以及 HEX/TI-TXT 地址与数据一致性检查。以上结果只证明代码路径、配置合同和工具链兼容性；实际转向符号、电机方向、传感器极性、控制参数及最大任务延迟仍必须通过分阶段实车验收确认。
+当前软件基线已通过离线测试和 TI Arm Clang clean build。以上结果只证明代码路径、配置合同和工具链兼容性；实际转向符号、电机方向、传感器极性、控制参数及最大任务延迟仍必须通过分阶段实车验收确认。
 
 更多资料见 [`docs/README.md`](docs/README.md)、[`docs/hardware/final-wiring.md`](docs/hardware/final-wiring.md) 和 [`PROJECT_SKILLS.md`](PROJECT_SKILLS.md)。

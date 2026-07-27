@@ -1,36 +1,87 @@
 # MSPM0G3507_LineFollowing_Car CCS 工程
 
-这是仓库的唯一活动固件工程，可作为 Existing Project 直接导入 CCS Theia。
+这是仓库中唯一的 CCS 工程，直接在 CCS Theia 中导入本目录即可。
 
-## 入口文件
+## 目录职责
 
-- `empty.c`：初始化、L 型 520 电机选择、循迹循环和安全服务。
+- `empty.c`：硬件初始化、应用创建和 FreeRTOS 启动入口。
 - `empty.syscfg`：引脚与外设配置的唯一真实来源。
-- `modules/line_tracking/`：PA15～PA18 灰度采样和循迹决策。
-- `modules/motor/`：两轮运动学、UART 驱动协议和电机安全层。
-- `bsp/time/`：1 ms 时间基和 200 ms 电机看门狗计时。
+- `app/`：启动、任务、邮箱和安全编排。
+- `config/`：循迹、电机安全和传感器参数。
+- `modules/`：按功能组织的显示、循迹、电机、MPU6050、时间和基础模块。
+- `shared/`：跨模块共享的数据结构。
+- `application/`：仍在使用的比赛状态机/运动原语兼容代码；新增功能优先放到 `app/` 或 `modules/`。
 
-## 构建
+未启用的 K230、超声波、YB-IMU 和旧 MPU6050 代码统一保留在 `modules/optional/` 下，不在当前构建源列表中。
+
+## CCS 构建
 
 要求：
 
 - CCS Theia
 - TI Arm Clang 4.0.4 LTS
 - MSPM0 SDK 2.10.00.04
-- SysConfig 1.26 或兼容版本
+- SysConfig 1.26.2
 
-在 CCS 中执行 **Project → Clean**，再执行 **Build Project**。输出文件名应为 `MSPM0G3507_LineFollowing_Car.out`。
+在 CCS 中执行 **Project → Clean**，再执行 **Build Project**。CCS/XDS110 产物位于：
 
-如果 CCS 仍显示旧工程名，请从工作区移除旧项目但不要删除磁盘文件，然后重新导入本目录。`.project`、`.cproject` 和 `.theia/launch.json` 已使用新名称。
+```text
+MSPM0G3507_LineFollowing_Car/Debug/MSPM0G3507_LineFollowing_Car.out
+```
 
-## 灰度输入约定
+不要手改 `Debug/` 或 `build/cli/` 中的 SysConfig 生成文件；修改外设时只改 `empty.syscfg`，然后重新生成。
 
-PA15=AD0、PA16=AD1、PA17=AD2 选择通道，PA18=OUT 读取数字电平。代码将低电平转换为黑线有效位，再用八路对称权重计算位置误差。
+## 命令行构建与 UniFlash
 
-首次上车前必须实测确认：
+在仓库根目录执行：
 
-1. X1 是否为车体最左侧、X8 是否为最右侧。
-2. 白底是否确实为高电平，黑线是否确实为低电平。
-3. M2/M4 正速度是否都对应车辆前进。
+```powershell
+& 'D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe' `
+-C MSPM0G3507_LineFollowing_Car rebuild
+```
 
-未确认这三项前，只允许离线构建和断电/架空轮检查。
+产物路径：
+
+```text
+build/cli/MSPM0G3507_LineFollowing_Car/MSPM0G3507_LineFollowing_Car.out
+dist/firmware/MSPM0G3507_LineFollowing_Car.hex
+dist/firmware/MSPM0G3507_LineFollowing_Car.txt
+```
+
+UniFlash 只选择并烧录 `dist/firmware/MSPM0G3507_LineFollowing_Car.txt`（TI-TXT）。烧录前保持 12.6 V 电机电源断开，Verify 成功后再进入下一阶段。
+
+## 灰度与方向约定
+
+面向车头时，X1 在右侧、X8 在左侧。PA15/PA16/PA17 选择通道，PA18 读取数字电平。
+
+- X1/right → 位置 `+7`
+- 中心 → 位置 `0`
+- X8/left → 位置 `-7`
+
+上车前先确认黑白电平、X1/X8 顺序和 M2/M4 正方向。未确认前只做断电测试或架空轮测试。
+
+## OLED 运行日志与 RESET 启动
+
+OLED 使用 PA10=SCL、PA11=SDA、地址 `0x3C`，作为流动行为日志；调试串口保持 115200。按下 RESET 后固件自动启动，K1 不是启动门，也不等待循迹有效帧才允许电机软启动。正常启动时 OLED 必须完整显示：
+
+```text
+0000 BOOT
+0012 OLED OK
+0020 AUTO START
+0022 MOTOR CFG
+0525 CFG OK
+0526 MOTOR ARM
+0626 TX L030 R030
+0726 TX L060 R060
+```
+
+第一次硬件测试：先断开或架空驱动轮，连接 12.6 V，按 RESET；在放下驱动轮前观察完整 OLED 日志。出现 `UART TIMEOUT`、`WATCHDOG`、`DIR WAIT` 或 `LINE LOST` 时，立即断开 12.6 V 并诊断，驱动轮落地时不要重复 RESET。OLED 不亮时检查 3.3 V、共地、PA10/PA11、地址和 UniFlash 的最新 `.txt`。
+
+## 电机安全
+
+- 所有速度请求必须经过 `Motor_Safety_RequestSpeed()`。
+- 启动保持 0→30% soft-start，禁止直接输出 100%。
+- 200 ms 没有合法请求时看门狗锁存故障并发送零速帧。
+- M1/M3 保持零速，M2/M4 是左右驱动轮。
+
+首次接通电机动力前，必须完成架空轮、共地、UART、X1/X8 方向、D2 心跳和 OLED 诊断检查，并确保可以立即切断 12.6 V 电源。
