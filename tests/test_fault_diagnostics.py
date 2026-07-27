@@ -9,20 +9,20 @@ ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 class FaultDiagnosticsContract(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tasks = (ROOT / "application/freertos/app_tasks.c").read_text(
+        cls.tasks = (ROOT / "app/tasks/app_tasks.c").read_text(
             encoding="utf-8"
         )
         cls.dashboard_h = (
-            ROOT / "application/diagnostics/dashboard.h"
+            ROOT / "modules/display/dashboard.h"
         ).read_text(encoding="utf-8")
         cls.dashboard = (
-            ROOT / "application/diagnostics/dashboard.c"
+            ROOT / "modules/display/dashboard.c"
         ).read_text(encoding="utf-8")
         cls.config = (
-            ROOT / "application/config/line_lookup_config.h"
+            ROOT / "config/line_lookup_config.h"
         ).read_text(encoding="utf-8")
         cls.lookup = (
-            ROOT / "modules/line_tracking/line_lookup_control.c"
+            ROOT / "modules/line_tracking/controller/line_lookup_control.c"
         ).read_text(encoding="utf-8")
 
     def test_supervision_constants_exist(self):
@@ -74,9 +74,9 @@ class FaultDiagnosticsContract(unittest.TestCase):
             self.tasks,
         )
         self.assertIsNotNone(display_body)
-        self.assertIn("APP_FAULT_OLED_I2C", self.tasks)
+        self.assertIn("Ssd1306_Init()", display_body.group(1))
+        self.assertIn('RuntimeLog_Push(now_ms, "OLED FAIL")', display_body.group(1))
         self.assertNotIn("Motor_Safety_Disarm", display_body.group(1))
-        self.assertNotIn("latched_fault = APP_FAULT_OLED_I2C", self.tasks)
 
 
 if __name__ == "__main__":

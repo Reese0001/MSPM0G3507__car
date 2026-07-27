@@ -10,13 +10,16 @@ DOCUMENTS = (
     REPO_ROOT / "MSPM0G3507_LineFollowing_Car" / "README.md",
     REPO_ROOT / "docs" / "setup" / "SETUP_GUIDE.md",
 )
-REQUIRED_LOG_MARKERS = (
+STARTUP_LOG = """0000 BOOT
+0012 OLED OK
+0020 AUTO START
+0022 MOTOR CFG
+0525 CFG OK
+0526 MOTOR ARM
+0626 TX L030 R030
+0726 TX L060 R060"""
+REQUIRED_DOCUMENTATION_MARKERS = (
     "RESET",
-    "AUTO START",
-    "MOTOR CFG",
-    "CFG OK",
-    "MOTOR ARM",
-    "TX L030 R030",
     "rebuild",
     "架空轮",
 )
@@ -26,7 +29,9 @@ class RuntimeLogDocumentationIntegrationTests(unittest.TestCase):
     def test_all_user_documents_describe_reset_startup_log_and_wheel_lift(self):
         for document in DOCUMENTS:
             content = document.read_text(encoding="utf-8")
-            for marker in REQUIRED_LOG_MARKERS:
+            with self.subTest(document=document, marker="ordered startup log"):
+                self.assertIn(STARTUP_LOG, content)
+            for marker in REQUIRED_DOCUMENTATION_MARKERS:
                 with self.subTest(document=document, marker=marker):
                     self.assertIn(marker, content)
 

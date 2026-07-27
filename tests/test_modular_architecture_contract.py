@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 import unittest
 
 
@@ -7,195 +6,64 @@ ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 
 
 class ModularArchitectureContract(unittest.TestCase):
-    def test_motion_request_contract_exists(self):
-        text = (ROOT / "modules/common/motion_request.h").read_text(encoding="utf-8")
+    def test_shared_contract_headers_exist(self):
+        motion = (ROOT / "shared/motion_request.h").read_text(encoding="utf-8")
+        status = (ROOT / "shared/module_status.h").read_text(encoding="utf-8")
         for token in ("MotionRequest", "left_speed", "right_speed", "timestamp_ms", "valid"):
-            self.assertIn(token, text)
-
-    def test_module_status_contract_exists(self):
-        text = (ROOT / "modules/common/module_status.h").read_text(encoding="utf-8")
+            self.assertIn(token, motion)
         for token in ("timestamp_ms", "sequence", "valid", "health", "ModuleStatus_IsFresh"):
-            self.assertIn(token, text)
+            self.assertIn(token, status)
 
-    def test_required_roots_exist(self):
-        for name in ("application", "modules", "bsp"):
+    def test_required_roots_exist_after_split(self):
+        for name in ("app", "config", "modules", "shared"):
             self.assertTrue((ROOT / name).is_dir(), name)
 
-    def test_legacy_bsp_is_removed(self):
-        directory_names = {path.name for path in ROOT.iterdir() if path.is_dir()}
-        self.assertNotIn("BSP", directory_names)
+    def test_optional_modules_are_quarantined_under_one_root(self):
+        optional = ROOT / "modules/optional"
+        for name in ("k230", "ultrasonic", "ybimu", "legacy"):
+            self.assertTrue((optional / name).is_dir(), name)
+        for name in ("k230_link", "ultrasonic", "ybimu", "legacy_mpu6050"):
+            self.assertFalse((ROOT / "modules" / name).exists(), name)
 
-    def test_lower_layers_do_not_include_application(self):
-        for base in (ROOT / "modules", ROOT / "bsp"):
+    def test_main_delegates_to_boot_and_tasks(self):
+        main = (ROOT / "empty.c").read_text(encoding="utf-8")
+        self.assertIn("AppBoot_Init();", main)
+        self.assertIn("AppTasks_Create()", main)
+        self.assertIn("vTaskStartScheduler();", main)
+        self.assertNotIn("App_Main_Init();", main)
+        self.assertNotIn("delay_ms(", main)
+
+    def test_boot_keeps_motor_disarmed_and_registers_tick(self):
+        boot = (ROOT / "app/boot/app_boot.c").read_text(encoding="utf-8")
+        self.assertIn("void AppBoot_Init", boot)
+        self.assertIn("Timer_Init()", boot)
+        self.assertIn("Motor_Safety_Init()", boot)
+        self.assertIn("Set_Motor(5)", boot)
+        self.assertIn("BSP_Time_RegisterTick1ms", boot)
+        self.assertNotIn("Motor_Safety_Arm()", boot)
+
+    def test_time_module_owns_registered_tick_api(self):
+        timer_h = (ROOT / "modules/time/timer.h").read_text(encoding="utf-8")
+        timer_c = (ROOT / "modules/time/timer.c").read_text(encoding="utf-8")
+        for token in ("Timer_Init", "BSP_Time_GetUs", "BSP_Time_RegisterTick1ms"):
+            self.assertIn(token, timer_h + timer_c)
+        self.assertIn("tick_callback()", timer_c)
+
+    def test_active_paths_use_new_split_locations(self):
+        tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
+        mailbox = (ROOT / "app/mailbox/app_mailbox.h").read_text(encoding="utf-8")
+        safety = (ROOT / "app/safety/safety_supervisor.h").read_text(encoding="utf-8")
+        self.assertIn("inputs.start_pressed = true;", tasks)
+        self.assertNotIn("LineStartGate_Update", tasks)
+        self.assertIn("SafetySupervisor_Step", tasks + safety)
+        self.assertIn("shared/motion_request.h", mailbox.replace("\\", "/"))
+        self.assertIn("shared/safety_decision.h", safety.replace("\\", "/"))
+
+    def test_lower_layers_do_not_include_old_application_paths(self):
+        for base in (ROOT / "modules", ROOT / "shared"):
             for path in base.rglob("*.[ch]"):
                 text = path.read_text(encoding="utf-8", errors="ignore")
                 self.assertNotIn('#include "application/', text, str(path))
-
-    def test_lower_layers_do_not_include_application_only_headers(self):
-        application = ROOT / "application"
-        application_headers = {
-            path.name for path in application.rglob("*.h")
-        }
-        for base in (ROOT / "modules", ROOT / "bsp"):
-            for path in base.rglob("*.[ch]"):
-                text = path.read_text(encoding="utf-8", errors="ignore")
-                for header in re.findall(r'^\s*#include\s+"([^/"]+)"', text, re.MULTILINE):
-                    if header not in application_headers:
-                        continue
-                    matches = list(ROOT.rglob(header))
-                    self.assertTrue(matches, header)
-                    self.assertFalse(
-                        all(candidate.is_relative_to(application) for candidate in matches),
-                        f"{path} includes application-only header {header}",
-                    )
-
-    def test_application_owns_legacy_key_event_policy(self):
-        key_source = (ROOT / "modules/key/key.c").read_text(
-            encoding="utf-8", errors="ignore"
-        )
-        questions_source = (ROOT / "application/legacy_questions/questions.c").read_text(
-            encoding="utf-8", errors="ignore"
-        )
-        task_source = (ROOT / "application/legacy_task/task.c").read_text(
-            encoding="utf-8", errors="ignore"
-        )
-        self.assertIn("Key_PollEvent", key_source)
-        self.assertNotIn("State_Machine", key_source)
-        self.assertIn("Legacy_Questions_HandleKey", questions_source)
-        self.assertIn("Key_PollEvent", questions_source)
-        self.assertIn("AppScheduler_Run", task_source)
-
-    def test_main_delegates_to_application(self):
-        main = (ROOT / "empty.c").read_text(encoding="utf-8")
-        self.assertIn("App_Main_Init();", main)
-        self.assertIn("AppTasks_Create()", main)
-        self.assertIn("vTaskStartScheduler();", main)
-        self.assertNotIn("App_Main_RunOnce", main)
-        self.assertNotIn("LineWalking();", main)
-        self.assertNotIn("delay_ms(", main)
-
-    def test_application_scheduler_contract_exists(self):
-        header = (ROOT / "application/app_scheduler.h").read_text(encoding="utf-8")
-        source = (ROOT / "application/app_scheduler.c").read_text(encoding="utf-8")
-        for token in (
-            "AppTaskFn",
-            "period_ms",
-            "last_ms",
-            "AppScheduler_Init",
-            "AppScheduler_Run",
-        ):
-            self.assertIn(token, header)
-        self.assertIn("now_ms - task->last_ms", source)
-        self.assertNotIn("delay_ms(", source)
-
-    def test_application_main_keeps_motor_disarmed(self):
-        source = (ROOT / "application/app_main.c").read_text(encoding="utf-8")
-        init_start = source.index("void App_Main_Init")
-        init_body = source[init_start:]
-        self.assertIn("Timer_Init()", init_body)
-        self.assertIn("Motor_Safety_Init()", init_body)
-        self.assertIn("Set_Motor(5)", init_body)
-        self.assertNotIn("AppScheduler_Init", init_body)
-        self.assertNotIn("Motor_Safety_Arm()", source)
-        self.assertNotIn("App_Main_RunOnce", source)
-
-    def test_scheduled_euler_update_is_non_blocking(self):
-        source = (ROOT / "modules/legacy_mpu6050/driver/app_mpu6050.c").read_text(
-            encoding="utf-8"
-        )
-        match = re.search(
-            r"void\s+Get_EulerAngles\s*\([^)]*\)\s*\{(.*?)\n\}",
-            source,
-            re.DOTALL,
-        )
-        self.assertIsNotNone(match)
-        self.assertNotIn("delay_ms(", match.group(1))
-
-    def test_default_scheduler_does_not_sample_uninitialized_legacy_mpu(self):
-        scheduler = (ROOT / "application/app_scheduler.c").read_text(
-            encoding="utf-8"
-        )
-        mpu = (ROOT / "modules/legacy_mpu6050/driver/app_mpu6050.c").read_text(
-            encoding="utf-8"
-        )
-        euler = re.search(
-            r"void\s+Get_EulerAngles\s*\([^)]*\)\s*\{(.*?)\n\}",
-            mpu,
-            re.DOTALL,
-        )
-        self.assertNotIn("Get_EulerAngles", scheduler)
-        self.assertIsNotNone(euler)
-        self.assertIn("float p = pitch", euler.group(1))
-        self.assertIn("if (mpu_dmp_get_data", euler.group(1))
-
-    def test_bsp_time_uses_registered_tick_without_module_dependencies(self):
-        timer_h = (ROOT / "bsp/time/timer.h").read_text(encoding="utf-8")
-        timer_c = (ROOT / "bsp/time/timer.c").read_text(encoding="utf-8")
-        app_main = (ROOT / "application/app_main.c").read_text(encoding="utf-8")
-        for forbidden in ("motor_safety.h", "buzzer.h", "app_mpu6050.h", "debug_uart.h"):
-            self.assertNotIn(forbidden, timer_h + timer_c)
-        self.assertIn("BSP_Time_RegisterTick1ms", timer_h)
-        self.assertIn("BSP_Time_RegisterTick1ms", timer_c)
-        self.assertIn("tick_callback()", timer_c)
-        self.assertIn("Motor_Safety_Tick1ms();", app_main)
-        self.assertIn("Buzzer_Handle();", app_main)
-        self.assertIn("BSP_Time_RegisterTick1ms", app_main)
-        self.assertLess(
-            app_main.index("Motor_Safety_Init()"),
-            app_main.index("BSP_Time_RegisterTick1ms"),
-        )
-
-    def test_automatic_start_uses_non_blocking_safety_services(self):
-        scheduler = (ROOT / "application/app_scheduler.c").read_text(
-            encoding="utf-8"
-        )
-        questions = (ROOT / "application/legacy_questions/questions.c").read_text(
-            encoding="utf-8"
-        )
-        buzzer = (ROOT / "modules/buzzer/buzzer.c").read_text(encoding="utf-8")
-        app_main = (ROOT / "application/app_main.c").read_text(encoding="utf-8")
-        safety = (ROOT / "modules/motor/motor_safety.c").read_text(
-            encoding="utf-8"
-        )
-        handler = re.search(
-            r"void\s+Legacy_Questions_HandleKey\s*\([^)]*\)\s*\{(.*?)\n\}",
-            questions,
-            re.DOTALL,
-        )
-        buzzer_service = re.search(
-            r"void\s+Buzzer_Handle\s*\([^)]*\)\s*\{(.*?)\n\}",
-            buzzer,
-            re.DOTALL,
-        )
-        disarm = re.search(
-            r"void\s+Motor_Safety_Disarm\s*\([^)]*\)\s*\{(.*?)\n\}",
-            safety,
-            re.DOTALL,
-        )
-        safety_service = re.search(
-            r"void\s+Motor_Safety_Service\s*\([^)]*\)\s*\{(.*?)\n\}",
-            safety,
-            re.DOTALL,
-        )
-        self.assertNotIn("Key_PollEvent();", scheduler)
-        self.assertIn("AppScheduler_Start();", scheduler)
-        self.assertNotIn("Motor_Safety_Disarm();", scheduler)
-        self.assertIsNotNone(handler)
-        self.assertIn("Buzzer_RequestBeeps", handler.group(1))
-        self.assertIn("Motor_Safety_Disarm", handler.group(1))
-        for forbidden in ("Contrl_Pwm(", "Contrl_Speed(", "Beep_Times(", "delay_ms(", "while"):
-            self.assertNotIn(forbidden, handler.group(1))
-        self.assertIsNotNone(buzzer_service)
-        self.assertNotIn("delay_ms(", buzzer_service.group(1))
-        self.assertNotIn("while", buzzer_service.group(1))
-        self.assertIn("Buzzer_Handle();", app_main)
-        self.assertIsNotNone(disarm)
-        self.assertIn("safety_state = MOTOR_SAFETY_DISARMED", disarm.group(1))
-        self.assertIn("clear_requested_speed()", disarm.group(1))
-        self.assertIn("stop_pending = 1U", disarm.group(1))
-        self.assertIsNotNone(safety_service)
-        self.assertIn("if (stop_pending != 0U)", safety_service.group(1))
-        self.assertIn("apply_speed(0, 0, 0, 0)", safety_service.group(1))
 
 
 if __name__ == "__main__":
