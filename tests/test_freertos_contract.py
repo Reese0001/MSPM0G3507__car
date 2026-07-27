@@ -18,6 +18,23 @@ class FreeRtosContract(unittest.TestCase):
         self.assertIn("xTaskCreateStatic", tasks)
         self.assertIn("Motor_Safety_Disarm()", tasks)
         self.assertIn("vTaskStartScheduler()", main)
+        self.assertIn("LineStartGate_Update", tasks)
+        self.assertIn("inputs.start_pressed = line_start_ready;", tasks)
+
+    def test_only_safety_task_arms_motor_after_line_gate(self):
+        tasks = (ROOT / "application/freertos/app_tasks.c").read_text(encoding="utf-8")
+
+        control_start = tasks.index("static void ControlTask")
+        safety_start = tasks.index("static void SafetyTask")
+        display_start = tasks.index("static void DisplayTask")
+        control_body = tasks[control_start:safety_start]
+        safety_body = tasks[safety_start:display_start]
+
+        self.assertNotIn("Motor_Safety_Arm()", control_body)
+        self.assertIn("LineStartGate_Reset();", tasks)
+        self.assertIn("line_start_ready = LineStartGate_Update", tasks)
+        self.assertIn("if (!motor_armed && state == SAFETY_RUNNING)", safety_body)
+        self.assertIn("Motor_Safety_Arm();", safety_body)
 
     def test_cm0_handlers_are_bound_for_ti_arm_clang(self):
         config = (ROOT / "FreeRTOSConfig.h").read_text(encoding="utf-8")

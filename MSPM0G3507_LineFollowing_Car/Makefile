@@ -76,6 +76,7 @@ SOURCES := \
     modules/line_tracking/line_features.c \
     modules/line_tracking/line_lookup_control.c \
     modules/line_tracking/line_position.c \
+    modules/line_tracking/line_start_gate.c \
     modules/line_tracking/line_scanner.c \
     modules/line_tracking/line_trend_detector.c \
     modules/motor/app_motor.c \

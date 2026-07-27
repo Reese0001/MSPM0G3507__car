@@ -17,6 +17,7 @@
 #include "../../modules/led/led.h"
 #include "../../modules/line_tracking/line_lookup_control.h"
 #include "../../modules/line_tracking/line_position.h"
+#include "../../modules/line_tracking/line_start_gate.h"
 #include "../../modules/display/ssd1306.h"
 #include "../../modules/line_tracking/line_scanner.h"
 #include "../../modules/motor/motor_adapter.h"
@@ -59,6 +60,7 @@ static volatile uint32_t sensor_alive_ms;
 static volatile uint32_t control_alive_ms;
 /* Only SafetyTask writes this; latched codes are never cleared. */
 static volatile uint8_t latched_fault = APP_FAULT_NONE;
+static volatile bool line_start_ready;
 
 static void ServiceImu(uint32_t now_ms)
 {
@@ -109,6 +111,7 @@ static void SensorTask(void *argument)
             sample.sequence = sequence;
             sample.timestamp_ms = now_ms;
             AppMailbox_PublishLineSample(&sample);
+            line_start_ready = LineStartGate_Update(sample.position.type);
             xTaskNotifyGive(control_task_handle);
         }
 
@@ -215,10 +218,6 @@ static void ControlTask(void *argument)
     uint16_t last_sequence = 0U;
 
     (void)argument;
-    /* Arm only after the scheduler runs so the 1 ms safety tick and the
-     * SafetyTask watchdog refresh are already alive. Soft-start still
-     * ramps 0 to 30% inside the motor safety layer. */
-    Motor_Safety_Arm();
     for (;;) {
         AppLineSample sample;
         MotionRequest request;
@@ -241,7 +240,7 @@ static void SafetyTask(void *argument)
 {
     TickType_t last_wake = xTaskGetTickCount();
     uint32_t last_frame_ms = 0U;
-    bool start_requested = true;
+    bool motor_armed = false;
 
     (void)argument;
     for (;;) {
@@ -271,7 +270,7 @@ static void SafetyTask(void *argument)
         inputs.ultrasonic_required = LINE_FOLLOWING_USE_ULTRASONIC != 0;
         inputs.imu_required = LINE_FOLLOWING_REQUIRE_IMU != 0;
         inputs.vision_required = LINE_FOLLOWING_USE_VISION != 0;
-        inputs.start_pressed = start_requested;
+        inputs.start_pressed = line_start_ready;
         inputs.reset_pressed = false;
         inputs.power_qualified = LINE_FOLLOWING_POWER_QUALIFIED != 0;
         inputs.motor_fault = Motor_Safety_IsFaultLatched() != 0U;
@@ -285,6 +284,12 @@ static void SafetyTask(void *argument)
             LED_ON();
         }
         (void)SafetySupervisor_Step(&inputs, &request, now_ms, &decision);
+
+        state = SafetySupervisor_GetState();
+        if (!motor_armed && state == SAFETY_RUNNING) {
+            Motor_Safety_Arm();
+            motor_armed = true;
+        }
         MotorAdapter_Apply(&decision);
 
         /* One UART frame per period, except an immediate stop. */
@@ -295,11 +300,6 @@ static void SafetyTask(void *argument)
             (uint32_t)(now_ms - last_frame_ms) >= MOTOR_UART_MIN_PERIOD_MS) {
             Motor_Safety_Service();
             last_frame_ms = now_ms;
-        }
-
-        state = SafetySupervisor_GetState();
-        if (state == SAFETY_RUNNING || state == SAFETY_LIMITED) {
-            start_requested = false;
         }
         LED_HeartbeatService(now_ms);
     }
@@ -375,6 +375,7 @@ bool AppTasks_Create(void)
     AppMailbox_Init();
     LineScanner_Init();
     LinePosition_Reset();
+    LineStartGate_Reset();
     LineRecovery_Init();
     SafetySupervisor_Init();
     if (LINE_FOLLOWING_USE_IMU != 0) {
@@ -383,6 +384,7 @@ bool AppTasks_Create(void)
     imu_started_ms = now_ms;
     sensor_alive_ms = now_ms;
     control_alive_ms = now_ms;
+    line_start_ready = false;
 
     sensor_task_handle = xTaskCreateStatic(SensorTask,
                                            "Sensor",
