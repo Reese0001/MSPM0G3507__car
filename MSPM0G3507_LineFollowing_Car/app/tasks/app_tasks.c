@@ -60,6 +60,10 @@ static uint32_t imu_started_ms;
 /* Written by their owner tasks, read by SafetyTask for supervision. */
 static volatile uint32_t sensor_alive_ms;
 static volatile uint32_t control_alive_ms;
+/* One-shot task-boundary markers consumed by DisplayTask for field diagnosis. */
+static volatile bool safety_loop_seen;
+static volatile bool sensor_frame_seen;
+static volatile bool control_request_seen;
 /* Only SafetyTask writes this; latched codes are never cleared. */
 static volatile uint8_t latched_fault = APP_FAULT_NONE;
 
@@ -104,6 +108,7 @@ static void SensorTask(void *argument)
         if (LineScanner_ReadFrame(now_ms, &snapshot)) {
             AppLineSample sample;
 
+            sensor_frame_seen = true;
             sample.position = LinePosition_Update(snapshot.black_bits);
             sequence++;
             if (sequence == 0U) {
@@ -233,6 +238,7 @@ static void ControlTask(void *argument)
         last_sequence = sample.sequence;
         BuildMotionRequest(&sample, now_ms, &request);
         AppMailbox_PublishMotionRequest(&request);
+        control_request_seen = true;
     }
 }
 
@@ -251,6 +257,7 @@ static void SafetyTask(void *argument)
         Motor_Safety_IsFaultLatched() == 0U) {
         Motor_Safety_Arm();
     }
+    safety_loop_seen = true;
     for (;;) {
         SafetyInputs inputs = {0};
         SafetyDecision decision = {0};
@@ -319,6 +326,9 @@ static void DisplayTask(void *argument)
     int16_t previous_right = 0;
     MotorSafetyFaultReason previous_fault = MOTOR_SAFETY_FAULT_NONE;
     bool previous_direction_wait = false;
+    bool logged_safety_loop = false;
+    bool logged_sensor_frame = false;
+    bool logged_control_request = false;
 
     (void)argument;
     for (;;) {
@@ -347,6 +357,18 @@ static void DisplayTask(void *argument)
         safety = SafetySupervisor_GetState();
         recovery = LineRecovery_GetState();
 
+        if (!logged_safety_loop && safety_loop_seen) {
+            redraw |= RuntimeLog_Push(now_ms, "SAFETY TASK");
+            logged_safety_loop = true;
+        }
+        if (!logged_sensor_frame && sensor_frame_seen) {
+            redraw |= RuntimeLog_Push(now_ms, "SENSOR FRAME");
+            logged_sensor_frame = true;
+        }
+        if (!logged_control_request && control_request_seen) {
+            redraw |= RuntimeLog_Push(now_ms, "CONTROL REQ");
+            logged_control_request = true;
+        }
         if ((!observed || safety != previous_safety) &&
             safety == SAFETY_RUNNING) {
             redraw |= RuntimeLog_Push(now_ms, "MOTOR ARM");
