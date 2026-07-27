@@ -10,18 +10,18 @@ class OledContract(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.syscfg = (ROOT / "empty.syscfg").read_text(encoding="utf-8")
-        cls.bsp = (ROOT / "bsp/bsp_oled_i2c.c").read_text(encoding="utf-8")
-        cls.bsp_h = (ROOT / "bsp/bsp_oled_i2c.h").read_text(encoding="utf-8")
-        cls.ssd = (ROOT / "modules/display/ssd1306.c").read_text(
+        cls.bsp = (ROOT / "modules/display/i2c/oled_i2c.c").read_text(encoding="utf-8")
+        cls.bsp_h = (ROOT / "modules/display/i2c/oled_i2c.h").read_text(encoding="utf-8")
+        cls.ssd = (ROOT / "modules/display/ssd1306/ssd1306.c").read_text(
             encoding="utf-8"
         )
-        cls.ssd_h = (ROOT / "modules/display/ssd1306.h").read_text(
+        cls.ssd_h = (ROOT / "modules/display/ssd1306/ssd1306.h").read_text(
             encoding="utf-8"
         )
-        cls.dashboard = (
-            ROOT / "application/diagnostics/dashboard.c"
+        cls.runtime_log = (
+            ROOT / "modules/display/runtime_log.c"
         ).read_text(encoding="utf-8")
-        cls.tasks = (ROOT / "application/freertos/app_tasks.c").read_text(
+        cls.tasks = (ROOT / "app/tasks/app_tasks.c").read_text(
             encoding="utf-8"
         )
         cls.cproject = (ROOT / ".cproject").read_text(encoding="utf-8")
@@ -63,10 +63,16 @@ class OledContract(unittest.TestCase):
             combined,
         )
 
-    def test_display_task_runs_at_200ms_and_renders_dashboard(self):
-        self.assertIn("pdMS_TO_TICKS(200U)", self.tasks)
-        self.assertIn("Dashboard_Render", self.tasks)
-        self.assertIn("void Dashboard_Render(const AppDiagnostics", self.dashboard)
+    def test_display_task_observes_and_renders_runtime_log_at_100ms(self):
+        self.assertIn("pdMS_TO_TICKS(100U)", self.tasks)
+        self.assertIn("RuntimeLog_Draw", self.tasks)
+        self.assertNotIn("Dashboard_Render", self.tasks)
+        self.assertIn("UART TIMEOUT", self.tasks)
+        self.assertIn("WATCHDOG", self.tasks)
+        self.assertIn("DIR WAIT", self.tasks)
+        self.assertIn("LINE LOST", self.tasks)
+        self.assertIn("MOTOR ARM", self.tasks)
+        self.assertIn("RuntimeLog_PushMotor", self.tasks)
 
     def test_oled_failure_never_stops_the_motors(self):
         display_body = re.search(
@@ -75,7 +81,9 @@ class OledContract(unittest.TestCase):
         )
         self.assertIsNotNone(display_body)
         self.assertNotIn("Motor_Safety_Disarm", display_body.group(1))
-        for text in (self.bsp, self.ssd, self.dashboard):
+        self.assertNotIn("Motor_Safety_RequestSpeed", display_body.group(1))
+        self.assertNotIn("Motor_Safety_Arm", display_body.group(1))
+        for text in (self.bsp, self.ssd, self.runtime_log):
             self.assertNotIn("Motor_Safety_Disarm", text)
             self.assertNotIn("motor_safety.h", text)
 

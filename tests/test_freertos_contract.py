@@ -9,7 +9,7 @@ REPOSITORY = ROOT.parent
 class FreeRtosContract(unittest.TestCase):
     def test_static_only_1khz_kernel_and_safe_start(self):
         config = (ROOT / "FreeRTOSConfig.h").read_text(encoding="utf-8")
-        tasks = (ROOT / "application/freertos/app_tasks.c").read_text(encoding="utf-8")
+        tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
         main = (ROOT / "empty.c").read_text(encoding="utf-8")
 
         self.assertIn("#define configTICK_RATE_HZ 1000", config)
@@ -18,11 +18,12 @@ class FreeRtosContract(unittest.TestCase):
         self.assertIn("xTaskCreateStatic", tasks)
         self.assertIn("Motor_Safety_Disarm()", tasks)
         self.assertIn("vTaskStartScheduler()", main)
-        self.assertIn("LineStartGate_Update", tasks)
-        self.assertIn("inputs.start_pressed = line_start_ready;", tasks)
+        self.assertIn("inputs.start_pressed = true;", tasks)
+        self.assertNotIn("inputs.start_pressed = line_start_ready;", tasks)
+        self.assertNotIn("line_start_ready = LineStartGate_Update", tasks)
 
-    def test_only_safety_task_arms_motor_after_line_gate(self):
-        tasks = (ROOT / "application/freertos/app_tasks.c").read_text(encoding="utf-8")
+    def test_only_safety_task_arms_motor_after_reset_auto_start(self):
+        tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
 
         control_start = tasks.index("static void ControlTask")
         safety_start = tasks.index("static void SafetyTask")
@@ -31,8 +32,9 @@ class FreeRtosContract(unittest.TestCase):
         safety_body = tasks[safety_start:display_start]
 
         self.assertNotIn("Motor_Safety_Arm()", control_body)
-        self.assertIn("LineStartGate_Reset();", tasks)
-        self.assertIn("line_start_ready = LineStartGate_Update", tasks)
+        self.assertNotIn("LineStartGate_Reset();", tasks)
+        self.assertNotIn("line_start_ready", tasks)
+        self.assertIn("AppBoot_IsMotorConfigured()", safety_body)
         self.assertIn("if (!motor_armed && state == SAFETY_RUNNING)", safety_body)
         self.assertIn("Motor_Safety_Arm();", safety_body)
 
