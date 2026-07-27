@@ -240,14 +240,21 @@ static void SafetyTask(void *argument)
 {
     TickType_t last_wake = xTaskGetTickCount();
     uint32_t last_frame_ms = 0U;
-    bool motor_armed = false;
 
     (void)argument;
+    /*
+     * RESET startup must arm before the first supervisor wait.  The safety
+     * layer still owns this call, and configuration failure or a latched
+     * motor fault keeps the output disarmed.
+     */
+    if (AppBoot_IsMotorConfigured() &&
+        Motor_Safety_IsFaultLatched() == 0U) {
+        Motor_Safety_Arm();
+    }
     for (;;) {
         SafetyInputs inputs = {0};
         SafetyDecision decision = {0};
         MotionRequest request = {0};
-        SafetySupervisorState state;
         uint32_t now_ms;
         bool immediate_zero;
 
@@ -287,11 +294,6 @@ static void SafetyTask(void *argument)
         }
         (void)SafetySupervisor_Step(&inputs, &request, now_ms, &decision);
 
-        state = SafetySupervisor_GetState();
-        if (!motor_armed && state == SAFETY_RUNNING) {
-            Motor_Safety_Arm();
-            motor_armed = true;
-        }
         MotorAdapter_Apply(&decision);
 
         /* One UART frame per period, except an immediate stop. */

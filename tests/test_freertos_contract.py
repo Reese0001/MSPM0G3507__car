@@ -22,7 +22,7 @@ class FreeRtosContract(unittest.TestCase):
         self.assertNotIn("inputs.start_pressed = line_start_ready;", tasks)
         self.assertNotIn("line_start_ready = LineStartGate_Update", tasks)
 
-    def test_only_safety_task_arms_motor_after_reset_auto_start(self):
+    def test_safety_task_arms_motor_before_waiting_for_supervisor_state(self):
         tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
 
         control_start = tasks.index("static void ControlTask")
@@ -35,8 +35,14 @@ class FreeRtosContract(unittest.TestCase):
         self.assertNotIn("LineStartGate_Reset();", tasks)
         self.assertNotIn("line_start_ready", tasks)
         self.assertIn("AppBoot_IsMotorConfigured()", safety_body)
-        self.assertIn("if (!motor_armed && state == SAFETY_RUNNING)", safety_body)
-        self.assertIn("Motor_Safety_Arm();", safety_body)
+        arm_position = safety_body.index("Motor_Safety_Arm();")
+        loop_position = safety_body.index("for (;;)")
+        self.assertLess(arm_position, loop_position)
+        self.assertIn("AppBoot_IsMotorConfigured()", safety_body)
+        self.assertNotIn(
+            "state == SAFETY_RUNNING",
+            safety_body[arm_position - 120:arm_position + 40],
+        )
 
     def test_safety_task_is_the_only_production_motor_arm_caller(self):
         callers = []
