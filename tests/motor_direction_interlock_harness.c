@@ -105,6 +105,42 @@ static int establish_sign(int command)
     return 0;
 }
 
+static int diagnostics_snapshot_reports_safety_state(void)
+{
+    MotorSafetyDiagnostics diagnostics;
+
+    init_and_arm();
+    Motor_Safety_Service();
+    Motor_Safety_GetDiagnostics(&diagnostics);
+    CHECK(diagnostics.left_applied == 0);
+    CHECK(diagnostics.right_applied == 0);
+    CHECK(diagnostics.direction_wait == false);
+    CHECK(diagnostics.fault_reason == MOTOR_SAFETY_FAULT_NONE);
+
+    if (establish_sign(100) != 0) {
+        return 1;
+    }
+    Motor_Safety_GetDiagnostics(&diagnostics);
+    CHECK(diagnostics.left_applied == output[1]);
+    CHECK(diagnostics.right_applied == output[3]);
+    Motor_Safety_RequestSpeed(0, -100, 0, -100);
+    Motor_Safety_Service();
+    Motor_Safety_GetDiagnostics(&diagnostics);
+    CHECK(diagnostics.direction_wait == true);
+
+    init_and_arm();
+    fail_next_frame = 1U;
+    Motor_Safety_Service();
+    Motor_Safety_GetDiagnostics(&diagnostics);
+    CHECK(diagnostics.fault_reason == MOTOR_SAFETY_FAULT_UART_TIMEOUT);
+
+    init_and_arm();
+    service_ms(MOTOR_SAFETY_WATCHDOG_MS);
+    Motor_Safety_GetDiagnostics(&diagnostics);
+    CHECK(diagnostics.fault_reason == MOTOR_SAFETY_FAULT_WATCHDOG);
+    return 0;
+}
+
 static int positive_to_negative_is_per_wheel_and_exactly_120ms(void)
 {
     init_and_arm();
@@ -304,6 +340,9 @@ static int failed_uart_frame_latches_fault_and_keeps_zero_output(void)
 
 int main(void)
 {
+    if (diagnostics_snapshot_reports_safety_state() != 0) {
+        return 1;
+    }
     if (positive_to_negative_is_per_wheel_and_exactly_120ms() != 0) {
         return 1;
     }

@@ -11,7 +11,7 @@ WORKTREE = ROOT.parent
 
 class MotorDirectionInterlockContract(unittest.TestCase):
     def test_arm_serializes_fault_latch_check_and_assignment(self):
-        source = (ROOT / "modules/motor/motor_safety.c").read_text(
+        source = (ROOT / "modules/motor/safety/motor_safety.c").read_text(
             encoding="utf-8"
         )
         arm = source[source.index("void Motor_Safety_Arm"):
@@ -23,10 +23,20 @@ class MotorDirectionInterlockContract(unittest.TestCase):
                         arm.index("safety_state = MOTOR_SAFETY_ARMED"))
 
     def test_safety_header_exposes_the_120ms_direction_pause(self):
-        header = (ROOT / "modules/motor/motor_safety.h").read_text(
+        header = (ROOT / "modules/motor/safety/motor_safety.h").read_text(
             encoding="utf-8"
         )
         self.assertIn("MOTOR_SAFETY_DIRECTION_CHANGE_PAUSE_MS (120U)", header)
+
+    def test_safety_header_exposes_read_only_diagnostics(self):
+        header = (ROOT / "modules/motor/safety/motor_safety.h").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("typedef enum {", header)
+        self.assertIn("MOTOR_SAFETY_FAULT_UART_TIMEOUT", header)
+        self.assertIn("MOTOR_SAFETY_FAULT_WATCHDOG", header)
+        self.assertIn("MotorSafetyDiagnostics", header)
+        self.assertIn("Motor_Safety_GetDiagnostics(MotorSafetyDiagnostics *out)", header)
 
     def test_only_motor_adapter_submits_speed_requests(self):
         callers = []
@@ -38,7 +48,7 @@ class MotorDirectionInterlockContract(unittest.TestCase):
             ):
                 callers.append(path.as_posix())
         self.assertEqual(
-            [str(ROOT / "modules/motor/motor_adapter.c").replace("\\", "/")],
+            [str(ROOT / "modules/motor/adapter/motor_adapter.c").replace("\\", "/")],
             callers,
         )
 
@@ -51,7 +61,7 @@ class MotorDirectionInterlockRuntime(unittest.TestCase):
         )
         self.assertTrue(vsdevcmd.exists(), "Visual Studio host toolchain missing")
         harness = WORKTREE / "tests/motor_direction_interlock_harness.c"
-        source = ROOT / "modules/motor/motor_safety.c"
+        source = ROOT / "modules/motor/safety/motor_safety.c"
         build_dir = ROOT / "Build_LineFollowing"
         sdk = Path(r"C:\ti\mspm0_sdk_2_10_00_04")
 
@@ -60,7 +70,7 @@ class MotorDirectionInterlockRuntime(unittest.TestCase):
             compile_command = (
                 f'call "{vsdevcmd}" -arch=x64 >nul && '
                 f'cl /nologo /std:c11 /utf-8 /W4 /WX /DMOTOR_SAFETY_HOST_TEST /TC '
-                f'/I"{ROOT / "modules/motor"}" '
+                f'/I"{ROOT / "modules/motor/safety"}" '
                 f'/I"{ROOT / "modules/led"}" '
                 f'/I"{build_dir}" '
                 f'/I"{sdk / "source"}" '
@@ -69,6 +79,7 @@ class MotorDirectionInterlockRuntime(unittest.TestCase):
             )
             build = subprocess.run(
                 compile_command,
+                cwd=temp_dir,
                 capture_output=True,
                 text=True,
                 errors="replace",
