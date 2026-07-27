@@ -50,8 +50,8 @@ LineLookupCommand LineLookupControl_Step(int8_t position,
     magnitude_index = (int8_t)(position < 0 ? -position : position);
     command.base = table[magnitude_index].base;
 
-    /* Negative position means the line is left: slow the left wheel by
-     * subtracting a positive differential. */
+    /* Negative position means the line is left of the car. Positive
+     * differential slows the left wheel and turns left. */
     diff = table[magnitude_index].diff;
     if (position > 0) {
         diff = (int16_t)-diff;

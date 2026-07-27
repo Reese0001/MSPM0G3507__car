@@ -7,8 +7,9 @@
 /*
  * Open-loop lookup controller: converts a stable 15-position line
  * estimate (-7..7, negative = line left of center) into bounded
- * left/right motor commands. No PID state is kept; the fresh MPU yaw
- * rate only limits excessive differential in sharp corners.
+ * left/right motor commands. Positive differential slows the left
+ * wheel and turns left. No PID state is kept; the fresh MPU yaw rate
+ * only limits excessive differential in sharp corners.
  */
 
 typedef struct {
