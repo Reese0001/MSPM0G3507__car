@@ -10,6 +10,19 @@ static uint8_t head;
 static uint8_t count;
 static char last_payload[18];
 
+static bool payload_is_ascii(const char *payload)
+{
+    const unsigned char *character = (const unsigned char *)payload;
+
+    while (*character != '\0') {
+        if ((*character < 0x20U) || (*character > 0x7EU)) {
+            return false;
+        }
+        character++;
+    }
+    return true;
+}
+
 static void push_line(uint32_t now_ms, const char *payload)
 {
     uint8_t write_index = (uint8_t)((head + count) % RUNTIME_LOG_CAPACITY);
@@ -37,6 +50,9 @@ bool RuntimeLog_Push(uint32_t now_ms, const char *event)
     char payload[sizeof(last_payload)];
 
     if (event == NULL) {
+        return false;
+    }
+    if (!payload_is_ascii(event)) {
         return false;
     }
     (void)snprintf(payload, sizeof(payload), "%s", event);

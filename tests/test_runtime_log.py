@@ -62,6 +62,11 @@ class RuntimeLogRuntime(unittest.TestCase):
     def test_long_duplicate_payload_is_suppressed(self):
         self.assertIn("LONG_DEDUP_OK", self.run_harness())
 
+    def test_ascii_rejection_and_snapshot_bounds(self):
+        output = self.run_harness()
+        self.assertIn("ASCII_REJECT_OK", output)
+        self.assertIn("TRUNCATE_AND_EMPTY_OK", output)
+
 
 if __name__ == "__main__":
     unittest.main()

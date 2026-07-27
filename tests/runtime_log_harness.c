@@ -60,5 +60,24 @@ int main(void)
     assert(strcmp(snapshot[0], "0000 TX L-999 R999") == 0);
     RuntimeLog_Draw();
     assert(strcmp(drawn[0], "0000 TX L-999 R999") == 0);
+
+    RuntimeLog_Init();
+    {
+        const char invalid_event[] = {'B', 'A', 'D', 1, 'X', '\0'};
+
+        assert(!RuntimeLog_Push(20U, invalid_event));
+        assert(RuntimeLog_Snapshot(snapshot) == 0U);
+    }
+    puts("ASCII_REJECT_OK");
+
+    RuntimeLog_Init();
+    assert(RuntimeLog_Push(12345U, "12345678901234567890"));
+    assert(RuntimeLog_Snapshot(snapshot) == 1U);
+    assert(strlen(snapshot[0]) == RUNTIME_LOG_LINE_CHARS);
+    assert(strcmp(snapshot[0], "2345 1234567890123456") == 0);
+    for (index = 1U; index < RUNTIME_LOG_CAPACITY; ++index) {
+        assert(snapshot[index][0] == '\0');
+    }
+    puts("TRUNCATE_AND_EMPTY_OK");
     return 0;
 }
