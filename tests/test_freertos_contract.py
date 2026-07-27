@@ -38,6 +38,18 @@ class FreeRtosContract(unittest.TestCase):
         self.assertIn("if (!motor_armed && state == SAFETY_RUNNING)", safety_body)
         self.assertIn("Motor_Safety_Arm();", safety_body)
 
+    def test_safety_task_is_the_only_production_motor_arm_caller(self):
+        callers = []
+        definition = ROOT / "modules/motor/safety/motor_safety.c"
+
+        for source in ROOT.rglob("*.c"):
+            if source == definition:
+                continue
+            if "Motor_Safety_Arm(" in source.read_text(encoding="utf-8"):
+                callers.append(source.relative_to(ROOT).as_posix())
+
+        self.assertEqual(callers, ["app/tasks/app_tasks.c"])
+
     def test_cm0_handlers_are_bound_for_ti_arm_clang(self):
         config = (ROOT / "FreeRTOSConfig.h").read_text(encoding="utf-8")
 

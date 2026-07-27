@@ -100,7 +100,6 @@ static void AppScheduler_Start(void)
     LineRecovery_Reset();
     CornerManeuver_Reset();
     SafetySupervisor_Reinitialize();
-    Motor_Safety_Arm();
     LED_OFF();
     start_requested = true;
     control_fault_latched = false;
