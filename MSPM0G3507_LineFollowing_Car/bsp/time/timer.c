@@ -11,6 +11,7 @@ void BSP_Time_RegisterTick1ms(BSP_Time_Tick1msCallback callback)
 
 void Timer_Init(void)
 {
+    DL_TimerG_startCounter(MICROSECOND_TIMEBASE_INST);
     NVIC_ClearPendingIRQ(TIMER_0_INST_INT_IRQN);
     NVIC_EnableIRQ(TIMER_0_INST_INT_IRQN);
     DL_TimerG_startCounter(TIMER_0_INST);
