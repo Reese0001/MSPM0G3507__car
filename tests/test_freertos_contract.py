@@ -50,6 +50,16 @@ class FreeRtosContract(unittest.TestCase):
 
         self.assertEqual(callers, ["app/tasks/app_tasks.c"])
 
+    def test_motor_arm_call_is_unique_and_inside_safety_task(self):
+        tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
+        arm_call = tasks.index("Motor_Safety_Arm()")
+        safety_start = tasks.index("static void SafetyTask")
+        display_start = tasks.index("static void DisplayTask")
+
+        self.assertEqual(tasks.count("Motor_Safety_Arm()"), 1)
+        self.assertGreater(arm_call, safety_start)
+        self.assertLess(arm_call, display_start)
+
     def test_cm0_handlers_are_bound_for_ti_arm_clang(self):
         config = (ROOT / "FreeRTOSConfig.h").read_text(encoding="utf-8")
 
