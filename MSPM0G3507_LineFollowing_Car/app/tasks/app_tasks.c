@@ -256,7 +256,6 @@ static void SafetyTask(void *argument)
         SafetyDecision decision = {0};
         MotionRequest request = {0};
         uint32_t now_ms;
-        bool immediate_zero;
 
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(1U));
         now_ms = Get_Time();
@@ -296,12 +295,13 @@ static void SafetyTask(void *argument)
 
         MotorAdapter_Apply(&decision);
 
-        /* One UART frame per period, except an immediate stop. */
-        immediate_zero = !decision.approved ||
-                         (decision.left_speed == 0 &&
-                          decision.right_speed == 0);
-        if (immediate_zero ||
-            (uint32_t)(now_ms - last_frame_ms) >= MOTOR_UART_MIN_PERIOD_MS) {
+        /*
+         * RequestSpeed() already sends an immediate zero when a non-zero
+         * applied command is rejected.  Keep the regular service frame
+         * rate-limited so the highest-priority task cannot monopolize the
+         * CPU with repeated blocking UART zero frames.
+         */
+        if ((uint32_t)(now_ms - last_frame_ms) >= MOTOR_UART_MIN_PERIOD_MS) {
             Motor_Safety_Service();
             last_frame_ms = now_ms;
         }
