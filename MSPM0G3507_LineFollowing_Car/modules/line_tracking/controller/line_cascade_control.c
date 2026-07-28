@@ -64,7 +64,7 @@ static float position_command(const LineEstimate *estimate, uint32_t elapsed_ms)
     if (absolute_float(effective_error) <= 1.0f) {
         controller.filtered_derivative = 0.0f;
         controller.previous_error = 0.0f;
-        controller.error_valid = true;
+        controller.error_valid = false;
         return 0.0f;
     }
     if (controller.error_valid && elapsed_ms > 0U) {
@@ -136,7 +136,7 @@ static int16_t slew(int16_t current,
 
 static void limit_wheels(int16_t *forward, int16_t *turn)
 {
-    int16_t turn_limit;
+    int16_t turn_magnitude;
 
     if (*forward < 0) {
         *forward = 0;
@@ -144,12 +144,17 @@ static void limit_wheels(int16_t *forward, int16_t *turn)
     if (*forward > LINE_CASCADE_MAX_COMMAND) {
         *forward = LINE_CASCADE_MAX_COMMAND;
     }
-    turn_limit = *forward;
-    if (turn_limit > LINE_CASCADE_MAX_COMMAND - *forward) {
-        turn_limit = (int16_t)(LINE_CASCADE_MAX_COMMAND - *forward);
+    if (absolute_int16(*turn) > LINE_CASCADE_MAX_COMMAND / 2) {
+        *turn = *turn < 0 ?
+                    (int16_t)-(LINE_CASCADE_MAX_COMMAND / 2) :
+                    (int16_t)(LINE_CASCADE_MAX_COMMAND / 2);
     }
-    if (absolute_int16(*turn) > turn_limit) {
-        *turn = *turn < 0 ? (int16_t)-turn_limit : turn_limit;
+    turn_magnitude = absolute_int16(*turn);
+    if (*forward > LINE_CASCADE_MAX_COMMAND - turn_magnitude) {
+        *forward = (int16_t)(LINE_CASCADE_MAX_COMMAND - turn_magnitude);
+    }
+    if (*forward < turn_magnitude) {
+        *turn = *turn < 0 ? (int16_t)-*forward : *forward;
     }
 }
 

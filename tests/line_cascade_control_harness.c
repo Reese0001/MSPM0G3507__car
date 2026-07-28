@@ -81,6 +81,23 @@ static void expect_feedforward_turn_survives_centered_line(void)
     assert(output.turn > 0);
 }
 
+static void expect_max_base_preserves_feedforward_turn(void)
+{
+    LineLookupCommand feedforward = make_feedforward(140, 28);
+    LineControlOutput output = run_case(0.0f, &feedforward, false, 0.0f);
+
+    assert(output.turn > 0);
+}
+
+static void expect_max_base_and_diff_turns_at_wheel_limit(void)
+{
+    LineLookupCommand feedforward = make_feedforward(140, 140);
+    LineControlOutput output = run_case(0.0f, &feedforward, false, 0.0f);
+
+    assert(output.forward == 70);
+    assert(output.turn == 70);
+}
+
 static void expect_position_feedback_changes_turn(void)
 {
     LineLookupCommand feedforward = make_feedforward(115, 12);
@@ -110,6 +127,46 @@ static void expect_center_deadzone_ignores_minus_one_zero_plus_one(void)
     assert(right.turn == center.turn);
 }
 
+static void expect_deadzone_exit_skips_derivative(void)
+{
+    LineLookupCommand feedforward = make_feedforward(80, 15);
+    LineControlOutput output = {0};
+    LineEstimate estimate;
+
+    LineCascadeControl_Init(0U);
+    estimate = make_estimate(20U, 1.0f);
+    assert(LineCascadeControl_Step(&estimate, &feedforward, 0, false,
+                                   20U, &output));
+    estimate = make_estimate(21U, 1.1f);
+    assert(LineCascadeControl_Step(&estimate, &feedforward, 0, false,
+                                   21U, &output));
+    assert(output.turn == 0);
+}
+
+static void expect_invalid_feedforward_resets_slew_state(void)
+{
+    LineLookupCommand feedforward = make_feedforward(80, 28);
+    LineLookupCommand invalid = {0};
+    LineControlOutput output = {0};
+    LineEstimate estimate;
+    uint32_t now_ms;
+
+    LineCascadeControl_Init(0U);
+    for (now_ms = 20U; now_ms <= 400U; now_ms += 20U) {
+        estimate = make_estimate(now_ms, 0.0f);
+        assert(LineCascadeControl_Step(&estimate, &feedforward, 0, false,
+                                       now_ms, &output));
+    }
+    assert(output.forward == 80);
+    estimate = make_estimate(420U, 0.0f);
+    assert(!LineCascadeControl_Step(&estimate, &invalid, 0, false,
+                                    420U, &output));
+    estimate = make_estimate(440U, 0.0f);
+    assert(LineCascadeControl_Step(&estimate, &feedforward, 0, false,
+                                   440U, &output));
+    assert(output.forward == 4);
+}
+
 static void expect_wheel_limits_hold(void)
 {
     LineLookupCommand feedforward = make_feedforward(140, 140);
@@ -127,9 +184,13 @@ int main(void)
 {
     expect_missing_or_invalid_feedforward_fails();
     expect_feedforward_turn_survives_centered_line();
+    expect_max_base_preserves_feedforward_turn();
+    expect_max_base_and_diff_turns_at_wheel_limit();
     expect_position_feedback_changes_turn();
     expect_fresh_imu_changes_angle_loop_result();
     expect_center_deadzone_ignores_minus_one_zero_plus_one();
+    expect_deadzone_exit_skips_derivative();
+    expect_invalid_feedforward_resets_slew_state();
     expect_wheel_limits_hold();
     return 0;
 }
