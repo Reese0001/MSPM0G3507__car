@@ -284,6 +284,7 @@ git commit -m "feat: predict line loss direction from recent frames"
 
 **Interfaces:**
 - States: `FOLLOW/SEEK_LEFT/SEEK_RIGHT/ALIGN/STOPPED`。
+- Consumes: `int8_t predicted_direction`，不再传入 `LineTrendResult` 或旧趋势分类。
 - Produces: `LineRecoveryDiagnostics {state,direction,yaw_delta_deg,yaw_fresh}`。
 
 - [ ] **Step 1: 写会失败的“不反向、不倒车”测试**
@@ -387,7 +388,7 @@ trend.direction = LineDirectionPredictor_Predict();
 LineCascadeControl_Step(&estimate, &lookup,
                         imu_fresh ? &imu : 0, imu_fresh,
                         now_ms, &follow);
-return LineRecovery_Step(&estimate, &trend, &follow,
+return LineRecovery_Step(&estimate, predicted_direction, &follow,
                          imu.yaw_angle_deg, imu.yaw_rate_dps,
                          imu_fresh, false, now_ms, request);
 ```
