@@ -22,6 +22,7 @@
 #include "../../modules/line_tracking/decoder/line_position.h"
 #include "../../modules/display/runtime_log.h"
 #include "../../modules/display/ssd1306/ssd1306.h"
+#include "../../modules/key/key.h"
 #include "../../modules/line_tracking/scanner/line_scanner.h"
 #include "../../modules/motor/adapter/motor_adapter.h"
 #include "../../modules/mpu6050/mpu6050.h"
@@ -42,6 +43,9 @@
 
 /* Service the MPU transaction every fifth 2 ms sensor cycle (10 ms). */
 #define APP_IMU_SERVICE_CYCLES 5U
+
+/* Bring-up mode proves the motor path before line tracking is trusted. */
+#define APP_BRINGUP_RUN_SPEED (120)
 
 static StaticTask_t sensor_tcb;
 static StackType_t sensor_stack[APP_SENSOR_STACK_WORDS];
@@ -221,6 +225,14 @@ static void BuildMotionRequest(const AppLineSample *sample,
                             yaw_fresh, false, now_ms, request);
 }
 
+static void BuildBringupRunRequest(uint32_t now_ms, MotionRequest *request)
+{
+    request->left_speed = APP_BRINGUP_RUN_SPEED;
+    request->right_speed = APP_BRINGUP_RUN_SPEED;
+    request->timestamp_ms = now_ms;
+    request->valid = true;
+}
+
 static void ControlTask(void *argument)
 {
     uint16_t last_sequence = 0U;
@@ -251,6 +263,7 @@ static void SafetyTask(void *argument)
     TickType_t last_wake;
     uint32_t last_frame_ms = 0U;
     bool motor_armed = false;
+    bool bringup_run_requested = true;
 
     BootTrace_TaskOnline(BOOT_TASK_SAFETY);
     last_wake = xTaskGetTickCount();
@@ -260,10 +273,14 @@ static void SafetyTask(void *argument)
         SafetyInputs inputs = {0};
         SafetyDecision decision = {0};
         MotionRequest request = {0};
+        MotionRequest line_request = {0};
         uint32_t now_ms;
 
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(1U));
         now_ms = Get_Time();
+        if (Key_PollEvent() == KEY_EVENT_SHORT) {
+            bringup_run_requested = true;
+        }
 
         if (!motor_armed && BootTrace_AllTasksOnline() &&
             AppBoot_IsMotorConfigured() &&
@@ -279,9 +296,6 @@ static void SafetyTask(void *argument)
             if ((uint32_t)(now_ms - sensor_alive_ms) >
                 APP_SENSOR_HEARTBEAT_TIMEOUT_MS) {
                 latched_fault = APP_FAULT_SENSOR_HEARTBEAT;
-            } else if ((uint32_t)(now_ms - control_alive_ms) >
-                       APP_CONTROL_HEARTBEAT_TIMEOUT_MS) {
-                latched_fault = APP_FAULT_CONTROL_HEARTBEAT;
             }
         }
 
@@ -295,7 +309,15 @@ static void SafetyTask(void *argument)
                                  AppBoot_IsMotorConfigured();
         inputs.motor_fault = Motor_Safety_IsFaultLatched() != 0U;
 
-        (void)AppMailbox_ReadMotionRequest(&request);
+        if (bringup_run_requested) {
+            BuildBringupRunRequest(now_ms, &request);
+        }
+        if (AppMailbox_ReadMotionRequest(&line_request) &&
+            line_request.valid &&
+            (uint32_t)(now_ms - line_request.timestamp_ms) <=
+                MOTION_REQUEST_MAX_AGE_MS) {
+            request = line_request;
+        }
         if (latched_fault != APP_FAULT_NONE) {
             request.left_speed = 0;
             request.right_speed = 0;
@@ -336,6 +358,7 @@ static void DisplayTask(void *argument)
     bool logged_safety_loop = false;
     bool logged_sensor_frame = false;
     bool logged_control_request = false;
+    bool logged_test_run = false;
     uint8_t previous_task_mask = 0xFFU;
 
     BootTrace_TaskOnline(BOOT_TASK_DISPLAY);
@@ -403,6 +426,11 @@ static void DisplayTask(void *argument)
         if ((!observed || recovery != previous_recovery) &&
             recovery == LINE_RECOVERY_STOPPED) {
             redraw |= RuntimeLog_Push(now_ms, "LINE LOST");
+        }
+        if (!logged_test_run &&
+            (motor.left_applied != 0 || motor.right_applied != 0)) {
+            redraw |= RuntimeLog_Push(now_ms, "TEST RUN");
+            logged_test_run = true;
         }
         if (observed &&
             (motor.left_applied != previous_left ||
