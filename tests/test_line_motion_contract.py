@@ -77,6 +77,33 @@ class LineMotionContract(unittest.TestCase):
         self.assertIn("AppMailbox_ReadImu", source)
         self.assertIn("yaw_angle_deg", source)
 
+    def test_pattern_bounds_and_startup_hold_fail_closed_before_noise(self):
+        source = (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
+        build = source[source.index("bool AppLineMotion_BuildRequest") :]
+        bounds = "(unsigned int)sample->position.type >"
+        self.assertIn(bounds, build)
+        bounds_at = build.index(bounds)
+        self.assertIn(
+            "(unsigned int)LINE_PATTERN_NOISE",
+            build[bounds_at : bounds_at + 120],
+        )
+        self.assertLess(bounds_at, build.index("event_by_pattern["))
+        self.assertLess(
+            build.index("ImuStartupHold(now_ms)"),
+            build.index("sample->position.type == LINE_PATTERN_NOISE"),
+        )
+        hold = build[
+            build.index("if (ImuStartupHold(now_ms))") :
+            build.index("if (ImuStartupHold(now_ms))") + 320
+        ]
+        for reset in (
+            "LinePosition_Reset()",
+            "LineDirectionPredictor_Reset()",
+            "LineRecovery_Reset()",
+            "LineCascadeControl_Init(now_ms)",
+        ):
+            self.assertIn(reset, hold)
+
 
 if __name__ == "__main__":
     unittest.main()

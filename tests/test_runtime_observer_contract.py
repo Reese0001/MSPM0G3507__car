@@ -28,7 +28,7 @@ class RuntimeObserverContract(unittest.TestCase):
             "LineCascadeControl_IsImuUsed",
             '"IMU READY"',
             '"IMU DEG"',
-            '"IMU U Y+000 G+000"',
+            '"U Y+000 G+000"',
             "format_signed_3",
             "LineRecovery_GetDiagnostics",
             "yaw_delta_deg",
@@ -41,6 +41,7 @@ class RuntimeObserverContract(unittest.TestCase):
             self.assertIn(token, header + source)
         self.assertNotIn('"LINE SEEK F"', source)
         self.assertNotIn('"LINE SEEK ROT"', source)
+        self.assertNotIn('"IMU U Y+000 G+000"', source)
         self.assertNotIn("RuntimeLog_Push(now_ms", tasks)
         self.assertIn("RuntimeObserver_Update", tasks)
         self.assertNotIn('"TEST RUN"', tasks)

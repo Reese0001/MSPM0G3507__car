@@ -120,20 +120,20 @@ static bool observe_imu(uint32_t now_ms,
         return redraw | RuntimeLog_Push(now_ms, "IMU STALE");
     }
     {
-        static const char imu_template[] = "IMU U Y+000 G+000";
+        static const char imu_template[] = "U Y+000 G+000";
 
         (void)memcpy(payload, imu_template, sizeof(imu_template));
     }
-    payload[4] = LineCascadeControl_IsImuUsed() ? 'U' : 'B';
+    payload[0] = LineCascadeControl_IsImuUsed() ? 'U' : 'B';
     if (recovery->state == LINE_RECOVERY_SEEK_LEFT ||
         recovery->state == LINE_RECOVERY_SEEK_RIGHT) {
-        payload[6] = 'D';
-        format_signed_3(&payload[7],
+        payload[2] = 'D';
+        format_signed_3(&payload[3],
                         clamp_log_value(recovery->yaw_delta_deg));
     } else {
-        format_signed_3(&payload[7], clamp_log_value(imu.yaw_angle_deg));
+        format_signed_3(&payload[3], clamp_log_value(imu.yaw_angle_deg));
     }
-    format_signed_3(&payload[13], clamp_log_value(imu.yaw_rate_dps));
+    format_signed_3(&payload[9], clamp_log_value(imu.yaw_rate_dps));
     return redraw | RuntimeLog_Push(now_ms, payload);
 }
 

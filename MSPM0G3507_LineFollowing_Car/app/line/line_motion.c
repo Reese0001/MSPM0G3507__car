@@ -98,14 +98,19 @@ bool AppLineMotion_BuildRequest(const AppLineSample *sample,
     if (sample == 0 || request == 0) {
         return false;
     }
-    if (sample->position.type == LINE_PATTERN_NOISE) {
-        LineCascadeControl_Init(now_ms);
-        return false;
-    }
     if (ImuStartupHold(now_ms)) {
         LinePosition_Reset();
         LineDirectionPredictor_Reset();
         LineRecovery_Reset();
+        LineCascadeControl_Init(now_ms);
+        return false;
+    }
+    if ((unsigned int)sample->position.type >
+        (unsigned int)LINE_PATTERN_NOISE) {
+        LineCascadeControl_Init(now_ms);
+        return false;
+    }
+    if (sample->position.type == LINE_PATTERN_NOISE) {
         LineCascadeControl_Init(now_ms);
         return false;
     }
