@@ -54,6 +54,7 @@ FREERTOS_PORT := $(SDK_DIR)/kernel/freertos/Source/portable/TI_ARM_CLANG/ARM_CM0
 SOURCES := \
     empty.c \
     app/boot/app_boot.c \
+    modules/diagnostics/boot_trace.c \
     application/app_scheduler.c \
     application/corner_maneuver.c \
     modules/line_tracking/recovery/line_recovery.c \
@@ -111,6 +112,7 @@ CPPFLAGS := \
     -Ibsp \
     -Ibsp/time \
     -Imodules \
+    -Imodules/diagnostics \
     -Imodules/buzzer \
     -Imodules/key \
     -Imodules/led \
