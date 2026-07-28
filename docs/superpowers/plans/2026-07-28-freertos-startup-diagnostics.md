@@ -39,7 +39,9 @@ ROOT = REPO / "MSPM0G3507_LineFollowing_Car"
 
 class FreeRtosStartupDiagnostics(unittest.TestCase):
     def test_all_startup_boundaries_are_named(self):
-        header = (ROOT / "modules/diagnostics/boot_trace.h").read_text("utf-8")
+        path = ROOT / "modules/diagnostics/boot_trace.h"
+        self.assertTrue(path.exists(), "boot trace header is missing")
+        header = path.read_text("utf-8")
         for name in (
             "BOOT_TRACE_MAIN", "BOOT_TRACE_TASKS_CREATED",
             "BOOT_TRACE_SCHED_START", "BOOT_TRACE_PORT_START",
@@ -51,7 +53,9 @@ class FreeRtosStartupDiagnostics(unittest.TestCase):
             self.assertIn(name, header)
 
     def test_port_wrappers_route_to_official_handlers(self):
-        wrapper = (ROOT / "modules/diagnostics/freertos_startup_wrappers.S").read_text("utf-8")
+        path = ROOT / "modules/diagnostics/freertos_startup_wrappers.S"
+        self.assertTrue(path.exists(), "FreeRTOS startup wrapper is missing")
+        wrapper = path.read_text("utf-8")
         kernel = (REPO / "freertos_kernel/Makefile").read_text("utf-8")
         self.assertIn("FreeRTOS_SVC_Handler", wrapper)
         self.assertIn("FreeRTOS_vRestoreContextOfFirstTask", wrapper)
@@ -59,7 +63,9 @@ class FreeRtosStartupDiagnostics(unittest.TestCase):
         self.assertIn("-DvRestoreContextOfFirstTask=FreeRTOS_vRestoreContextOfFirstTask", kernel)
 
     def test_fatal_path_is_gpio_only(self):
-        source = (ROOT / "modules/diagnostics/boot_trace.c").read_text("utf-8")
+        path = ROOT / "modules/diagnostics/boot_trace.c"
+        self.assertTrue(path.exists(), "boot trace implementation is missing")
+        source = path.read_text("utf-8")
         fatal = source[source.index("BootTrace_Fatal"):]
         for forbidden in ("RuntimeLog", "Ssd1306", "Motor_", "printf", "vTask"):
             self.assertNotIn(forbidden, fatal)
