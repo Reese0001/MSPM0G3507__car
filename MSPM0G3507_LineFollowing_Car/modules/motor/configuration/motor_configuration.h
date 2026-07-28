@@ -8,10 +8,5 @@
 #define Car_APB          				(188.0f)//  (228+148)/2
 
 bool Set_Motor(int MOTOR_TYPE);
-void Motion_Car_Control(int16_t V_x, int16_t V_y, int16_t V_z);
-void Motion_Yaw_Calc(float offset_yaw);
-void Get_Odometry(void);
-
-
 
 #endif

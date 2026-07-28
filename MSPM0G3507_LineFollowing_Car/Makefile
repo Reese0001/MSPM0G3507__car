@@ -109,7 +109,6 @@ CPPFLAGS := \
     -D__USE_SYSCONFIG__ \
     -I. \
     -I$(BUILD_DIR) \
-    -Iapplication \
     -Iapp \
     -Iapp/boot \
     -Iapp/mailbox \
@@ -123,7 +122,6 @@ CPPFLAGS := \
     -Iconfig \
     -Ishared \
     -Ibsp \
-    -Ibsp/time \
     -Imodules \
     -Imodules/diagnostics \
     -Imodules/buzzer \

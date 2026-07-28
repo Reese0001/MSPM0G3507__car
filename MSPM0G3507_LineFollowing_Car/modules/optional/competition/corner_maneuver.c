@@ -1,6 +1,6 @@
 #include "corner_maneuver.h"
 
-#include "config/corner_maneuver_config.h"
+#include "../../../config/corner_maneuver_config.h"
 
 static CornerManeuverState state;
 static int8_t corner_direction;

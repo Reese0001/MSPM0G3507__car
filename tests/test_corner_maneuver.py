@@ -11,10 +11,10 @@ ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 
 class CornerManeuverContract(unittest.TestCase):
     def setUp(self):
-        self.header = (ROOT / "application/corner_maneuver.h").read_text(
+        self.header = (ROOT / "modules/optional/competition/corner_maneuver.h").read_text(
             encoding="utf-8"
         )
-        self.source = (ROOT / "application/corner_maneuver.c").read_text(
+        self.source = (ROOT / "modules/optional/competition/corner_maneuver.c").read_text(
             encoding="utf-8"
         )
         self.config = (ROOT / "config/corner_maneuver_config.h").read_text(
@@ -81,7 +81,7 @@ class CornerManeuverRuntime(unittest.TestCase):
             / "Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat"
         )
         harness = ROOT.parent / "tests/corner_maneuver_harness.c"
-        source = ROOT / "application/corner_maneuver.c"
+        source = ROOT / "modules/optional/competition/corner_maneuver.c"
 
         self.assertTrue(vsdevcmd.exists(), "Visual Studio host toolchain missing")
         with tempfile.TemporaryDirectory() as temp_dir:

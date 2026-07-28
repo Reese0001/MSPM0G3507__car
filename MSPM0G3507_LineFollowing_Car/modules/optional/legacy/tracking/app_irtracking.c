@@ -1,5 +1,7 @@
 #include "app_irtracking.h"
 
+/* Optional legacy direct-tracking helper. Not linked by the active firmware. */
+
 #define IRTrack_Trun_KP (40.0f)
 #define IRTrack_Trun_KD (10.0f)
 #define IRR_SPEED (120)

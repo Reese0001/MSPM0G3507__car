@@ -24,9 +24,13 @@ class BuildOutputLayoutContract(unittest.TestCase):
             "application/app_scheduler.c",
             "application/corner_maneuver.c",
             "application/motion_primitives.c",
+            "modules/optional/competition/corner_maneuver.c",
+            "modules/optional/competition/motion_primitives.c",
+            "modules/optional/legacy/tracking/app_irtracking.c",
         ):
             self.assertNotIn(old_source, makefile)
-            self.assertIn(old_source, cproject)
+        for excluded in ("application", "modules/optional/competition", "modules/optional/legacy"):
+            self.assertIn(excluded, cproject)
         self.assertIn("app/tasks/app_tasks.c", makefile)
 
 

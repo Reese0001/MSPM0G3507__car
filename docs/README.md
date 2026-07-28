@@ -6,4 +6,4 @@
 - [项目记录](notes/)：交接和历史构建记录。
 - [历史资料整理清单](archive-manifest.md)：保留与删除范围及统计数据。
 
-当前固件的唯一有效来源是 `MSPM0G3507_LineFollowing_Car/` 下的 `empty.syscfg`、`empty.c`、`application/`、`modules/` 和 `bsp/`。旧工程名只出现在历史计划和构建记录中。
+当前固件的唯一有效来源是 `MSPM0G3507_LineFollowing_Car/` 下的 `empty.syscfg`、`empty.c`、`app/`、`modules/`、`shared/`、`config/` 和 `bsp/`。`application/` 已退出活跃构建；旧版循迹、比赛状态机和运动原语只作为参考放在 `modules/optional/`。旧工程名只出现在历史计划和构建记录中。

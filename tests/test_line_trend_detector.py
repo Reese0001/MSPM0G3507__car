@@ -85,16 +85,13 @@ class LineTrendDetectorContract(unittest.TestCase):
             r"[\s\S]{0,180}clear_direction_evidence",
         )
 
-    def test_scheduler_resets_trend_at_control_reset_boundaries(self):
-        scheduler = (ROOT / "application/app_scheduler.c").read_text(
-            encoding="utf-8"
-        )
-        self.assertGreaterEqual(scheduler.count("LineTrendDetector_Reset();"), 2)
-        self.assertRegex(
-            scheduler,
-            r"if\s*\(corner_fault\)\s*\{[\s\S]{0,240}"
-            r"AppScheduler_ResetLineControlHistory\(\)",
-        )
+    def test_active_runtime_does_not_keep_stale_trend_state(self):
+        line_motion = (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
+        tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
+        active = line_motion + tasks
+        self.assertNotIn("static LineTrendResult", active)
+        self.assertNotIn("LineTrendDetector_Update", active)
+        self.assertNotIn("AppScheduler_ResetLineControlHistory", active)
 
     def test_public_types_and_thresholds_exist(self):
         header_path = ROOT / "modules/line_tracking/line_trend_detector.h"

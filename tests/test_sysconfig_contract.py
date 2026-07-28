@@ -10,14 +10,14 @@ class SysConfigContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.syscfg = (PROJECT / "empty.syscfg").read_text(encoding="utf-8")
-        cls.tracking_h = (PROJECT / "modules/line_tracking/app_irtracking.h").read_text(
+        cls.tracking_h = (PROJECT / "modules/line_tracking/scanner/line_mux.c").read_text(
             encoding="utf-8"
         )
 
     def test_gpio_multiplexer_tracking_pins(self):
         for assignment in ('"PA15"', '"PA16"', '"PA17"', '"PA18"'):
             self.assertIn(assignment, self.syscfg)
-        for symbol in ("GRAY_AD0", "GRAY_AD1", "GRAY_AD2", "GRAY_OUT"):
+        for symbol in ("LINE_MUX_AD0_PIN", "LINE_MUX_AD1_PIN", "LINE_MUX_AD2_PIN", "LINE_MUX_OUT_PIN"):
             self.assertIn(symbol, self.tracking_h)
 
     def test_motor_uart_pins_and_baud(self):

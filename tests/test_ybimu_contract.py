@@ -104,9 +104,12 @@ class YbImuContract(unittest.TestCase):
         source_path = ROOT / "modules/optional/ybimu/ybimu.c"
         self.assertTrue(source_path.exists(), source_path)
         source = source_path.read_text(encoding="utf-8")
-        scheduler = (ROOT / "application/app_scheduler.c").read_text(encoding="utf-8")
+        active = (
+            (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
+            + (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
+        )
         for forbidden in ("app_mpu6050", "Get_EulerAngles", "mpu_dmp"):
-            self.assertNotIn(forbidden, source + scheduler)
+            self.assertNotIn(forbidden, source + active)
 
     def test_calibration_has_timeout_states(self):
         header = (ROOT / "modules/optional/ybimu/ybimu.h").read_text(encoding="utf-8")
@@ -147,16 +150,17 @@ class YbImuContract(unittest.TestCase):
         self.assertIn("service_calibration", source)
 
     def test_active_profile_uses_mpu6050_not_ybimu(self):
-        scheduler = (ROOT / "application/app_scheduler.c").read_text(
-            encoding="utf-8"
+        active = (
+            (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
+            + (ROOT / "app/sensor/sensor_runtime.c").read_text(encoding="utf-8")
         )
         profile = (ROOT / "config/line_following_profile.h").read_text(
             encoding="utf-8"
         )
         self.assertIn("LINE_FOLLOWING_USE_IMU (1)", profile)
-        self.assertIn("BSP_I2C_Service", scheduler)
-        self.assertIn("Mpu6050_Service", scheduler)
-        self.assertNotIn("YbImu_Service", scheduler)
+        self.assertIn("BSP_I2C_Service", active)
+        self.assertIn("Mpu6050_Service", active)
+        self.assertNotIn("YbImu_Service", active)
 
     def test_magnetic_heading_has_plausibility_and_change_gates(self):
         source = (ROOT / "modules/optional/ybimu/ybimu.c").read_text(encoding="utf-8")

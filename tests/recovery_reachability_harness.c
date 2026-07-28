@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "application/corner_maneuver.h"
+#include "modules/optional/competition/corner_maneuver.h"
 #include "modules/line_tracking/recovery/line_recovery.h"
 
 #define CHECK(condition) do { \

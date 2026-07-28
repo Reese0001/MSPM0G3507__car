@@ -22,19 +22,17 @@ class LineFollowingBurnProfileContract(unittest.TestCase):
             self.assertIn(token, profile)
         self.assertNotIn("LINE_KEY_TASK_PERIOD_MS", profile)
 
-    def test_reset_automatically_starts_without_key_control(self):
-        scheduler = (ROOT / "application/app_scheduler.c").read_text(
-            encoding="utf-8"
-        )
-        init = scheduler[scheduler.index("void AppScheduler_Init"):]
-        init = init[:init.index("void AppScheduler_Run")]
-        self.assertIn("AppScheduler_Start();", init)
-        self.assertNotIn("Key_PollEvent", scheduler)
-        self.assertNotIn("KEY_EVENT_", scheduler)
-        self.assertNotIn("AppScheduler_RunKey", scheduler)
+    def test_reset_automatically_starts_without_key_gate(self):
+        run = (ROOT / "app/run/run_controller.c").read_text(encoding="utf-8")
+        safety = (ROOT / "app/safety/safety_runtime.c").read_text(encoding="utf-8")
+        self.assertIn("run_requested = true", run)
+        self.assertIn("inputs.start_pressed = true", safety)
+        self.assertIn("RunController_OnKeyEvent(Key_PollEvent())", safety)
+        self.assertNotIn("KEY_EVENT_", safety)
 
-    def test_bootstrap_defers_heartbeat_to_a_later_task(self):
-        app_main = (ROOT / "app/boot/app_boot.c").read_text(encoding="utf-8")
+    def test_bootstrap_defers_heartbeat_to_later_runtime(self):
+        boot = (ROOT / "app/boot/app_boot.c").read_text(encoding="utf-8")
+        safety = (ROOT / "app/safety/safety_runtime.c").read_text(encoding="utf-8")
         led_header = (ROOT / "modules/led/led.h").read_text(encoding="utf-8")
         led_source = (ROOT / "modules/led/led.c").read_text(encoding="utf-8")
         self.assertIn("LED_HeartbeatInit", led_header + led_source)
@@ -42,60 +40,48 @@ class LineFollowingBurnProfileContract(unittest.TestCase):
         self.assertIn("LED_HEARTBEAT_PERIOD_MS (250U)", led_source)
         self.assertIn("DL_GPIO_togglePins(LED_PORT, LED_D2_PIN)", led_source)
         self.assertNotIn("delay_", led_source)
-        self.assertIn("LED_HeartbeatInit();", app_main)
-        self.assertNotIn("LED_HeartbeatService", app_main)
+        self.assertIn("LED_HeartbeatInit();", boot)
+        self.assertIn("LED_HeartbeatService(now_ms)", safety)
 
     def test_tracking_timing_matches_pre_stop_go_baseline(self):
         config = (ROOT / "config/line_control_config.h").read_text(
             encoding="utf-8"
         )
-        scheduler = (ROOT / "application/app_scheduler.c").read_text(
-            encoding="utf-8"
-        )
-        app_main = (ROOT / "app/boot/app_boot.c").read_text(encoding="utf-8")
+        tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
+        boot = (ROOT / "app/boot/app_boot.c").read_text(encoding="utf-8")
         self.assertIn("LINE_ESTIMATE_STALE_MS (20U)", config)
-        self.assertNotIn("Buzzer_RequestBeeps", scheduler)
-        self.assertNotIn("PWM_Buzzer_Init();", app_main)
+        self.assertNotIn("Buzzer_RequestBeeps", tasks)
+        self.assertNotIn("PWM_Buzzer_Init();", boot)
 
     def test_line_output_reaches_the_single_motor_authority_path(self):
-        scheduler = (ROOT / "application/app_scheduler.c").read_text(
-            encoding="utf-8"
-        )
-        positions = [
-            scheduler.index("LineController_Step"),
-            scheduler.index("LineRecovery_Step"),
-            scheduler.index("SafetySupervisor_Step"),
-            scheduler.index("MotorAdapter_Apply"),
-        ]
-        self.assertEqual(positions, sorted(positions))
+        control = (ROOT / "app/control/control_runtime.c").read_text(encoding="utf-8")
+        safety = (ROOT / "app/safety/safety_runtime.c").read_text(encoding="utf-8")
+        self.assertIn("AppLineMotion_BuildRequest", control)
+        self.assertIn("AppMailbox_PublishMotionRequest", control)
+        self.assertIn("SafetySupervisor_Step", safety)
+        self.assertIn("MotorAdapter_Apply", safety)
 
     def test_ccs_build_excludes_unfitted_and_legacy_sources(self):
         cproject = (ROOT / ".cproject").read_text(encoding="utf-8")
         for excluded in (
-            "application/legacy_questions",
-            "application/legacy_task",
+            "application",
             "modules/optional/legacy",
+            "modules/optional/competition",
             "modules/optional/ybimu",
             "modules/optional/k230",
             "modules/optional/ultrasonic",
-            "application/app_scheduler.c",
-            "application/corner_maneuver.c",
-            "application/motion_primitives.c",
         ):
             self.assertIn(excluded, cproject)
+        self.assertNotIn("${PROJECT_ROOT}/application", cproject)
 
     def test_line_loss_timeout_stops_motion_without_disarming_run(self):
-        scheduler = (ROOT / "application/app_scheduler.c").read_text(
-            encoding="utf-8"
-        )
-        line_control = scheduler[
-            scheduler.index("static void AppScheduler_RunLineControl"):
-            scheduler.index("static void AppScheduler_RunSafety")
-        ]
-        self.assertIn("LineRecovery_Reset();", line_control)
-        self.assertIn("mission_request.valid = false;", line_control)
-        self.assertNotIn("AppScheduler_Stop", line_control)
-        self.assertNotIn("Motor_Safety_Disarm", line_control)
+        line_motion = (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
+        safety = (ROOT / "app/safety/safety_runtime.c").read_text(encoding="utf-8")
+        self.assertIn("LineRecovery_Reset();", line_motion)
+        self.assertIn("ClearRequest(now_ms, request)", line_motion)
+        self.assertNotIn("Motor_Safety_Disarm", line_motion)
+        self.assertNotIn("RunController_Init", line_motion)
+        self.assertIn("RunController_BuildRequest", safety)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 #include <ti/devices/msp/m0p/mspm0g350x.h>
 #include <ti/driverlib/dl_gpio.h>
 
-#include "../modules/line_tracking/line_tracking_config.h"
+#include "../line_tracking_config.h"
 
 #define LINE_MUX_AD0_PIN DL_GPIO_PIN_15
 #define LINE_MUX_AD1_PIN DL_GPIO_PIN_16

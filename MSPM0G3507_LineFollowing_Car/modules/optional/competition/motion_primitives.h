@@ -4,9 +4,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../shared/motion_request.h"
-#include "../modules/line_tracking/line_estimator.h"
-#include "../modules/line_tracking/line_trend_detector.h"
+#include "../../../shared/motion_request.h"
+#include "../../line_tracking/line_estimator.h"
+#include "../../line_tracking/line_trend_detector.h"
 
 typedef enum {
     MOTION_RUNNING = 0,

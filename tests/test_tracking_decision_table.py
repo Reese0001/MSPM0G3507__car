@@ -7,12 +7,12 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (
     ROOT
     / "MSPM0G3507_LineFollowing_Car"
-    / "modules/line_tracking/app_irtracking.c"
+    / "modules/optional/legacy/tracking/app_irtracking.c"
 ).read_text(encoding="utf-8")
 HEADER = (
     ROOT
     / "MSPM0G3507_LineFollowing_Car"
-    / "modules/line_tracking/app_irtracking.h"
+    / "modules/optional/legacy/tracking/app_irtracking.h"
 ).read_text(encoding="utf-8")
 
 

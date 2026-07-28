@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "application/corner_maneuver.h"
+#include "modules/optional/competition/corner_maneuver.h"
 
 #define CHECK(condition) do { \
     if (!(condition)) { \

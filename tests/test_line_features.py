@@ -190,20 +190,17 @@ int main(void)
         result = subprocess.run([str(self.harness)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_scheduler_extracts_features_before_estimation(self):
-        scheduler = (ROOT / "application/app_scheduler.c").read_text(
-            encoding="utf-8"
-        )
-        init = scheduler[scheduler.index("void AppScheduler_Init"):]
-        line_control = scheduler[
-            scheduler.index("static void AppScheduler_RunLineControl"):
-            scheduler.index("static void AppScheduler_RunSafety")
-        ]
-        self.assertIn("static LineFeatures line_features", scheduler)
-        self.assertIn("LineFeatureExtractor_Init();", init)
-        self.assertIn("LineFeatureExtractor_Reset();", scheduler)
-        self.assertIn("LineFeatureExtractor_Update(&scanner, now_ms,", line_control)
-        self.assertIn("LineEstimator_Update(&line_features, now_ms)", line_control)
+    def test_active_line_motion_does_not_depend_on_old_feature_pipeline(self):
+        line_motion = (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
+        tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
+        self.assertIn("LineRecovery_Step", line_motion)
+        self.assertIn("LineLookupControl_Step", line_motion)
+        for forbidden in (
+            "LineFeatureExtractor_Update",
+            "LineEstimator_Update(&line_features",
+            "AppScheduler_",
+        ):
+            self.assertNotIn(forbidden, line_motion + tasks)
 
 
 if __name__ == "__main__":

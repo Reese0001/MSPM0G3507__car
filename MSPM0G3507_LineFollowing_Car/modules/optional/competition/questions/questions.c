@@ -1,4 +1,6 @@
 #include "questions.h"
+
+/* Optional legacy contest state machine. Not linked by the active firmware. */
 #include "key.h"
 #include "buzzer.h"
 #include "motor_safety.h"

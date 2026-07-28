@@ -1,9 +1,9 @@
 #include "motion_primitives.h"
 
-#include "config/line_control_config.h"
-#include "config/line_recovery_config.h"
-#include "config/motion_primitives_config.h"
-#include "line_recovery.h"
+#include "../../../config/line_control_config.h"
+#include "../../../config/line_recovery_config.h"
+#include "../../../config/motion_primitives_config.h"
+#include "../../line_tracking/recovery/line_recovery.h"
 
 static MotionPrimitiveType active_type = MOTION_PRIMITIVE_FOLLOW_LINE;
 static MotionPrimitiveParams active_params = {0};

@@ -2,10 +2,10 @@
 #define __QUESTIONS_H__
 
 #include "ti_msp_dl_config.h"
-#include "app_mpu6050.h"
-#include "motor/configuration/motor_configuration.h"
-#include "app_irtracking.h"
-#include "led.h"
+#include "../../../optional/legacy/driver/app_mpu6050.h"
+#include "../../../motor/configuration/motor_configuration.h"
+#include "../../legacy/tracking/app_irtracking.h"
+#include "../../../led/led.h"
 
 extern int odometry_sum;
 extern int encoder_odometry_flag;
