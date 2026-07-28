@@ -310,6 +310,9 @@ git commit -m "debug: trace freertos first context switch"
 - Modify: `MSPM0G3507_LineFollowing_Car/app/tasks/app_tasks.c`
 - Modify: `MSPM0G3507_LineFollowing_Car/modules/display/runtime_log.h`
 - Modify: `MSPM0G3507_LineFollowing_Car/modules/display/runtime_log.c`
+- Modify: `tests/test_freertos_contract.py` (replace the superseded pre-loop Arm contract)
+- Modify: `MSPM0G3507_LineFollowing_Car/modules/diagnostics/boot_trace.c` (release startup LED state at mask `0x0F`)
+- Modify: `tests/test_freertos_startup_diagnostics.py` (cover D1/D2 handoff to heartbeat)
 
 **Interfaces:**
 - Consumes: `BootTrace_TaskOnline()`、`BootTrace_AllTasksOnline()`、`BootTrace_GetTaskMask()`。
@@ -340,6 +343,17 @@ if (!motor_armed && BootTrace_AllTasksOnline() &&
 ```
 
 Remove the current pre-loop Arm and the one-shot `LED2_Toggle()` marker. Keep the single production `Motor_Safety_Arm()` call inside SafetyTask.
+
+Update the legacy FreeRTOS contract test that required `Motor_Safety_Arm()`
+before the task loop.  The replacement contract must require the unique Arm
+call to be inside SafetyTask and guarded by `BootTrace_AllTasksOnline()`;
+keeping both assertions would make the confirmed `0x0F` safety gate
+impossible.
+
+When the task mask first becomes `BOOT_TASK_ALL`, clear both startup stage
+pins before the normal D2 heartbeat is enabled.  Stage 06 leaves D1/D2 high;
+without this handoff, a successful boot would leave D1 falsely indicating a
+fatal error.
 
 - [ ] **Step 3: Add a bounded task-mask log formatter**
 
@@ -390,6 +404,8 @@ git commit -m "debug: report freertos task startup mask"
 **Files:**
 - Generated: `dist/firmware/MSPM0G3507_LineFollowing_Car.txt`
 - Verify: `build/cli/MSPM0G3507_LineFollowing_Car/MSPM0G3507_LineFollowing_Car.map`
+- Modify: `README.md`
+- Modify: `MSPM0G3507_LineFollowing_Car/README.md`
 
 **Interfaces:**
 - Consumes: Tasks 1-4.
@@ -425,6 +441,10 @@ Get-FileHash 'dist\firmware\MSPM0G3507_LineFollowing_Car.txt' -Algorithm SHA256
 - OLED `SCHED START`, LEDs `11`: restore began but first task C entry not reached.
 - D1 ON with D2 repeating 1-5 pulses: `E1-E5` fatal code.
 - D1 OFF and D2 250 ms heartbeat, OLED task mask `0F`: all tasks running; continue into motor/control diagnostics.
+
+Record this temporary field table in both READMEs next to the OLED startup
+instructions.  State clearly that it applies only to the temporary startup
+diagnostic firmware and will be removed after the root cause is confirmed.
 
 Do not claim the motor issue fixed until the field result reaches task mask `0F` and a nonzero motor request is observed.
 
