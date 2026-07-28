@@ -15,7 +15,7 @@ void LineDirectionPredictor_Reset(void)
 
 void LineDirectionPredictor_Record(int8_t position)
 {
-    if ((position <= -7) || (position >= 7)) {
+    if ((position < -7) || (position > 7)) {
         return;
     }
 
