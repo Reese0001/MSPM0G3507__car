@@ -17,7 +17,7 @@ class BuildOutputLayoutContract(unittest.TestCase):
         self.assertIn("FIRMWARE_DIR := ../dist/firmware", makefile)
         self.assertIn("dist/", gitignore)
 
-    def test_firmware_build_uses_only_the_freertos_task_entry(self):
+    def test_firmware_build_uses_only_the_native_task_entry(self):
         makefile = (PROJECT / "Makefile").read_text(encoding="utf-8")
         cproject = (PROJECT / ".cproject").read_text(encoding="utf-8")
         for old_source in (
@@ -38,6 +38,7 @@ class BuildOutputLayoutContract(unittest.TestCase):
         for excluded in ("application", "modules/optional/competition", "modules/optional/legacy"):
             self.assertIn(excluded, cproject)
         self.assertIn("app/tasks/app_tasks.c", makefile)
+        self.assertNotIn("freertos_kernel_ticlang.lib", makefile)
 
 
 if __name__ == "__main__":

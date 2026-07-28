@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import os
 import subprocess
 import tempfile
@@ -16,7 +16,7 @@ class LineStartGateRuntime(unittest.TestCase):
             / "Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat"
         )
         harness = ROOT / "tests/line_start_gate_harness.c"
-        source = PROJECT / "modules/line_tracking/decoder/line_start_gate.c"
+        source = PROJECT / "modules/optional/competition/line_tracking/decoder/line_start_gate.c"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             executable = Path(temp_dir) / "line_start_gate_harness.exe"
@@ -42,3 +42,4 @@ class LineStartGateRuntime(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

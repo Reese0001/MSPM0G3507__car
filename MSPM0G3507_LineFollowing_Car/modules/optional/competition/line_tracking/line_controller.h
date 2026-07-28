@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "line_model.h"
+#include "../../../line_tracking/line_model.h"
 
 typedef struct {
     int16_t max_forward;

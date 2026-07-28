@@ -14,13 +14,15 @@ class ApplicationScheduleTests(unittest.TestCase):
         cls.entry = (PROJECT / "empty.c").read_text(encoding="utf-8")
         cls.syscfg = (PROJECT / "empty.syscfg").read_text(encoding="utf-8")
 
-    def test_four_freertos_tasks_are_the_only_active_scheduler(self):
+    def test_native_poll_scheduler_is_the_only_active_scheduler(self):
+        self.assertIn("AppTasks_Init", self.tasks)
+        self.assertIn("AppTasks_Poll", self.tasks)
+        self.assertIn("APP_SENSOR_PERIOD_MS (2U)", self.tasks)
+        self.assertIn("APP_SAFETY_PERIOD_MS (1U)", self.tasks)
+        self.assertIn("APP_DISPLAY_PERIOD_MS (100U)", self.tasks)
         for name in ("SensorTask", "ControlTask", "SafetyTask", "DisplayTask"):
-            self.assertIn(name, self.tasks)
-        self.assertIn("vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(2U))", self.tasks)
-        self.assertIn("vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(1U))", self.tasks)
-        self.assertIn("vTaskDelay(pdMS_TO_TICKS(100U))", self.tasks)
-        self.assertNotIn("static AppTask app_tasks", self.tasks)
+            self.assertNotIn(name, self.tasks)
+        self.assertNotIn("vTaskDelay", self.tasks)
         self.assertNotIn("AppScheduler_", self.tasks + self.entry + self.main)
 
     def test_microsecond_services_use_32_bit_timebase(self):
@@ -34,9 +36,9 @@ class ApplicationScheduleTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertNotIn("Motor_Safety_Arm", self.main)
-        self.assertIn("AppTasks_Create()", self.entry)
-        self.assertIn("vTaskStartScheduler();", self.entry)
-        self.assertIn("Motor_Safety_Disarm();", self.entry)
+        self.assertIn("AppTasks_Init();", self.entry)
+        self.assertIn("AppTasks_Poll(Get_Time());", self.entry)
+        self.assertNotIn("vTaskStartScheduler();", self.entry)
         self.assertIn("Motor_Safety_Arm", safety_runtime)
 
     def test_runtime_diagnostics_are_boot_trace_and_oled_log(self):

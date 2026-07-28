@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import re
 import unittest
 
@@ -79,10 +79,10 @@ class LineEstimatorContract(unittest.TestCase):
             self.assertAlmostEqual(value + mirror, 0.0)
 
     def test_estimator_contract_has_trend_confidence_and_events(self):
-        header = (ROOT / "modules/line_tracking/line_estimator.h").read_text(
+        header = (ROOT / "modules/optional/competition/line_tracking/line_estimator.h").read_text(
             encoding="utf-8"
         )
-        source = (ROOT / "modules/line_tracking/line_estimator.c").read_text(
+        source = (ROOT / "modules/optional/competition/line_tracking/line_estimator.c").read_text(
             encoding="utf-8"
         )
         for token in (
@@ -103,7 +103,7 @@ class LineEstimatorContract(unittest.TestCase):
         self.assertNotIn("Motion_Car_Control", source)
 
     def test_empty_and_wide_patterns_have_explicit_events(self):
-        source = (ROOT / "modules/line_tracking/line_estimator.c").read_text(
+        source = (ROOT / "modules/optional/competition/line_tracking/line_estimator.c").read_text(
             encoding="utf-8"
         )
         self.assertRegex(source, r"active_count\s*==\s*0U")
@@ -111,10 +111,10 @@ class LineEstimatorContract(unittest.TestCase):
         self.assertIn("LINE_EVENT_WIDE_BLACK", source)
 
     def test_estimator_consumes_stable_line_features(self):
-        header = (ROOT / "modules/line_tracking/line_estimator.h").read_text(
+        header = (ROOT / "modules/optional/competition/line_tracking/line_estimator.h").read_text(
             encoding="utf-8"
         )
-        source = (ROOT / "modules/line_tracking/line_estimator.c").read_text(
+        source = (ROOT / "modules/optional/competition/line_tracking/line_estimator.c").read_text(
             encoding="utf-8"
         )
         self.assertIn("const LineFeatures *features", header)
@@ -141,13 +141,13 @@ class LineControllerContract(unittest.TestCase):
         self.assertEqual(straight_target(frames)[-2:], [400, 330])
 
     def test_straight_boost_and_early_braking_parameters(self):
-        header = (ROOT / "modules/line_tracking/line_controller.h").read_text(
+        header = (ROOT / "modules/optional/competition/line_tracking/line_controller.h").read_text(
             encoding="utf-8"
         )
-        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+        source = (ROOT / "modules/optional/competition/line_tracking/line_controller.c").read_text(
             encoding="utf-8"
         )
-        config = (ROOT / "config/line_control_config.h").read_text(
+        config = (ROOT / "modules/optional/competition/line_tracking/line_control_config.h").read_text(
             encoding="utf-8"
         )
         for token in (
@@ -182,7 +182,7 @@ class LineControllerContract(unittest.TestCase):
             self.assertIn(token, source)
 
     def test_straight_boost_resets_on_uncertain_or_curve_frame(self):
-        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+        source = (ROOT / "modules/optional/competition/line_tracking/line_controller.c").read_text(
             encoding="utf-8"
         )
         self.assertRegex(
@@ -203,7 +203,7 @@ class LineControllerContract(unittest.TestCase):
         )
 
     def test_all_curve_targets_stay_inside_competition_limit(self):
-        config = (ROOT / "config/line_control_config.h").read_text(
+        config = (ROOT / "modules/optional/competition/line_tracking/line_control_config.h").read_text(
             encoding="utf-8"
         )
         values = [
@@ -218,13 +218,13 @@ class LineControllerContract(unittest.TestCase):
         self.assertTrue(all(abs(value) <= 450 for value in values))
 
     def test_controller_accepts_and_handles_continuous_curve_trends(self):
-        header = (ROOT / "modules/line_tracking/line_controller.h").read_text(
+        header = (ROOT / "modules/optional/competition/line_tracking/line_controller.h").read_text(
             encoding="utf-8"
         )
-        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+        source = (ROOT / "modules/optional/competition/line_tracking/line_controller.c").read_text(
             encoding="utf-8"
         )
-        config = (ROOT / "config/line_control_config.h").read_text(
+        config = (ROOT / "modules/optional/competition/line_tracking/line_control_config.h").read_text(
             encoding="utf-8"
         )
         self.assertRegex(
@@ -267,10 +267,10 @@ class LineControllerContract(unittest.TestCase):
             self.assertGreaterEqual(base_speed - correction_limit, 0)
 
     def test_hard_corner_has_separate_low_speed_pivot_commands(self):
-        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+        source = (ROOT / "modules/optional/competition/line_tracking/line_controller.c").read_text(
             encoding="utf-8"
         )
-        config = (ROOT / "config/line_control_config.h").read_text(
+        config = (ROOT / "modules/optional/competition/line_tracking/line_control_config.h").read_text(
             encoding="utf-8"
         )
         recovery = (ROOT / "modules/line_tracking/recovery/line_recovery.c").read_text(
@@ -283,23 +283,23 @@ class LineControllerContract(unittest.TestCase):
         self.assertNotIn("if (left < 0 || right < 0)", recovery)
 
     def test_single_sensor_turn_keeps_both_wheels_within_command_limit(self):
-        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+        source = (ROOT / "modules/optional/competition/line_tracking/line_controller.c").read_text(
             encoding="utf-8"
         )
         self.assertIn("absolute_int16(turn)", source)
         self.assertIn("control_config.max_forward - turn_magnitude", source)
 
     def test_predictive_controller_has_speed_planning_and_slew_limits(self):
-        header = (ROOT / "modules/line_tracking/line_controller.h").read_text(
+        header = (ROOT / "modules/optional/competition/line_tracking/line_controller.h").read_text(
             encoding="utf-8"
         )
         model = (ROOT / "modules/line_tracking/line_model.h").read_text(
             encoding="utf-8"
         )
-        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+        source = (ROOT / "modules/optional/competition/line_tracking/line_controller.c").read_text(
             encoding="utf-8"
         )
-        config = (ROOT / "config/line_control_config.h").read_text(
+        config = (ROOT / "modules/optional/competition/line_tracking/line_control_config.h").read_text(
             encoding="utf-8"
         )
         for token in (
@@ -343,7 +343,7 @@ class LineControllerContract(unittest.TestCase):
         self.assertIn("LineController_Init", header + source)
 
     def test_controller_fails_closed_on_lost_or_invalid_estimate(self):
-        source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
+        source = (ROOT / "modules/optional/competition/line_tracking/line_controller.c").read_text(
             encoding="utf-8"
         )
         self.assertIn("LINE_EVENT_LOST", source)
@@ -352,3 +352,4 @@ class LineControllerContract(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

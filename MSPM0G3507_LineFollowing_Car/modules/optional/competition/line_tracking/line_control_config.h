@@ -1,7 +1,7 @@
 #ifndef LINE_CONTROL_CONFIG_H
 #define LINE_CONTROL_CONFIG_H
 
-#include "../../modules/line_tracking/line_controller.h"
+#include "line_controller.h"
 
 /* Command scale is -1000..1000; competition ceiling is 45%. */
 #define LINE_MAX_FORWARD (400)

@@ -230,7 +230,6 @@ void Motor_Safety_Init(void)
     clear_requested_speed();
     reset_direction_interlock();
     LED_OFF();
-    apply_speed(0, 0, 0, 0);
 }
 
 void Motor_Safety_Arm(void)

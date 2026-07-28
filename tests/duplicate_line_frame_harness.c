@@ -2,8 +2,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "modules/line_tracking/line_controller.h"
-#include "modules/line_tracking/line_trend_detector.h"
+#include "modules/optional/competition/line_tracking/line_controller.h"
+#include "modules/optional/competition/line_tracking/line_trend_detector.h"
 
 static LineEstimate estimate(uint32_t sequence, float error, LineEvent event)
 {

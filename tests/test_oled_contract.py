@@ -67,7 +67,7 @@ class OledContract(unittest.TestCase):
         )
 
     def test_display_task_observes_and_renders_runtime_log_at_100ms(self):
-        self.assertIn("pdMS_TO_TICKS(100U)", self.tasks)
+        self.assertIn("APP_DISPLAY_PERIOD_MS (100U)", self.tasks)
         self.assertIn("RuntimeObserver_Update", self.tasks)
         self.assertIn("RuntimeLog_Draw", self.observer)
         self.assertNotIn("Dashboard_Render", self.tasks)
@@ -82,7 +82,8 @@ class OledContract(unittest.TestCase):
 
     def test_oled_failure_never_stops_the_motors(self):
         display_body = re.search(
-            r"static void DisplayTask\(void \*argument\)\s*\{([\s\S]*?)\n\}",
+            r"if \(\(uint32_t\)\(now_ms - last_display_ms\) >= "
+            r"APP_DISPLAY_PERIOD_MS\) \{([\s\S]*?)\n    \}",
             self.tasks,
         )
         self.assertIsNotNone(display_body)

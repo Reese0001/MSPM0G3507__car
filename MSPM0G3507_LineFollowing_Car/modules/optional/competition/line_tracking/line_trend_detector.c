@@ -1,6 +1,6 @@
 #include "line_trend_detector.h"
 
-#include "line_tracking_config.h"
+#include "../../../line_tracking/line_tracking_config.h"
 #include "line_trend_config.h"
 
 static int8_t trend_direction;

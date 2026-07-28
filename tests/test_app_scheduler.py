@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import os
 import subprocess
 import tempfile
@@ -59,7 +59,7 @@ class AppRuntimePipelineContract(unittest.TestCase):
         self.assertNotIn("LineStartGate_Update", self.safety + self.tasks)
 
     def test_integration_keeps_confirmed_pd_and_speed_limits(self):
-        config = (ROOT / "config/line_control_config.h").read_text(encoding="utf-8")
+        config = (ROOT / "modules/optional/competition/line_tracking/line_control_config.h").read_text(encoding="utf-8")
         safety = (ROOT / "config/safety_config.h").read_text(encoding="utf-8")
         self.assertIn("LINE_CONTROL_KP (28.0f)", config)
         self.assertIn("LINE_MAX_FORWARD (400)", config)
@@ -121,3 +121,4 @@ class RecoveryReachabilityRuntime(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

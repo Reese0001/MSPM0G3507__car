@@ -1,5 +1,5 @@
-#ifndef APPLICATION_FREERTOS_APP_MAILBOX_H
-#define APPLICATION_FREERTOS_APP_MAILBOX_H
+#ifndef APP_MAILBOX_H
+#define APP_MAILBOX_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -8,12 +8,7 @@
 #include "../../modules/line_tracking/decoder/line_position.h"
 #include "../../modules/mpu6050/mpu6050.h"
 
-/*
- * Latest-value mailboxes between the static FreeRTOS tasks. Each slot
- * holds exactly one fixed-size snapshot; publish overwrites, read
- * copies. All copies happen inside short critical sections so a
- * higher-priority reader can never observe a torn struct.
- */
+/* Latest-value slots used by the cooperative app loop. */
 
 typedef struct {
     LinePositionResult position;

@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import unittest
 
 
@@ -74,7 +74,7 @@ class LineTrendDetectorContract(unittest.TestCase):
         self.assertEqual(classify_trace(direct_wide), "normal")
 
     def test_three_stable_frames_clear_old_corner_evidence(self):
-        source = (ROOT / "modules/line_tracking/line_trend_detector.c").read_text(
+        source = (ROOT / "modules/optional/competition/line_tracking/line_trend_detector.c").read_text(
             encoding="utf-8"
         )
         self.assertIn("stable_reacquire_frames", source)
@@ -94,8 +94,8 @@ class LineTrendDetectorContract(unittest.TestCase):
         self.assertNotIn("AppScheduler_ResetLineControlHistory", active)
 
     def test_public_types_and_thresholds_exist(self):
-        header_path = ROOT / "modules/line_tracking/line_trend_detector.h"
-        config_path = ROOT / "modules/line_tracking/line_trend_config.h"
+        header_path = ROOT / "modules/optional/competition/line_tracking/line_trend_detector.h"
+        config_path = ROOT / "modules/optional/competition/line_tracking/line_trend_config.h"
         self.assertTrue(header_path.exists())
         self.assertTrue(config_path.exists())
         header = header_path.read_text(encoding="utf-8")
@@ -126,7 +126,7 @@ class LineTrendDetectorContract(unittest.TestCase):
             self.assertIn(token, config)
 
     def test_detector_tracks_sequence_not_only_last_sample(self):
-        source = (ROOT / "modules/line_tracking/line_trend_detector.c").read_text(
+        source = (ROOT / "modules/optional/competition/line_tracking/line_trend_detector.c").read_text(
             encoding="utf-8"
         )
         for token in (
@@ -140,7 +140,7 @@ class LineTrendDetectorContract(unittest.TestCase):
         self.assertNotIn("Contrl_Speed", source)
 
     def test_low_confidence_completion_events_are_not_rejected(self):
-        source = (ROOT / "modules/line_tracking/line_trend_detector.c").read_text(
+        source = (ROOT / "modules/optional/competition/line_tracking/line_trend_detector.c").read_text(
             encoding="utf-8"
         )
         self.assertIn("completion_event", source)
@@ -151,14 +151,14 @@ class LineTrendDetectorContract(unittest.TestCase):
         )
 
     def test_wide_features_are_owned_by_the_event_classifier(self):
-        trend = (ROOT / "modules/line_tracking/line_trend_detector.c").read_text(
+        trend = (ROOT / "modules/optional/competition/line_tracking/line_trend_detector.c").read_text(
             encoding="utf-8"
         )
         classifier = (
-            ROOT / "modules/line_tracking/line_event_classifier.c"
+            ROOT / "modules/optional/competition/line_tracking/line_event_classifier.c"
         ).read_text(encoding="utf-8")
         header = (
-            ROOT / "modules/line_tracking/line_event_classifier.h"
+            ROOT / "modules/optional/competition/line_tracking/line_event_classifier.h"
         ).read_text(encoding="utf-8")
         self.assertNotIn("LINE_TREND_RIGHT_ANGLE", trend)
         self.assertIn("LineEventClassifier_Update", header)
@@ -192,3 +192,4 @@ class LineTrendDetectorContract(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

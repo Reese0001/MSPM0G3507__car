@@ -1,4 +1,4 @@
-import os
+﻿import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -213,8 +213,9 @@ int main(void)
             f'call "{devcmd}" -arch=x64 -host_arch=x64 >nul\n'
             "if errorlevel 1 exit /b 1\n"
             "cl.exe /nologo /std:c11 /utf-8 /W4 /WX "
+            f'/I"{ROOT / "modules/optional/competition/line_tracking"}" '
             f'/I"{ROOT / "modules/line_tracking"}" '
-            f'"{ROOT / "modules/line_tracking/line_event_classifier.c"}" '
+            f'"{ROOT / "modules/optional/competition/line_tracking/line_event_classifier.c"}" '
             f'"{harness}" /Fe"{executable}"\n',
             encoding="utf-8",
         )
@@ -259,7 +260,7 @@ int main(void)
 
     def test_public_events_and_reset_exist(self):
         header = (
-            ROOT / "modules/line_tracking/line_event_classifier.h"
+            ROOT / "modules/optional/competition/line_tracking/line_event_classifier.h"
         ).read_text(encoding="utf-8")
         for token in (
             "LINE_PATH_WIDE_PENDING",
@@ -277,3 +278,4 @@ int main(void)
 
 if __name__ == "__main__":
     unittest.main()
+

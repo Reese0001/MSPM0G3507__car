@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import os
 import subprocess
 import tempfile
@@ -16,7 +16,7 @@ class LineControllerRuntime(unittest.TestCase):
             / "Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat"
         )
         harness = ROOT / "tests/line_controller_harness.c"
-        source = PROJECT / "modules/line_tracking/line_controller.c"
+        source = PROJECT / "modules/optional/competition/line_tracking/line_controller.c"
 
         self.assertTrue(vsdevcmd.exists(), "Visual Studio host toolchain missing")
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -43,3 +43,4 @@ class LineControllerRuntime(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

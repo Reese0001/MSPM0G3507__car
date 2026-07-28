@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import unittest
 
 
@@ -44,7 +44,7 @@ class LineFollowingBurnProfileContract(unittest.TestCase):
         self.assertIn("LED_HeartbeatService(now_ms)", safety)
 
     def test_tracking_timing_matches_pre_stop_go_baseline(self):
-        config = (ROOT / "config/line_control_config.h").read_text(
+        config = (ROOT / "modules/optional/competition/line_tracking/line_control_config.h").read_text(
             encoding="utf-8"
         )
         tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
@@ -86,3 +86,4 @@ class LineFollowingBurnProfileContract(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

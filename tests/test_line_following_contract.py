@@ -11,13 +11,13 @@ def read(relative: str) -> str:
 
 
 class LineFollowingContractTests(unittest.TestCase):
-    def test_main_starts_freertos_tasks_with_motors_disarmed(self):
+    def test_main_starts_native_poll_loop_with_motors_disarmed(self):
         main = read("empty.c")
         boot = read("app/boot/app_boot.c")
         tasks = read("app/tasks/app_tasks.c")
-        self.assertIn("AppTasks_Create()", main)
-        self.assertIn("vTaskStartScheduler();", main)
-        self.assertIn("Motor_Safety_Disarm();", main)
+        self.assertIn("AppTasks_Init();", main)
+        self.assertIn("AppTasks_Poll(Get_Time());", main)
+        self.assertNotIn("vTaskStartScheduler();", main)
         self.assertNotIn("AppScheduler_", main + boot + tasks)
         self.assertNotIn("Motor_Safety_Arm()", boot)
         self.assertIn("SafetyRuntime_Step", tasks)

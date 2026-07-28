@@ -28,8 +28,9 @@ class ModularArchitectureContract(unittest.TestCase):
     def test_main_delegates_to_boot_and_tasks(self):
         main = (ROOT / "empty.c").read_text(encoding="utf-8")
         self.assertIn("AppBoot_Init();", main)
-        self.assertIn("AppTasks_Create()", main)
-        self.assertIn("vTaskStartScheduler();", main)
+        self.assertIn("AppTasks_Init();", main)
+        self.assertIn("AppTasks_Poll(Get_Time());", main)
+        self.assertNotIn("vTaskStartScheduler();", main)
         self.assertNotIn("App_Main_Init();", main)
         self.assertNotIn("delay_ms(", main)
 

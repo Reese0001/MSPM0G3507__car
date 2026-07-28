@@ -1,7 +1,7 @@
 #include "line_estimator.h"
 
 #include "line_feature_config.h"
-#include "line_tracking_config.h"
+#include "../../../line_tracking/line_tracking_config.h"
 
 static LineEstimate latest_estimate = {0};
 

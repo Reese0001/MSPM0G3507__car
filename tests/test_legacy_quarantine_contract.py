@@ -25,6 +25,19 @@ class LegacyQuarantineContract(unittest.TestCase):
             "application/motion_primitives.h",
             "application/legacy_questions/questions.c",
             "application/legacy_questions/questions.h",
+            "modules/line_tracking/line_controller.c",
+            "modules/line_tracking/line_controller.h",
+            "modules/line_tracking/line_estimator.c",
+            "modules/line_tracking/line_estimator.h",
+            "modules/line_tracking/line_event_classifier.c",
+            "modules/line_tracking/line_event_classifier.h",
+            "modules/line_tracking/line_features.c",
+            "modules/line_tracking/line_features.h",
+            "modules/line_tracking/line_trend_detector.c",
+            "modules/line_tracking/line_trend_detector.h",
+            "modules/line_tracking/decoder/line_start_gate.c",
+            "modules/line_tracking/decoder/line_start_gate.h",
+            "config/line_control_config.h",
         ):
             self.assertFalse((ROOT / rel).exists(), rel)
 
@@ -33,6 +46,13 @@ class LegacyQuarantineContract(unittest.TestCase):
             "modules/optional/competition/corner_maneuver.c",
             "modules/optional/competition/motion_primitives.c",
             "modules/optional/competition/questions/questions.c",
+            "modules/optional/competition/line_tracking/line_controller.c",
+            "modules/optional/competition/line_tracking/line_estimator.c",
+            "modules/optional/competition/line_tracking/line_event_classifier.c",
+            "modules/optional/competition/line_tracking/line_features.c",
+            "modules/optional/competition/line_tracking/line_trend_detector.c",
+            "modules/optional/competition/line_tracking/decoder/line_start_gate.c",
+            "modules/optional/competition/line_tracking/line_control_config.h",
         ):
             self.assertTrue((ROOT / rel).exists(), rel)
 

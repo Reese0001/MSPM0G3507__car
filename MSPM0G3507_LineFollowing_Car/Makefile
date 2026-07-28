@@ -31,7 +31,6 @@ NAME       := MSPM0G3507_LineFollowing_Car
 BUILD_DIR  := ../build/cli/MSPM0G3507_LineFollowing_Car
 OBJ_DIR    := $(BUILD_DIR)/obj
 FIRMWARE_DIR := ../dist/firmware
-KERNEL_LIB := ../freertos_kernel/Debug/freertos_kernel_ticlang.lib
 
 TARGET  := $(BUILD_DIR)/$(NAME).out
 MAP     := $(BUILD_DIR)/$(NAME).map
@@ -45,11 +44,8 @@ GEN_OPT     := $(BUILD_DIR)/device.opt
 
 STARTUP_SRC := $(SDK_DIR)/source/ti/devices/msp/m0p/startup_system_files/ticlang/startup_mspm0g350x_ticlang.c
 
-FREERTOS_INC  := $(SDK_DIR)/kernel/freertos/Source/include
-FREERTOS_PORT := $(SDK_DIR)/kernel/freertos/Source/portable/TI_ARM_CLANG/ARM_CM0
-
 # Source set mirrors the .cproject sourceEntries exclusion list. Firmware has
-# one active runtime entry: empty.c -> app/tasks/app_tasks.c. Older application
+# one active native runtime entry: empty.c -> app/tasks/app_tasks.c. Older application
 # schedulers and optional hardware modules stay in the tree for reference/tests
 # but are not linked into the car image.
 SOURCES := \
@@ -94,10 +90,6 @@ OBJECTS := $(foreach s,$(SOURCES),$(call mangle,$(s))) \
     $(OBJ_DIR)/ti_msp_dl_config.o \
     $(OBJ_DIR)/startup_mspm0g350x_ticlang.o
 
-STARTUP_TRACE_ASM := modules/diagnostics/freertos_startup_wrappers.S
-STARTUP_TRACE_OBJ := $(OBJ_DIR)/modules_diagnostics_freertos_startup_wrappers.o
-OBJECTS += $(STARTUP_TRACE_OBJ)
-
 CPPFLAGS := \
     -D__MSPM0G3507__ \
     -D__USE_SYSCONFIG__ \
@@ -138,9 +130,7 @@ CPPFLAGS := \
     -Imodules/display/ssd1306 \
     -Imodules/time \
     -I$(SDK_DIR)/source \
-    -I$(SDK_DIR)/source/third_party/CMSIS/Core/Include \
-    -I$(FREERTOS_INC) \
-    -I$(FREERTOS_PORT)
+    -I$(SDK_DIR)/source/third_party/CMSIS/Core/Include
 
 CFLAGS := -march=thumbv6m -mcpu=cortex-m0plus -mfloat-abi=soft -mlittle-endian \
     -mthumb -O2 -gdwarf-3 -Wall -MMD -MP
@@ -197,11 +187,8 @@ $(OBJ_DIR)/ti_msp_dl_config.o: $(GEN_CONFIG) | $(OBJ_DIR)
 $(OBJ_DIR)/startup_mspm0g350x_ticlang.o: $(STARTUP_SRC) $(GEN_CONFIG) | $(OBJ_DIR)
 	$(TIARMCLANG) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
 
-$(STARTUP_TRACE_OBJ): $(STARTUP_TRACE_ASM) $(GEN_CONFIG) | $(OBJ_DIR)
-	$(TIARMCLANG) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
-
-$(TARGET): $(OBJECTS) $(GEN_LINKER) $(GEN_GENLIBS) $(KERNEL_LIB)
-	$(TIARMCLANG) $(LDFLAGS) -o $@ $(OBJECTS) $(KERNEL_LIB) $(LDLIBS)
+$(TARGET): $(OBJECTS) $(GEN_LINKER) $(GEN_GENLIBS)
+	$(TIARMCLANG) $(LDFLAGS) -o $@ $(OBJECTS) $(LDLIBS)
 
 $(HEX): $(TARGET) | $(FIRMWARE_DIR)
 	"$(TIARMOBJCOPY)" -O ihex "$<" "$@"

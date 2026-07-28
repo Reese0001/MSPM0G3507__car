@@ -12,7 +12,7 @@
                     <extension id="com.ti.ccs.errorparser.CompilerErrorParser_TI" point="com.ti.ccs.project.ErrorParser"/>
                 </extensions>
                 <sourceEntries>
-<entry excluding="Build_LineFollowing|Debug|application|bsp/bsp_k230_uart.c|bsp/bsp_ultrasonic.c|bsp/debug_uart.c|modules/line_tracking/decoder/line_start_gate.c|modules/line_tracking/line_controller.c|modules/line_tracking/line_estimator.c|modules/line_tracking/line_event_classifier.c|modules/line_tracking/line_features.c|modules/line_tracking/line_trend_detector.c|modules/optional/competition|modules/optional/k230|modules/optional/legacy|modules/optional/ultrasonic|modules/optional/ybimu" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry excluding="Build_LineFollowing|Debug|application|bsp/bsp_k230_uart.c|bsp/bsp_ultrasonic.c|bsp/debug_uart.c|modules/diagnostics/freertos_startup_wrappers.S|modules/line_tracking/decoder/line_start_gate.c|modules/line_tracking/line_controller.c|modules/line_tracking/line_estimator.c|modules/line_tracking/line_event_classifier.c|modules/line_tracking/line_features.c|modules/line_tracking/line_trend_detector.c|modules/optional/competition|modules/optional/k230|modules/optional/legacy|modules/optional/ultrasonic|modules/optional/ybimu" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                 </sourceEntries>
             </storageModule>
             <storageModule moduleId="cdtBuildSystem" version="4.0.0">
@@ -76,8 +76,6 @@
                                     <listOptionValue value="${PROJECT_ROOT}/modules/display/ssd1306"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/time"/>
                                     <listOptionValue value="${PROJECT_ROOT}/bsp"/>
-                                    <listOptionValue value="${COM_TI_MSPM0_SDK_INSTALL_DIR}/kernel/freertos/Source/include"/>
-                                    <listOptionValue value="${COM_TI_MSPM0_SDK_INSTALL_DIR}/kernel/freertos/Source/portable/TI_ARM_CLANG/ARM_CM0"/>
                                 </option>
                                 <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.compilerID.DEFINE.400916244" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.compilerID.DEFINE" valueType="definedSymbols">
                                     <listOptionValue value="${COM_TI_MSPM0_SDK_SYMBOLS}"/>
@@ -107,14 +105,12 @@
                                     <listOptionValue value="${PROJECT_ROOT}"/>
                                     <listOptionValue value="${PROJECT_BUILD_DIR}/syscfg"/>
                                     <listOptionValue value="${CG_TOOL_ROOT}/lib"/>
-                                    <listOptionValue value="${WORKSPACE_LOC}/freertos_kernel_ticlang/Debug"/>
                                 </option>
                                 <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.linkerID.LIBRARY.530771839" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.linkerID.LIBRARY" valueType="libs">
                                     <listOptionValue value="${COM_TI_MSPM0_SDK_LIBRARIES}"/>
                                     <listOptionValue value="${SYSCONFIG_TOOL_LIBRARIES}"/>
                                     <listOptionValue value="device.cmd.genlibs"/>
                                     <listOptionValue value="libc.a"/>
-                                    <listOptionValue value="freertos_kernel_ticlang.lib"/>
                                 </option>
                             </tool>
                             <tool id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex.2074646574" name="Arm Hex Utility" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex"/>

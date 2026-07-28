@@ -1,8 +1,9 @@
-#ifndef APPLICATION_FREERTOS_APP_TASKS_H
-#define APPLICATION_FREERTOS_APP_TASKS_H
+#ifndef APP_TASKS_H
+#define APP_TASKS_H
 
-#include <stdbool.h>
+#include <stdint.h>
 
-bool AppTasks_Create(void);
+void AppTasks_Init(void);
+void AppTasks_Poll(uint32_t now_ms);
 
 #endif

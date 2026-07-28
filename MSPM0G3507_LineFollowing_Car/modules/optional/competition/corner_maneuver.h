@@ -5,9 +5,9 @@
 #include <stdint.h>
 
 #include "../../../shared/motion_request.h"
-#include "../../line_tracking/line_controller.h"
-#include "../../line_tracking/line_event_classifier.h"
-#include "../../line_tracking/line_features.h"
+#include "line_tracking/line_controller.h"
+#include "line_tracking/line_event_classifier.h"
+#include "line_tracking/line_features.h"
 
 typedef enum {
     CORNER_MANEUVER_FOLLOW = 0,

@@ -94,6 +94,25 @@ static void init_and_arm(void)
     Motor_Safety_Arm();
 }
 
+static int init_does_not_latch_uart_fault_before_driver_config(void)
+{
+    MotorSafetyDiagnostics diagnostics;
+
+    emergency_stop_count = 0U;
+    zero_frame_count = 0U;
+    critical_depth = 0U;
+    inject_watchdog_tick = 0U;
+    watchdog_tick_injected = 0U;
+    fail_next_frame = 1U;
+
+    Motor_Safety_Init();
+    Motor_Safety_GetDiagnostics(&diagnostics);
+    CHECK(Motor_Safety_IsFaultLatched() == 0U);
+    CHECK(diagnostics.fault_reason == MOTOR_SAFETY_FAULT_NONE);
+    CHECK(zero_frame_count == 0U);
+    return 0;
+}
+
 static int establish_sign(int command)
 {
     Motor_Safety_RequestSpeed(0, command, 0, command);
@@ -340,6 +359,9 @@ static int failed_uart_frame_latches_fault_and_keeps_zero_output(void)
 
 int main(void)
 {
+    if (init_does_not_latch_uart_fault_before_driver_config() != 0) {
+        return 1;
+    }
     if (diagnostics_snapshot_reports_safety_state() != 0) {
         return 1;
     }

@@ -19,8 +19,12 @@
 static uint32_t sensor_alive_ms;
 static uint32_t last_frame_ms;
 static bool motor_armed;
+static bool arm_waiting_for_config;
+static bool arm_blocked_by_fault;
 static bool sensor_heartbeat_missing;
 static uint8_t latched_fault;
+static MotionRequest last_request;
+static SafetyDecision last_decision;
 
 static void StopRequest(uint32_t now_ms, MotionRequest *request)
 {
@@ -94,11 +98,16 @@ static MotionRequest BuildRequest(uint32_t now_ms)
 
 static void ArmWhenReady(void)
 {
-    if (!motor_armed && BootTrace_MotionTasksOnline() &&
-        AppBoot_IsMotorConfigured() &&
-        Motor_Safety_IsFaultLatched() == 0U) {
+    bool configured = AppBoot_IsMotorConfigured();
+    bool faulted = Motor_Safety_IsFaultLatched() != 0U;
+
+    arm_waiting_for_config = !motor_armed && !configured;
+    arm_blocked_by_fault = !motor_armed && faulted;
+    if (!motor_armed && configured && !faulted) {
         Motor_Safety_Arm();
         motor_armed = true;
+        arm_waiting_for_config = false;
+        arm_blocked_by_fault = false;
     }
 }
 
@@ -109,8 +118,16 @@ void SafetyRuntime_Init(uint32_t now_ms)
     sensor_alive_ms = now_ms;
     last_frame_ms = 0U;
     motor_armed = false;
+    arm_waiting_for_config = false;
+    arm_blocked_by_fault = false;
     sensor_heartbeat_missing = false;
     latched_fault = APP_FAULT_NONE;
+    StopRequest(now_ms, &last_request);
+    last_decision.approved = false;
+    last_decision.left_speed = 0;
+    last_decision.right_speed = 0;
+    last_decision.reason = SAFETY_REASON_BOOT_GATE;
+    last_decision.state = SAFETY_BOOT_SAFE;
 }
 
 void SafetyRuntime_OnSensorFrame(uint32_t now_ms)
@@ -132,6 +149,8 @@ void SafetyRuntime_Step(uint32_t now_ms)
     request = BuildRequest(now_ms);
 
     (void)SafetySupervisor_Step(&inputs, &request, now_ms, &decision);
+    last_request = request;
+    last_decision = decision;
     MotorAdapter_Apply(&decision);
 
     if ((uint32_t)(now_ms - last_frame_ms) >= MOTOR_UART_MIN_PERIOD_MS) {
@@ -146,4 +165,17 @@ void SafetyRuntime_Step(uint32_t now_ms)
 bool SafetyRuntime_IsSensorHeartbeatMissing(void)
 {
     return sensor_heartbeat_missing;
+}
+
+void SafetyRuntime_GetDiagnostics(SafetyRuntimeDiagnostics *out)
+{
+    if (out == 0) {
+        return;
+    }
+    out->last_request = last_request;
+    out->last_decision = last_decision;
+    out->motor_armed = motor_armed;
+    out->arm_waiting_for_config = arm_waiting_for_config;
+    out->arm_blocked_by_fault = arm_blocked_by_fault;
+    out->sensor_heartbeat_missing = sensor_heartbeat_missing;
 }

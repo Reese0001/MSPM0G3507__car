@@ -1,6 +1,6 @@
 #include <assert.h>
 
-#include "modules/line_tracking/decoder/line_start_gate.h"
+#include "modules/optional/competition/line_tracking/decoder/line_start_gate.h"
 
 int main(void)
 {

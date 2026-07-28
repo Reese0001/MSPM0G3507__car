@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import os
 import subprocess
 import tempfile
@@ -17,8 +17,8 @@ class DuplicateLineFrameRuntime(unittest.TestCase):
         )
         harness = ROOT / "tests/duplicate_line_frame_harness.c"
         sources = (
-            PROJECT / "modules/line_tracking/line_trend_detector.c",
-            PROJECT / "modules/line_tracking/line_controller.c",
+            PROJECT / "modules/optional/competition/line_tracking/line_trend_detector.c",
+            PROJECT / "modules/optional/competition/line_tracking/line_controller.c",
         )
 
         self.assertTrue(vsdevcmd.exists(), "Visual Studio host toolchain missing")
@@ -47,3 +47,4 @@ class DuplicateLineFrameRuntime(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

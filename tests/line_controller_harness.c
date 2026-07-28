@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "modules/line_tracking/line_controller.h"
+#include "modules/optional/competition/line_tracking/line_controller.h"
 
 static LineEstimate left_curve(void)
 {
