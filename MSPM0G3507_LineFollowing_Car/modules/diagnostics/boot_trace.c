@@ -53,7 +53,7 @@ void BootTrace_TaskOnline(uint8_t bit)
     uint32_t primask = __get_PRIMASK();
 
     __disable_irq();
-    task_mask = (uint8_t)(task_mask | bit);
+    task_mask = (uint8_t)(task_mask | (bit & BOOT_TASK_ALL));
     if (task_mask == BOOT_TASK_ALL) {
         stage = BOOT_TRACE_ALL_TASKS;
     }
