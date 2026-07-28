@@ -7,10 +7,10 @@ PROJECT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 
 class BootTimebaseContract(unittest.TestCase):
     def test_microsecond_counter_starts_before_motor_configuration(self):
-        timer = (PROJECT / "bsp/time/timer.c").read_text(
+        timer = (PROJECT / "modules/time/timer.c").read_text(
             encoding="utf-8", errors="ignore"
         )
-        app = (PROJECT / "application/app_main.c").read_text(
+        app = (PROJECT / "app/boot/app_boot.c").read_text(
             encoding="utf-8", errors="ignore"
         )
 

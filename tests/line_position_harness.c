@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "modules/line_tracking/line_position.h"
+#include "modules/line_tracking/decoder/line_position.h"
 
 #define CHECK(expr)                                                     \
     do {                                                                \

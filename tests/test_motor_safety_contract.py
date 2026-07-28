@@ -13,20 +13,20 @@ def read(relative_path: str) -> str:
 
 class MotorSafetyContractTests(unittest.TestCase):
     def test_watchdog_latch_marks_system_stall_on_d1(self):
-        source = read("modules/motor/motor_safety.c")
+        source = read("modules/motor/safety/motor_safety.c")
         init = source[source.index("void Motor_Safety_Init"):]
         init = init[:init.index("void Motor_Safety_Arm")]
         tick = source[source.index("void Motor_Safety_Tick1ms"):]
         tick = tick[:tick.index("uint8_t Motor_Safety_IsFaultLatched")]
-        self.assertIn('#include "led.h"', source)
+        self.assertIn('#include "../../led/led.h"', source)
         self.assertIn("LED_OFF();", init)
         self.assertIn("LED_ON();", tick)
         self.assertLess(tick.index("MOTOR_SAFETY_FAULT_LATCHED"),
                         tick.index("LED_ON();"))
 
     def test_safety_module_and_limits_exist(self):
-        header = read("modules/motor/motor_safety.h")
-        source = read("modules/motor/motor_safety.c")
+        header = read("modules/motor/safety/motor_safety.h")
+        source = read("modules/motor/safety/motor_safety.c")
         combined = header + source
         for value in ("1000", "10", "30", "200", "100"):
             self.assertIn(value, combined)
@@ -41,8 +41,8 @@ class MotorSafetyContractTests(unittest.TestCase):
 
     def test_main_initializes_timer_and_uses_l520(self):
         main = read("empty.c")
-        app_main = read("application/app_main.c")
-        self.assertIn("App_Main_Init();", main)
+        app_main = read("app/boot/app_boot.c")
+        self.assertIn("AppBoot_Init();", main)
         self.assertIn("AppTasks_Create()", main)
         self.assertIn("vTaskStartScheduler();", main)
         self.assertIn("Motor_Safety_Disarm();", main)
@@ -53,9 +53,9 @@ class MotorSafetyContractTests(unittest.TestCase):
         self.assertNotIn("Motor_Safety_Service()", app_main)
 
     def test_timer_starts_irq_and_ticks_watchdog(self):
-        timer_c = read("bsp/time/timer.c")
-        timer_h = read("bsp/time/timer.h")
-        app_main = read("application/app_main.c")
+        timer_c = read("modules/time/timer.c")
+        timer_h = read("modules/time/timer.h")
+        app_main = read("app/boot/app_boot.c")
         self.assertIn("Timer_Init", timer_h)
         self.assertIn("Timer_Init", timer_c)
         self.assertIn("NVIC_EnableIRQ", timer_c)
@@ -64,8 +64,8 @@ class MotorSafetyContractTests(unittest.TestCase):
         self.assertIn("Motor_Safety_Tick1ms", app_main)
 
     def test_motion_commands_are_routed_through_safety(self):
-        source = read("modules/motor/app_motor.c")
-        adapter = read("modules/motor/motor_adapter.c")
+        source = read("modules/motor/configuration/motor_configuration.c")
+        adapter = read("modules/motor/adapter/motor_adapter.c")
         for function in ("Motion_Car_Control", "Motion_Yaw_Calc"):
             match = re.search(
                 rf"void\s+{function}\s*\([^)]*\)\s*\{{(.*?)\n\}}",
@@ -77,7 +77,7 @@ class MotorSafetyContractTests(unittest.TestCase):
         self.assertIn("Motor_Safety_RequestSpeed", adapter)
 
     def test_isr_stop_is_fixed_and_bounded(self):
-        source = read("modules/motor/bsp_motor_usart.c")
+        source = read("modules/motor/uart/motor_uart.c")
         match = re.search(
             r"Motor_EmergencyStop_FromISR\s*\([^)]*\)\s*\{(.*?)\n\}",
             source,

@@ -12,7 +12,7 @@ class ApplicationScheduleTests(unittest.TestCase):
         cls.scheduler = (PROJECT / "application/app_scheduler.c").read_text(
             encoding="utf-8"
         )
-        cls.main = (PROJECT / "application/app_main.c").read_text(encoding="utf-8")
+        cls.main = (PROJECT / "app/boot/app_boot.c").read_text(encoding="utf-8")
         cls.entry = (PROJECT / "empty.c").read_text(encoding="utf-8")
         cls.syscfg = (PROJECT / "empty.syscfg").read_text(encoding="utf-8")
 

@@ -7,10 +7,10 @@ ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 
 class SafetySupervisorContract(unittest.TestCase):
     def test_states_inputs_and_decision_exist(self):
-        header = (ROOT / "application/safety_supervisor.h").read_text(
+        header = (ROOT / "app/safety/safety_supervisor.h").read_text(
             encoding="utf-8"
         )
-        common = (ROOT / "modules/common/safety_decision.h").read_text(
+        common = (ROOT / "shared/safety_decision.h").read_text(
             encoding="utf-8"
         )
         for token in (
@@ -31,7 +31,7 @@ class SafetySupervisorContract(unittest.TestCase):
             self.assertIn(token, header + common)
 
     def test_priority_order_and_latched_clear_gate_exist(self):
-        source = (ROOT / "application/safety_supervisor.c").read_text(
+        source = (ROOT / "app/safety/safety_supervisor.c").read_text(
             encoding="utf-8"
         )
         step = source[source.index("bool SafetySupervisor_Step"):]
@@ -49,7 +49,7 @@ class SafetySupervisorContract(unittest.TestCase):
         self.assertIn("clear_sample_count", source)
 
     def test_ultrasonic_gate_can_be_disabled_for_minimal_hardware(self):
-        source = (ROOT / "application/safety_supervisor.c").read_text(
+        source = (ROOT / "app/safety/safety_supervisor.c").read_text(
             encoding="utf-8"
         )
         self.assertIn("inputs->ultrasonic_required", source)
@@ -59,7 +59,7 @@ class SafetySupervisorContract(unittest.TestCase):
         )
 
     def test_timing_and_distance_limits_are_tunable(self):
-        config = (ROOT / "application/config/safety_config.h").read_text(
+        config = (ROOT / "config/safety_config.h").read_text(
             encoding="utf-8"
         )
         for token in (

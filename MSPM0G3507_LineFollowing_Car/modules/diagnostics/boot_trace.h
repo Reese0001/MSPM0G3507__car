@@ -4,6 +4,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#if defined(__GNUC__) || defined(__clang__)
+#define BOOT_TRACE_NORETURN __attribute__((noreturn))
+#else
+#define BOOT_TRACE_NORETURN
+#endif
+
 /* Temporary startup checkpoints.  Remove after the scheduler root cause is fixed. */
 typedef enum {
     BOOT_TRACE_MAIN = 1,
@@ -42,6 +48,6 @@ void BootTrace_Tick1ms(void);
 bool BootTrace_MotionTasksOnline(void);
 bool BootTrace_AllTasksOnline(void);
 uint8_t BootTrace_GetTaskMask(void);
-__attribute__((noreturn)) void BootTrace_Fatal(BootTraceFault fault);
+BOOT_TRACE_NORETURN void BootTrace_Fatal(BootTraceFault fault);
 
 #endif

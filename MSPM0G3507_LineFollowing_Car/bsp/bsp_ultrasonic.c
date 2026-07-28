@@ -2,7 +2,7 @@
 
 #include "ti_msp_dl_config.h"
 
-#include "../modules/ultrasonic/ultrasonic.h"
+#include "../modules/optional/ultrasonic/ultrasonic.h"
 #include "time/timer.h"
 
 void BSP_Ultrasonic_Init(void)

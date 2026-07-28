@@ -29,10 +29,10 @@ def straight_target(frames):
 
 class LineScannerContract(unittest.TestCase):
     def test_scanner_is_nonblocking_and_publishes_atomic_snapshot(self):
-        source = (ROOT / "modules/line_tracking/line_scanner.c").read_text(
+        source = (ROOT / "modules/line_tracking/scanner/line_scanner.c").read_text(
             encoding="utf-8"
         )
-        header = (ROOT / "modules/line_tracking/line_scanner.h").read_text(
+        header = (ROOT / "modules/line_tracking/scanner/line_scanner.h").read_text(
             encoding="utf-8"
         )
         self.assertNotIn("delay_ms", source)
@@ -59,7 +59,9 @@ class LineScannerContract(unittest.TestCase):
         self.assertRegex(config, r"LINE_SENSOR_STALE_MS\s+\(20U\)")
 
     def test_bsp_owns_confirmed_gray_mux_pins(self):
-        source = (ROOT / "bsp/bsp_line_mux.c").read_text(encoding="utf-8")
+        source = (ROOT / "modules/line_tracking/scanner/line_mux.c").read_text(
+            encoding="utf-8"
+        )
         for pin in ("DL_GPIO_PIN_15", "DL_GPIO_PIN_16", "DL_GPIO_PIN_17", "DL_GPIO_PIN_18"):
             self.assertIn(pin, source)
         self.assertEqual(source.count("DL_GPIO_writePinsVal("), 1)
@@ -145,7 +147,7 @@ class LineControllerContract(unittest.TestCase):
         source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
             encoding="utf-8"
         )
-        config = (ROOT / "application/config/line_control_config.h").read_text(
+        config = (ROOT / "config/line_control_config.h").read_text(
             encoding="utf-8"
         )
         for token in (
@@ -201,7 +203,7 @@ class LineControllerContract(unittest.TestCase):
         )
 
     def test_all_curve_targets_stay_inside_competition_limit(self):
-        config = (ROOT / "application/config/line_control_config.h").read_text(
+        config = (ROOT / "config/line_control_config.h").read_text(
             encoding="utf-8"
         )
         values = [
@@ -222,7 +224,7 @@ class LineControllerContract(unittest.TestCase):
         source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
             encoding="utf-8"
         )
-        config = (ROOT / "application/config/line_control_config.h").read_text(
+        config = (ROOT / "config/line_control_config.h").read_text(
             encoding="utf-8"
         )
         self.assertRegex(
@@ -268,10 +270,10 @@ class LineControllerContract(unittest.TestCase):
         source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
             encoding="utf-8"
         )
-        config = (ROOT / "application/config/line_control_config.h").read_text(
+        config = (ROOT / "config/line_control_config.h").read_text(
             encoding="utf-8"
         )
-        recovery = (ROOT / "application/line_recovery.c").read_text(
+        recovery = (ROOT / "modules/line_tracking/recovery/line_recovery.c").read_text(
             encoding="utf-8"
         )
         self.assertIn("LINE_HARD_TURN_FORWARD (40)", config)
@@ -294,7 +296,7 @@ class LineControllerContract(unittest.TestCase):
         source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
             encoding="utf-8"
         )
-        config = (ROOT / "application/config/line_control_config.h").read_text(
+        config = (ROOT / "config/line_control_config.h").read_text(
             encoding="utf-8"
         )
         for token in (

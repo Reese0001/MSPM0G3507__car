@@ -16,7 +16,7 @@ class LineLookupControlRuntime(unittest.TestCase):
             / "Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat"
         )
         harness = ROOT / "tests/line_lookup_control_harness.c"
-        source = PROJECT / "modules/line_tracking/line_lookup_control.c"
+        source = PROJECT / "modules/line_tracking/controller/line_lookup_control.c"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             executable = Path(temp_dir) / "line_lookup_control_harness.exe"
@@ -27,6 +27,7 @@ class LineLookupControlRuntime(unittest.TestCase):
             )
             result = subprocess.run(
                 command,
+                cwd=temp_dir,
                 capture_output=True,
                 text=True,
                 errors="replace",

@@ -28,6 +28,7 @@ class Mpu6050Runtime(unittest.TestCase):
             )
             build = subprocess.run(
                 command,
+                cwd=temp_dir,
                 capture_output=True,
                 text=True,
                 errors="replace",

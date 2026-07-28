@@ -130,6 +130,7 @@ int main(void)
         )
         result = subprocess.run(
             ["cmd", "/d", "/c", str(compile_script)],
+            cwd=cls.tempdir.name,
             capture_output=True,
             text=True,
             encoding="utf-8",

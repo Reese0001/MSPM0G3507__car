@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../modules/common/motion_request.h"
+#include "../shared/motion_request.h"
 #include "../modules/line_tracking/line_estimator.h"
 #include "../modules/line_tracking/line_trend_detector.h"
 

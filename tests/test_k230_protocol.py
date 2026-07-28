@@ -29,8 +29,8 @@ class K230ProtocolContract(unittest.TestCase):
         self.assertTrue(body.startswith("$") and body.endswith("#"))
 
     def test_incremental_parser_states_and_validation_exist(self):
-        header_path = MCU / "modules/k230_link/k230_protocol.h"
-        source_path = MCU / "modules/k230_link/k230_protocol.c"
+        header_path = MCU / "modules/optional/k230/k230_protocol.h"
+        source_path = MCU / "modules/optional/k230/k230_protocol.c"
         self.assertTrue(header_path.exists(), header_path)
         self.assertTrue(source_path.exists(), source_path)
         header = header_path.read_text(encoding="utf-8")
@@ -53,7 +53,7 @@ class K230ProtocolContract(unittest.TestCase):
             self.assertNotIn(forbidden, source)
 
     def test_parser_has_restart_overflow_and_id_gates(self):
-        source_path = MCU / "modules/k230_link/k230_protocol.c"
+        source_path = MCU / "modules/optional/k230/k230_protocol.c"
         self.assertTrue(source_path.exists(), source_path)
         source = source_path.read_text(encoding="utf-8")
         self.assertIn("byte == '$'", source)

@@ -93,7 +93,7 @@
 
 | 项目 | 判据 | 结果 | 证据 |
 |---|---|---|---|
-| 离线测试 | 全部通过 | PASS | 192/192（含 FreeRTOS 调度、OLED、故障诊断合同） |
+| 离线测试 | 全部通过 | PASS（190/190） | `python -m unittest discover -s tests -p "test_*.py"`；本次目录整理后复核通过 |
 | TI clean build | 无错误链接 | PASS | `gmake -C MSPM0G3507_LineFollowing_Car all`；text 29144 / bss 6381 字节 |
 | 静态内核 | 四个静态任务栈，无应用堆 | PASS | map 中 control 0x300 / display 0x280 / safety 0x280 / sensor 0x280 + idle 0x180，无 `ucHeap` |
 | 中断归属 | PendSV/SVC/SysTick 由 FreeRTOS port 提供 | PASS | map：三个 handler 均来自 `freertos_kernel_ticlang.lib : port.o` |
@@ -101,7 +101,7 @@
 
 构建方式：CCS Theia 无无头构建命令，且 `Debug/*.mk` 由 IDE 重新生成，因此新增
 `MSPM0G3507_LineFollowing_Car/Makefile` 复刻 CCS Debug 配置（同编译器、同参数、
-同 SysConfig 产物、同源码排除表），产物写入 `Build_LineFollowing/`。
+同 SysConfig 产物、同源码排除表），CLI 产物写入 `build/cli/`。
 **烧录前仍以 CCS GUI 构建为准。**
 
 ### G.2 当前查表参数（待实测调整）
@@ -137,12 +137,12 @@ IMU 过期限速 `LINE_LOOKUP_IMU_DEGRADED_LIMIT = 280`；
 
 ### G.4 固件指纹（2026-07-26 生成，`gmake images`）
 
-`firmware/` 不入库，需要时用 `gmake -C MSPM0G3507_LineFollowing_Car images` 重新生成。
+`build/` 和 `dist/` 不入库，需要时用 `gmake -C MSPM0G3507_LineFollowing_Car clean all images` 重新生成。
 
 | 文件 | SHA-256 |
 |---|---|
-| firmware/MSPM0G3507_LineFollowing_Car.hex | `3075705169e4e0379cb14ebb61789b3200a9577e8f4aa64b3402808ccbc90ba0` |
-| firmware/MSPM0G3507_LineFollowing_Car.txt | `7812d34bdceb9f865019344223746fbb3cf5a057dec2c4a6d58da2e7fcdefca4` |
+| dist/firmware/MSPM0G3507_LineFollowing_Car.hex | 待重新生成 |
+| dist/firmware/MSPM0G3507_LineFollowing_Car.txt | 待重新生成 |
 
 两者携带的地址/数据字节完全一致（各 29144 字节），仅容器格式不同。
 

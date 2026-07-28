@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 
 class LineFollowingBurnProfileContract(unittest.TestCase):
     def test_profile_matches_installed_hardware(self):
-        profile = (ROOT / "application/config/line_following_profile.h").read_text(
+        profile = (ROOT / "config/line_following_profile.h").read_text(
             encoding="utf-8"
         )
         for token in (
@@ -34,7 +34,7 @@ class LineFollowingBurnProfileContract(unittest.TestCase):
         self.assertNotIn("AppScheduler_RunKey", scheduler)
 
     def test_bootstrap_defers_heartbeat_to_a_later_task(self):
-        app_main = (ROOT / "application/app_main.c").read_text(encoding="utf-8")
+        app_main = (ROOT / "app/boot/app_boot.c").read_text(encoding="utf-8")
         led_header = (ROOT / "modules/led/led.h").read_text(encoding="utf-8")
         led_source = (ROOT / "modules/led/led.c").read_text(encoding="utf-8")
         self.assertIn("LED_HeartbeatInit", led_header + led_source)
@@ -46,13 +46,13 @@ class LineFollowingBurnProfileContract(unittest.TestCase):
         self.assertNotIn("LED_HeartbeatService", app_main)
 
     def test_tracking_timing_matches_pre_stop_go_baseline(self):
-        config = (ROOT / "application/config/line_control_config.h").read_text(
+        config = (ROOT / "config/line_control_config.h").read_text(
             encoding="utf-8"
         )
         scheduler = (ROOT / "application/app_scheduler.c").read_text(
             encoding="utf-8"
         )
-        app_main = (ROOT / "application/app_main.c").read_text(encoding="utf-8")
+        app_main = (ROOT / "app/boot/app_boot.c").read_text(encoding="utf-8")
         self.assertIn("LINE_ESTIMATE_STALE_MS (20U)", config)
         self.assertNotIn("Buzzer_RequestBeeps", scheduler)
         self.assertNotIn("PWM_Buzzer_Init();", app_main)
@@ -74,10 +74,13 @@ class LineFollowingBurnProfileContract(unittest.TestCase):
         for excluded in (
             "application/legacy_questions",
             "application/legacy_task",
-            "modules/legacy_mpu6050",
-            "modules/ybimu",
-            "modules/k230_link",
-            "modules/ultrasonic",
+            "modules/optional/legacy",
+            "modules/optional/ybimu",
+            "modules/optional/k230",
+            "modules/optional/ultrasonic",
+            "application/app_scheduler.c",
+            "application/corner_maneuver.c",
+            "application/motion_primitives.c",
         ):
             self.assertIn(excluded, cproject)
 

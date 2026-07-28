@@ -13,6 +13,7 @@
 **/build/
 **/Build_LineFollowing/
 firmware/
+dist/
 **/OBJ/
 **/Objects/
 **/Listings/

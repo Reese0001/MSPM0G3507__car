@@ -81,10 +81,10 @@ class MotionPrimitiveContract(unittest.TestCase):
             encoding="utf-8"
         )
         recovery_config = (
-            ROOT / "application/config/line_recovery_config.h"
+            ROOT / "config/line_recovery_config.h"
         ).read_text(encoding="utf-8")
         primitive_config = (
-            ROOT / "application/config/motion_primitives_config.h"
+            ROOT / "config/motion_primitives_config.h"
         ).read_text(encoding="utf-8")
         self.assertIn("MOTION_SEARCH_LINE_MAX_YAW_DEG (45.0f)", primitive_config)
         self.assertIn("MOTION_SEARCH_LINE_MAX_YAW_DEG", source)

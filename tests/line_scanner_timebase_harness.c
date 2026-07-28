@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "modules/line_tracking/line_scanner.h"
+#include "modules/line_tracking/scanner/line_scanner.h"
 
 static uint32_t fake_us;
 

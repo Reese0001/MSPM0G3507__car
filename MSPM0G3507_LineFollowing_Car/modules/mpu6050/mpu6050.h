@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../common/module_status.h"
+#include "../../shared/module_status.h"
 
 typedef enum {
     MPU6050_STATE_STARTUP = 0,

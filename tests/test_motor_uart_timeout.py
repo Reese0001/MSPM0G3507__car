@@ -7,15 +7,15 @@ ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 
 class MotorUartTimeoutContract(unittest.TestCase):
     def test_bounded_send_uses_hardware_time_and_fifo_space(self):
-        source = (ROOT / "modules/motor/bsp_motor_usart.c").read_text(
+        source = (ROOT / "modules/motor/uart/motor_uart.c").read_text(
             encoding="utf-8", errors="ignore"
         )
-        header = (ROOT / "modules/motor/bsp_motor_usart.h").read_text(
+        header = (ROOT / "modules/motor/uart/motor_uart.h").read_text(
             encoding="utf-8", errors="ignore"
         )
         body = source[source.index("bool Motor_Usart_SendArrayBounded"):]
         body = body[:body.index("bool Motor_EmergencyStop_FromISR")]
-        self.assertIn('#include "../../bsp/time/timer.h"', source)
+        self.assertIn('#include "../../time/timer.h"', source)
         self.assertIn("BSP_Time_GetUs()", body)
         self.assertIn("DL_UART_Main_isTXFIFOFull", body)
         self.assertIn("DL_UART_isBusy", body)

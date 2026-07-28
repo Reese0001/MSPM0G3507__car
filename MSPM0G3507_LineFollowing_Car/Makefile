@@ -48,17 +48,15 @@ STARTUP_SRC := $(SDK_DIR)/source/ti/devices/msp/m0p/startup_system_files/ticlang
 FREERTOS_INC  := $(SDK_DIR)/kernel/freertos/Source/include
 FREERTOS_PORT := $(SDK_DIR)/kernel/freertos/Source/portable/TI_ARM_CLANG/ARM_CM0
 
-# Source set mirrors the .cproject sourceEntries exclusion list: legacy
-# archives, K230, ultrasonic, YB-IMU, app_irtracking.c and debug_uart.c (PA10 /
-# PA11 now drive the OLED) are all left out of the build.
+# Source set mirrors the .cproject sourceEntries exclusion list. Firmware has
+# one active runtime entry: empty.c -> app/tasks/app_tasks.c. Older application
+# schedulers and optional hardware modules stay in the tree for reference/tests
+# but are not linked into the car image.
 SOURCES := \
     empty.c \
     app/boot/app_boot.c \
     modules/diagnostics/boot_trace.c \
-    application/app_scheduler.c \
-    application/corner_maneuver.c \
     modules/line_tracking/recovery/line_recovery.c \
-    application/motion_primitives.c \
     app/safety/safety_supervisor.c \
     modules/display/dashboard.c \
     modules/display/runtime_log.c \

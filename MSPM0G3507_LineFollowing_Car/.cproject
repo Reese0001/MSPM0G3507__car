@@ -12,7 +12,7 @@
                     <extension id="com.ti.ccs.errorparser.CompilerErrorParser_TI" point="com.ti.ccs.project.ErrorParser"/>
                 </extensions>
                 <sourceEntries>
-                                    <entry excluding="Build_LineFollowing|Debug|application/legacy_questions|application/legacy_task|bsp/bsp_k230_uart.c|bsp/bsp_ultrasonic.c|bsp/debug_uart.c|modules/k230_link|modules/legacy_mpu6050|modules/line_tracking/app_irtracking.c|modules/ultrasonic|modules/ybimu" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry excluding="Build_LineFollowing|Debug|application/app_scheduler.c|application/corner_maneuver.c|application/motion_primitives.c|application/legacy_questions|application/legacy_task|bsp/bsp_k230_uart.c|bsp/bsp_ultrasonic.c|bsp/debug_uart.c|modules/optional/k230|modules/optional/legacy|modules/optional/ultrasonic|modules/optional/ybimu|modules/line_tracking/app_irtracking.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                 </sourceEntries>
             </storageModule>
             <storageModule moduleId="cdtBuildSystem" version="4.0.0">
@@ -44,18 +44,37 @@
                                     <listOptionValue value="${COM_TI_MSPM0_SDK_INSTALL_DIR}/source/third_party/CMSIS/Core/Include"/>
                                     <listOptionValue value="${COM_TI_MSPM0_SDK_INSTALL_DIR}/source"/>
                                     <listOptionValue value="${PROJECT_ROOT}/application"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/app"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/app/boot"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/app/mailbox"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/app/safety"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/app/tasks"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/config"/>
                                     <listOptionValue value="${PROJECT_ROOT}/application/legacy_task"/>
                                     <listOptionValue value="${PROJECT_ROOT}/application/legacy_questions"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/modules/common"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/shared"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/mpu6050"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/motor"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/modules/legacy_mpu6050/driver"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/modules/legacy_mpu6050/empl"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/motor/adapter"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/motor/configuration"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/motor/protocol"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/motor/safety"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/motor/uart"/>
+<listOptionValue value="${PROJECT_ROOT}/modules/optional/legacy/driver"/>
+<listOptionValue value="${PROJECT_ROOT}/modules/optional/legacy/empl"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/controller"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/decoder"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/recovery"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/scanner"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/led"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/key"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/buzzer"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/display"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/display/i2c"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/display/ssd1306"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/time"/>
                                     <listOptionValue value="${PROJECT_ROOT}/bsp"/>
                                     <listOptionValue value="${PROJECT_ROOT}/bsp/time"/>
                                     <listOptionValue value="${COM_TI_MSPM0_SDK_INSTALL_DIR}/kernel/freertos/Source/include"/>

@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "line_estimator.h"
-#include "line_scanner.h"
+#include "scanner/line_scanner.h"
 
 typedef enum {
     LINE_TREND_NORMAL = 0,

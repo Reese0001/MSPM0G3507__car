@@ -2,7 +2,7 @@
 
 #include "ti_msp_dl_config.h"
 
-#include "../modules/k230_link/k230_link.h"
+#include "../modules/optional/k230/k230_link.h"
 
 void BSP_K230_UartInit(void)
 {

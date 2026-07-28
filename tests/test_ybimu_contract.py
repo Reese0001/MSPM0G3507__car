@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 
 class YbImuContract(unittest.TestCase):
     def test_vendor_registers_and_address(self):
-        header_path = ROOT / "modules/ybimu/ybimu_protocol.h"
+        header_path = ROOT / "modules/optional/ybimu/ybimu_protocol.h"
         self.assertTrue(header_path.exists(), header_path)
         text = header_path.read_text(encoding="utf-8")
         for token in ("0x23U", "0x0AU", "0x10U", "0x16U", "0x26U"):
@@ -16,7 +16,7 @@ class YbImuContract(unittest.TestCase):
         self.assertIn("YbImuProtocol_DecodeFloatLE", text)
 
     def test_decoders_use_explicit_little_endian_assembly(self):
-        source_path = ROOT / "modules/ybimu/ybimu_protocol.c"
+        source_path = ROOT / "modules/optional/ybimu/ybimu_protocol.c"
         self.assertTrue(source_path.exists(), source_path)
         source = source_path.read_text(encoding="utf-8")
         for shift in ("<< 8", "<< 16", "<< 24"):
@@ -26,9 +26,9 @@ class YbImuContract(unittest.TestCase):
         self.assertNotIn("*(float", source)
 
     def test_snapshot_is_timestamped_and_nonblocking(self):
-        header_path = ROOT / "modules/ybimu/ybimu.h"
-        source_path = ROOT / "modules/ybimu/ybimu.c"
-        config_path = ROOT / "modules/ybimu/ybimu_config.h"
+        header_path = ROOT / "modules/optional/ybimu/ybimu.h"
+        source_path = ROOT / "modules/optional/ybimu/ybimu.c"
+        config_path = ROOT / "modules/optional/ybimu/ybimu_config.h"
         self.assertTrue(header_path.exists(), header_path)
         self.assertTrue(source_path.exists(), source_path)
         self.assertTrue(config_path.exists(), config_path)
@@ -54,7 +54,7 @@ class YbImuContract(unittest.TestCase):
         self.assertNotRegex(source, r"while\s*\(")
 
     def test_service_advances_one_vendor_register_per_call(self):
-        source_path = ROOT / "modules/ybimu/ybimu.c"
+        source_path = ROOT / "modules/optional/ybimu/ybimu.c"
         self.assertTrue(source_path.exists(), source_path)
         source = source_path.read_text(encoding="utf-8")
         for token in (
@@ -101,7 +101,7 @@ class YbImuContract(unittest.TestCase):
         self.assertNotRegex(combined, r"while\s*\(")
 
     def test_active_path_does_not_use_legacy_mpu(self):
-        source_path = ROOT / "modules/ybimu/ybimu.c"
+        source_path = ROOT / "modules/optional/ybimu/ybimu.c"
         self.assertTrue(source_path.exists(), source_path)
         source = source_path.read_text(encoding="utf-8")
         scheduler = (ROOT / "application/app_scheduler.c").read_text(encoding="utf-8")
@@ -109,12 +109,12 @@ class YbImuContract(unittest.TestCase):
             self.assertNotIn(forbidden, source + scheduler)
 
     def test_calibration_has_timeout_states(self):
-        header = (ROOT / "modules/ybimu/ybimu.h").read_text(encoding="utf-8")
-        source = (ROOT / "modules/ybimu/ybimu.c").read_text(encoding="utf-8")
-        config = (ROOT / "modules/ybimu/ybimu_config.h").read_text(
+        header = (ROOT / "modules/optional/ybimu/ybimu.h").read_text(encoding="utf-8")
+        source = (ROOT / "modules/optional/ybimu/ybimu.c").read_text(encoding="utf-8")
+        config = (ROOT / "modules/optional/ybimu/ybimu_config.h").read_text(
             encoding="utf-8"
         )
-        protocol = (ROOT / "modules/ybimu/ybimu_protocol.h").read_text(
+        protocol = (ROOT / "modules/optional/ybimu/ybimu_protocol.h").read_text(
             encoding="utf-8"
         )
         for token in (
@@ -136,7 +136,7 @@ class YbImuContract(unittest.TestCase):
         self.assertNotIn("Motor_", source)
 
     def test_calibration_write_and_poll_are_bounded(self):
-        source = (ROOT / "modules/ybimu/ybimu.c").read_text(encoding="utf-8")
+        source = (ROOT / "modules/optional/ybimu/ybimu.c").read_text(encoding="utf-8")
         bsp = (ROOT / "bsp/bsp_i2c.h").read_text(encoding="utf-8") + (
             ROOT / "bsp/bsp_i2c.c"
         ).read_text(encoding="utf-8")
@@ -150,7 +150,7 @@ class YbImuContract(unittest.TestCase):
         scheduler = (ROOT / "application/app_scheduler.c").read_text(
             encoding="utf-8"
         )
-        profile = (ROOT / "application/config/line_following_profile.h").read_text(
+        profile = (ROOT / "config/line_following_profile.h").read_text(
             encoding="utf-8"
         )
         self.assertIn("LINE_FOLLOWING_USE_IMU (1)", profile)
@@ -159,8 +159,8 @@ class YbImuContract(unittest.TestCase):
         self.assertNotIn("YbImu_Service", scheduler)
 
     def test_magnetic_heading_has_plausibility_and_change_gates(self):
-        source = (ROOT / "modules/ybimu/ybimu.c").read_text(encoding="utf-8")
-        config = (ROOT / "modules/ybimu/ybimu_config.h").read_text(
+        source = (ROOT / "modules/optional/ybimu/ybimu.c").read_text(encoding="utf-8")
+        config = (ROOT / "modules/optional/ybimu/ybimu_config.h").read_text(
             encoding="utf-8"
         )
         for token in (

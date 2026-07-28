@@ -32,6 +32,7 @@ class DuplicateLineFrameRuntime(unittest.TestCase):
             )
             result = subprocess.run(
                 command,
+                cwd=temp_dir,
                 capture_output=True,
                 text=True,
                 errors="replace",

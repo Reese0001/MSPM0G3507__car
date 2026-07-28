@@ -88,12 +88,10 @@ class AppSchedulerPipelineContract(unittest.TestCase):
         )
 
     def test_integration_keeps_confirmed_pd_and_speed_limits(self):
-        config = (
-            ROOT / "application/config/line_control_config.h"
-        ).read_text(encoding="utf-8")
-        safety = (
-            ROOT / "application/config/safety_config.h"
-        ).read_text(encoding="utf-8")
+        config = (ROOT / "config/line_control_config.h").read_text(
+            encoding="utf-8"
+        )
+        safety = (ROOT / "config/safety_config.h").read_text(encoding="utf-8")
         self.assertIn("LINE_CONTROL_KP (28.0f)", config)
         self.assertIn("LINE_MAX_FORWARD (400)", config)
         self.assertIn("SAFETY_RUNNING_SPEED_LIMIT (450)", safety)
@@ -136,10 +134,12 @@ class RecoveryReachabilityRuntime(unittest.TestCase):
             compile_command = (
                 f'call "{vsdevcmd}" -arch=x64 >nul && '
                 f'cl /nologo /W4 /TC /I"{ROOT}" "{harness}" '
-                f'"{corner}" "{recovery}" /Fe"{executable}"'
+                f'"{corner}" "{ROOT / "modules/line_tracking/recovery/line_recovery.c"}" '
+                f'/Fe"{executable}"'
             )
             build = subprocess.run(
                 compile_command,
+                cwd=temp_dir,
                 capture_output=True,
                 text=True,
                 errors="replace",

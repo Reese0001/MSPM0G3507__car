@@ -3,7 +3,7 @@
 
 #include "ti_msp_dl_config.h"
 #include "app_mpu6050.h"
-#include "app_motor.h"
+#include "motor/configuration/motor_configuration.h"
 #include "app_irtracking.h"
 #include "led.h"
 

@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include "ti_msp_dl_config.h"
-#include "app_motor.h"
+#include "motor/configuration/motor_configuration.h"
 #include "debug_uart.h"
 
 #define BLACK       1        //黑线black

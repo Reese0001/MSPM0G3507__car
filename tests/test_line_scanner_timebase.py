@@ -16,7 +16,7 @@ class LineScannerTimebaseRuntime(unittest.TestCase):
             / "Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat"
         )
         harness = ROOT / "tests/line_scanner_timebase_harness.c"
-        source = PROJECT / "modules/line_tracking/line_scanner.c"
+        source = PROJECT / "modules/line_tracking/scanner/line_scanner.c"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             executable = Path(temp_dir) / "line_scanner_timebase_harness.exe"
@@ -27,6 +27,7 @@ class LineScannerTimebaseRuntime(unittest.TestCase):
             )
             result = subprocess.run(
                 command,
+                cwd=temp_dir,
                 capture_output=True,
                 text=True,
                 errors="replace",

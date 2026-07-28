@@ -17,9 +17,9 @@ class CornerManeuverContract(unittest.TestCase):
         self.source = (ROOT / "application/corner_maneuver.c").read_text(
             encoding="utf-8"
         )
-        self.config = (
-            ROOT / "application/config/corner_maneuver_config.h"
-        ).read_text(encoding="utf-8")
+        self.config = (ROOT / "config/corner_maneuver_config.h").read_text(
+            encoding="utf-8"
+        )
 
     def test_states_cover_probe_brake_commit_seek_settle(self):
         for token in (
@@ -94,6 +94,7 @@ class CornerManeuverRuntime(unittest.TestCase):
             )
             build = subprocess.run(
                 compile_command,
+                cwd=temp_dir,
                 capture_output=True,
                 text=True,
                 errors="replace",

@@ -1,4 +1,7 @@
 import re
+import os
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -68,6 +71,61 @@ class RunFirstBringupContract(unittest.TestCase):
 
     def test_oled_logs_test_run(self):
         self.assertIn('"TEST RUN"', self.observer)
+
+    def test_reset_path_reaches_nonzero_motor_frame_without_line_frame(self):
+        vsdevcmd = (
+            Path(os.environ["ProgramFiles"])
+            / "Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat"
+        )
+        self.assertTrue(vsdevcmd.exists(), "Visual Studio host toolchain missing")
+        harness = ROOT / "tests" / "run_first_bringup_harness.c"
+        sources = [
+            PROJECT / "app/safety/safety_runtime.c",
+            PROJECT / "app/safety/safety_supervisor.c",
+            PROJECT / "app/mailbox/app_mailbox.c",
+            PROJECT / "app/run/run_controller.c",
+            PROJECT / "modules/motor/adapter/motor_adapter.c",
+            PROJECT / "modules/motor/safety/motor_safety.c",
+        ]
+        include_flags = [
+            f'/I"{ROOT / "tests/host_stubs"}"',
+            f'/I"{PROJECT}"',
+            f'/I"{PROJECT / "app"}"',
+            f'/I"{PROJECT / "config"}"',
+            f'/I"{PROJECT / "shared"}"',
+            f'/I"{PROJECT / "modules"}"',
+            f'/I"{PROJECT / "modules/motor/safety"}"',
+            f'/I"{PROJECT / "modules/motor/adapter"}"',
+            f'/I"{PROJECT / "modules/key"}"',
+        ]
+        source_args = " ".join(f'"{path}"' for path in [harness, *sources])
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            executable = Path(temp_dir) / "run_first_bringup_harness.exe"
+            compile_command = (
+                f'call "{vsdevcmd}" -arch=x64 >nul && '
+                f'cl /nologo /std:c11 /utf-8 /W4 /WX '
+                f'/DMOTOR_SAFETY_HOST_TEST /TC '
+                f'{" ".join(include_flags)} '
+                f'{source_args} /Fe"{executable}"'
+            )
+            build = subprocess.run(
+                compile_command,
+                cwd=temp_dir,
+                capture_output=True,
+                text=True,
+                errors="replace",
+                check=False,
+                shell=True,
+                executable=os.environ["ComSpec"],
+            )
+            self.assertEqual(
+                0, build.returncode, (build.stdout or "") + build.stderr
+            )
+            run = subprocess.run(
+                [str(executable)], capture_output=True, text=True, check=False
+            )
+            self.assertEqual(0, run.returncode, run.stdout + run.stderr)
 
 
 if __name__ == "__main__":

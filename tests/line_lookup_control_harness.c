@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "modules/line_tracking/line_lookup_control.h"
+#include "modules/line_tracking/controller/line_lookup_control.h"
 
 #define CHECK(expr)                                                     \
     do {                                                                \

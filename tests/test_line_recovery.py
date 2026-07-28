@@ -11,14 +11,14 @@ ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 
 class LineRecoveryContract(unittest.TestCase):
     def setUp(self):
-        self.header = (ROOT / "application/line_recovery.h").read_text(
+        self.header = (ROOT / "modules/line_tracking/recovery/line_recovery.h").read_text(
             encoding="utf-8"
         )
-        self.source = (ROOT / "application/line_recovery.c").read_text(
+        self.source = (ROOT / "modules/line_tracking/recovery/line_recovery.c").read_text(
             encoding="utf-8"
         )
         self.config = (
-            ROOT / "application/config/line_recovery_config.h"
+            ROOT / "config/line_recovery_config.h"
         ).read_text(encoding="utf-8")
 
     def test_recovery_has_no_backtrack_state_or_request(self):
@@ -135,7 +135,7 @@ class LineRecoveryRuntime(unittest.TestCase):
             / "Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat"
         )
         harness = ROOT.parent / "tests/line_recovery_harness.c"
-        source = ROOT / "application/line_recovery.c"
+        source = ROOT / "modules/line_tracking/recovery/line_recovery.c"
 
         self.assertTrue(vsdevcmd.exists(), "Visual Studio host toolchain missing")
         self.assertTrue(harness.exists(), "line recovery harness missing")
@@ -148,6 +148,7 @@ class LineRecoveryRuntime(unittest.TestCase):
             )
             build = subprocess.run(
                 compile_command,
+                cwd=temp_dir,
                 capture_output=True,
                 text=True,
                 errors="replace",

@@ -8,8 +8,8 @@ ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 
 class UltrasonicContract(unittest.TestCase):
     def test_public_contract_and_limits(self):
-        header_path = ROOT / "modules/ultrasonic/ultrasonic.h"
-        config_path = ROOT / "modules/ultrasonic/ultrasonic_config.h"
+        header_path = ROOT / "modules/optional/ultrasonic/ultrasonic.h"
+        config_path = ROOT / "modules/optional/ultrasonic/ultrasonic_config.h"
         self.assertTrue(header_path.exists(), header_path)
         self.assertTrue(config_path.exists(), config_path)
 
@@ -28,7 +28,7 @@ class UltrasonicContract(unittest.TestCase):
             self.assertIn(token, config)
 
     def test_conversion_is_integer_only_and_bounded(self):
-        source_path = ROOT / "modules/ultrasonic/ultrasonic.c"
+        source_path = ROOT / "modules/optional/ultrasonic/ultrasonic.c"
         self.assertTrue(source_path.exists(), source_path)
         source = source_path.read_text(encoding="utf-8")
         self.assertIn("pulse_us < ULTRASONIC_MIN_PULSE_US", source)
@@ -38,10 +38,10 @@ class UltrasonicContract(unittest.TestCase):
         self.assertNotIn("double", source)
 
     def test_state_machine_is_non_blocking(self):
-        source = (ROOT / "modules/ultrasonic/ultrasonic.c").read_text(
+        source = (ROOT / "modules/optional/ultrasonic/ultrasonic.c").read_text(
             encoding="utf-8"
         )
-        header = (ROOT / "modules/ultrasonic/ultrasonic.h").read_text(
+        header = (ROOT / "modules/optional/ultrasonic/ultrasonic.h").read_text(
             encoding="utf-8"
         )
         for state in (
@@ -63,7 +63,7 @@ class UltrasonicContract(unittest.TestCase):
         self.assertNotIn("Motor_", source)
 
     def test_echo_callback_only_captures_edge_state(self):
-        source = (ROOT / "modules/ultrasonic/ultrasonic.c").read_text(
+        source = (ROOT / "modules/optional/ultrasonic/ultrasonic.c").read_text(
             encoding="utf-8"
         )
         signature = "void Ultrasonic_OnEchoEdge"

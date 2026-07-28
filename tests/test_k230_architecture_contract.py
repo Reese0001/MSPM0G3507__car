@@ -8,7 +8,7 @@ MCU = ROOT / "MSPM0G3507_LineFollowing_Car"
 
 class K230ArchitectureContract(unittest.TestCase):
     def test_protocol_limits_exist(self):
-        path = MCU / "modules/k230_link/k230_config.h"
+        path = MCU / "modules/optional/k230/k230_config.h"
         self.assertTrue(path.exists(), path)
         text = path.read_text(encoding="utf-8")
         self.assertIn("K230_FRAME_MAX_LEN", text)
@@ -19,7 +19,7 @@ class K230ArchitectureContract(unittest.TestCase):
         self.assertIn("16U", text)
 
     def test_link_cannot_include_motor_or_allocate(self):
-        directory = MCU / "modules/k230_link"
+        directory = MCU / "modules/optional/k230"
         self.assertTrue(directory.is_dir(), directory)
         for path in directory.glob("*.[ch]"):
             text = path.read_text(encoding="utf-8").lower()
@@ -29,7 +29,7 @@ class K230ArchitectureContract(unittest.TestCase):
             self.assertNotIn("realloc", text, path)
 
     def test_snapshot_has_status_confidence_and_timestamp(self):
-        header = (MCU / "modules/k230_link/k230_link.h").read_text(
+        header = (MCU / "modules/optional/k230/k230_link.h").read_text(
             encoding="utf-8"
         )
         for token in (
@@ -44,7 +44,7 @@ class K230ArchitectureContract(unittest.TestCase):
             self.assertIn(token, header)
 
     def test_uart_isr_only_queues_bytes(self):
-        source = (MCU / "modules/k230_link/k230_link.c").read_text(
+        source = (MCU / "modules/optional/k230/k230_link.c").read_text(
             encoding="utf-8"
         )
         start = source.index("void K230Link_OnRxByteFromISR")
@@ -61,7 +61,7 @@ class K230ArchitectureContract(unittest.TestCase):
             self.assertNotIn(forbidden, isr_body)
 
     def test_snapshot_is_age_checked(self):
-        source = (MCU / "modules/k230_link/k230_link.c").read_text(
+        source = (MCU / "modules/optional/k230/k230_link.c").read_text(
             encoding="utf-8"
         )
         self.assertIn("ModuleStatus_IsFresh", source)

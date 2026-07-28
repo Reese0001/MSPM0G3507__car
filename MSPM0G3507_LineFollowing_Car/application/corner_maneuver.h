@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../modules/common/motion_request.h"
+#include "../shared/motion_request.h"
 #include "../modules/line_tracking/line_controller.h"
 #include "../modules/line_tracking/line_event_classifier.h"
 #include "../modules/line_tracking/line_features.h"
