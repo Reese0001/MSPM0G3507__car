@@ -7,26 +7,23 @@
 #include "task.h"
 
 #include "../boot/app_boot.h"
+#include "../line/line_motion.h"
 #include "../mailbox/app_mailbox.h"
+#include "../run/run_controller.h"
 #include "../../modules/display/dashboard.h"
 #include "../../modules/diagnostics/boot_trace.h"
 #include "../../modules/line_tracking/recovery/line_recovery.h"
 #include "../safety/safety_supervisor.h"
 #include "../../config/line_following_profile.h"
-#include "../../config/line_lookup_config.h"
 #include "../../config/safety_config.h"
-#include "../../bsp/bsp_i2c.h"
 #include "../../modules/time/timer.h"
 #include "../../modules/led/led.h"
-#include "../../modules/line_tracking/controller/line_lookup_control.h"
 #include "../../modules/line_tracking/decoder/line_position.h"
 #include "../../modules/display/runtime_log.h"
 #include "../../modules/display/ssd1306/ssd1306.h"
 #include "../../modules/key/key.h"
 #include "../../modules/line_tracking/scanner/line_scanner.h"
 #include "../../modules/motor/adapter/motor_adapter.h"
-#include "../../modules/mpu6050/mpu6050.h"
-#include "../../modules/mpu6050/mpu6050_config.h"
 #include "../../modules/motor/safety/motor_safety.h"
 
 /* Fixed priorities: fresh sensor data immediately preempts the sensor
@@ -44,9 +41,6 @@
 /* Service the MPU transaction every fifth 2 ms sensor cycle (10 ms). */
 #define APP_IMU_SERVICE_CYCLES 5U
 
-/* Bring-up mode proves the motor path before line tracking is trusted. */
-#define APP_BRINGUP_RUN_SPEED (120)
-
 static StaticTask_t sensor_tcb;
 static StackType_t sensor_stack[APP_SENSOR_STACK_WORDS];
 static StaticTask_t control_tcb;
@@ -61,7 +55,6 @@ static TaskHandle_t control_task_handle;
 static TaskHandle_t safety_task_handle;
 static TaskHandle_t display_task_handle;
 
-static uint32_t imu_started_ms;
 /* Written by their owner tasks, read by SafetyTask for supervision. */
 static volatile uint32_t sensor_alive_ms;
 static volatile uint32_t control_alive_ms;
@@ -71,30 +64,6 @@ static volatile bool sensor_frame_seen;
 static volatile bool control_request_seen;
 /* Only SafetyTask writes this; latched codes are never cleared. */
 static volatile uint8_t latched_fault = APP_FAULT_NONE;
-
-static void ServiceImu(uint32_t now_ms)
-{
-    uint32_t started_us = BSP_Time_GetUs();
-
-    Mpu6050_Service(now_ms);
-    /* Complete the nonblocking soft-I2C transaction in a bounded burst;
-     * SafetyTask and ControlTask can still preempt this loop. */
-    while (BSP_I2C_GetStatus() == BSP_I2C_STATUS_BUSY &&
-           (uint32_t)(BSP_Time_GetUs() - started_us) < 1000U) {
-        BSP_I2C_Service(BSP_Time_GetUs());
-    }
-    Mpu6050_Service(now_ms);
-}
-
-static void PublishImuSnapshot(void)
-{
-    Mpu6050Snapshot snapshot;
-
-    if (Mpu6050_GetState() == MPU6050_STATE_READY &&
-        Mpu6050_GetSnapshot(&snapshot)) {
-        AppMailbox_PublishImu(&snapshot);
-    }
-}
 
 static void SensorTask(void *argument)
 {
@@ -131,106 +100,9 @@ static void SensorTask(void *argument)
         if (LINE_FOLLOWING_USE_IMU != 0 &&
             imu_cycle >= APP_IMU_SERVICE_CYCLES) {
             imu_cycle = 0U;
-            ServiceImu(now_ms);
-            PublishImuSnapshot();
+            AppLineMotion_ServiceImu(now_ms);
         }
     }
-}
-
-static bool ImuStartupHold(uint32_t now_ms)
-{
-    Mpu6050State state;
-
-    if (LINE_FOLLOWING_USE_IMU == 0 ||
-        (uint32_t)(now_ms - imu_started_ms) >=
-            LINE_FOLLOWING_IMU_STARTUP_TIMEOUT_MS) {
-        return false;
-    }
-    state = Mpu6050_GetState();
-    return state == MPU6050_STATE_STARTUP ||
-           state == MPU6050_STATE_CALIBRATING ||
-           state == MPU6050_STATE_DEGRADED;
-}
-
-static bool ReadFreshYawRate(uint32_t now_ms, float *yaw_rate_dps)
-{
-    Mpu6050Snapshot snapshot;
-
-    if (LINE_FOLLOWING_USE_IMU == 0 ||
-        !AppMailbox_ReadImu(&snapshot) ||
-        !ModuleStatus_IsFresh(&snapshot.status, now_ms, MPU6050_STALE_MS)) {
-        return false;
-    }
-    *yaw_rate_dps = snapshot.yaw_rate_dps;
-    return true;
-}
-
-static int8_t PositionSign(int8_t position)
-{
-    if (position < 0) {
-        return -1;
-    }
-    if (position > 0) {
-        return 1;
-    }
-    return 0;
-}
-
-static void BuildMotionRequest(const AppLineSample *sample,
-                               uint32_t now_ms,
-                               MotionRequest *request)
-{
-    LineEstimate estimate = {0};
-    LineTrendResult trend = {0};
-    LineControlOutput follow = {0};
-    LineLookupCommand command;
-    float yaw_rate_dps = 0.0f;
-    bool yaw_fresh;
-    bool pattern_known;
-
-    request->left_speed = 0;
-    request->right_speed = 0;
-    request->timestamp_ms = now_ms;
-    request->valid = false;
-    if (ImuStartupHold(now_ms)) {
-        LinePosition_Reset();
-        LineRecovery_Reset();
-        return;
-    }
-    yaw_fresh = ReadFreshYawRate(now_ms, &yaw_rate_dps);
-
-    pattern_known = sample->position.type == LINE_PATTERN_POSITION ||
-                    sample->position.type == LINE_PATTERN_WIDE;
-    estimate.status.timestamp_ms = sample->timestamp_ms;
-    estimate.status.sequence = sample->sequence;
-    estimate.status.valid = true;
-    estimate.status.health = MODULE_HEALTH_OK;
-    estimate.event = sample->position.type == LINE_PATTERN_LOST
-                         ? LINE_EVENT_LOST
-                         : LINE_EVENT_NONE;
-    estimate.error = (float)sample->position.stable_position;
-    estimate.predicted_error = (float)sample->position.stable_position;
-    estimate.confidence = pattern_known ? 60U : 0U;
-
-    trend.status = estimate.status;
-    trend.direction = PositionSign(sample->position.stable_position);
-
-    command = LineLookupControl_Step(sample->position.stable_position,
-                                     yaw_rate_dps, yaw_fresh);
-    follow.forward = command.base;
-    follow.turn = command.diff;
-    follow.valid = command.valid;
-
-    (void)LineRecovery_Step(&estimate, &trend, &follow, yaw_rate_dps,
-                            yaw_fresh, false, now_ms, request);
-}
-
-static void BuildBringupRunRequest(uint32_t now_ms, MotionRequest *request)
-{
-    request->left_speed = APP_BRINGUP_RUN_SPEED;
-    request->right_speed = APP_BRINGUP_RUN_SPEED;
-    request->timestamp_ms = now_ms;
-    request->valid = true;
 }
 
 static void ControlTask(void *argument)
@@ -252,9 +124,10 @@ static void ControlTask(void *argument)
             continue;
         }
         last_sequence = sample.sequence;
-        BuildMotionRequest(&sample, now_ms, &request);
-        AppMailbox_PublishMotionRequest(&request);
-        control_request_seen = true;
+        if (AppLineMotion_BuildRequest(&sample, now_ms, &request)) {
+            AppMailbox_PublishMotionRequest(&request);
+            control_request_seen = true;
+        }
     }
 }
 
@@ -263,7 +136,6 @@ static void SafetyTask(void *argument)
     TickType_t last_wake;
     uint32_t last_frame_ms = 0U;
     bool motor_armed = false;
-    bool bringup_run_requested = true;
 
     BootTrace_TaskOnline(BOOT_TASK_SAFETY);
     last_wake = xTaskGetTickCount();
@@ -278,9 +150,7 @@ static void SafetyTask(void *argument)
 
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(1U));
         now_ms = Get_Time();
-        if (Key_PollEvent() == KEY_EVENT_SHORT) {
-            bringup_run_requested = true;
-        }
+        RunController_OnKeyEvent(Key_PollEvent());
 
         if (!motor_armed && BootTrace_AllTasksOnline() &&
             AppBoot_IsMotorConfigured() &&
@@ -309,9 +179,7 @@ static void SafetyTask(void *argument)
                                  AppBoot_IsMotorConfigured();
         inputs.motor_fault = Motor_Safety_IsFaultLatched() != 0U;
 
-        if (bringup_run_requested) {
-            BuildBringupRunRequest(now_ms, &request);
-        }
+        (void)RunController_BuildRequest(now_ms, &request);
         if (AppMailbox_ReadMotionRequest(&line_request) &&
             line_request.valid &&
             (uint32_t)(now_ms - line_request.timestamp_ms) <=
@@ -462,13 +330,9 @@ bool AppTasks_Create(void)
 
     AppMailbox_Init();
     LineScanner_Init();
-    LinePosition_Reset();
-    LineRecovery_Init();
+    AppLineMotion_Init(now_ms);
     SafetySupervisor_Init();
-    if (LINE_FOLLOWING_USE_IMU != 0) {
-        Mpu6050_Init(now_ms);
-    }
-    imu_started_ms = now_ms;
+    RunController_Init();
     sensor_alive_ms = now_ms;
     control_alive_ms = now_ms;
 

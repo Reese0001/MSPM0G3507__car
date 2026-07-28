@@ -63,6 +63,8 @@ SOURCES := \
     modules/display/dashboard.c \
     modules/display/runtime_log.c \
     app/mailbox/app_mailbox.c \
+    app/run/run_controller.c \
+    app/line/line_motion.c \
     app/tasks/app_tasks.c \
     bsp/bsp_i2c.c \
     modules/line_tracking/scanner/line_mux.c \
@@ -109,6 +111,8 @@ CPPFLAGS := \
     -Iapp \
     -Iapp/boot \
     -Iapp/mailbox \
+    -Iapp/run \
+    -Iapp/line \
     -Iapp/safety \
     -Iapp/tasks \
     -Iconfig \
