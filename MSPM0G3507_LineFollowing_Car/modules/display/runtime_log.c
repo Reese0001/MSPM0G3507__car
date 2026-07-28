@@ -87,6 +87,16 @@ bool RuntimeLog_PushMotor(uint32_t now_ms, int16_t left, int16_t right)
     return RuntimeLog_Push(now_ms, payload);
 }
 
+bool RuntimeLog_PushTaskMask(uint32_t now_ms, uint8_t mask)
+{
+    static const char hex[] = "0123456789ABCDEF";
+    char payload[] = "TASK MASK 00";
+
+    payload[10] = hex[(mask >> 4) & 0x0FU];
+    payload[11] = hex[mask & 0x0FU];
+    return RuntimeLog_Push(now_ms, payload);
+}
+
 uint8_t RuntimeLog_Snapshot(
     char out[RUNTIME_LOG_CAPACITY][RUNTIME_LOG_LINE_BUFFER])
 {

@@ -9,6 +9,7 @@
 #include "../boot/app_boot.h"
 #include "../mailbox/app_mailbox.h"
 #include "../../modules/display/dashboard.h"
+#include "../../modules/diagnostics/boot_trace.h"
 #include "../../modules/line_tracking/recovery/line_recovery.h"
 #include "../safety/safety_supervisor.h"
 #include "../../config/line_following_profile.h"
@@ -93,10 +94,12 @@ static void PublishImuSnapshot(void)
 
 static void SensorTask(void *argument)
 {
-    TickType_t last_wake = xTaskGetTickCount();
+    TickType_t last_wake;
     uint16_t sequence = 0U;
     uint8_t imu_cycle = 0U;
 
+    BootTrace_TaskOnline(BOOT_TASK_SENSOR);
+    last_wake = xTaskGetTickCount();
     (void)argument;
     for (;;) {
         LineSensorSnapshot snapshot;
@@ -222,6 +225,7 @@ static void ControlTask(void *argument)
 {
     uint16_t last_sequence = 0U;
 
+    BootTrace_TaskOnline(BOOT_TASK_CONTROL);
     (void)argument;
     for (;;) {
         AppLineSample sample;
@@ -244,19 +248,13 @@ static void ControlTask(void *argument)
 
 static void SafetyTask(void *argument)
 {
-    TickType_t last_wake = xTaskGetTickCount();
+    TickType_t last_wake;
     uint32_t last_frame_ms = 0U;
+    bool motor_armed = false;
 
+    BootTrace_TaskOnline(BOOT_TASK_SAFETY);
+    last_wake = xTaskGetTickCount();
     (void)argument;
-    /*
-     * RESET startup must arm before the first supervisor wait.  The safety
-     * layer still owns this call, and configuration failure or a latched
-     * motor fault keeps the output disarmed.
-     */
-    if (AppBoot_IsMotorConfigured() &&
-        Motor_Safety_IsFaultLatched() == 0U) {
-        Motor_Safety_Arm();
-    }
     safety_loop_seen = true;
     for (;;) {
         SafetyInputs inputs = {0};
@@ -266,6 +264,13 @@ static void SafetyTask(void *argument)
 
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(1U));
         now_ms = Get_Time();
+
+        if (!motor_armed && BootTrace_AllTasksOnline() &&
+            AppBoot_IsMotorConfigured() &&
+            Motor_Safety_IsFaultLatched() == 0U) {
+            Motor_Safety_Arm();
+            motor_armed = true;
+        }
 
         /* Latch actionable faults: motor UART first, then silent tasks. */
         if (Motor_Safety_IsFaultLatched() != 0U) {
@@ -312,13 +317,15 @@ static void SafetyTask(void *argument)
             Motor_Safety_Service();
             last_frame_ms = now_ms;
         }
-        LED_HeartbeatService(now_ms);
+        if (BootTrace_AllTasksOnline()) {
+            LED_HeartbeatService(now_ms);
+        }
     }
 }
 
 static void DisplayTask(void *argument)
 {
-    bool display_ready = AppBoot_IsDisplayReady();
+    bool display_ready;
     bool observed = false;
     SafetySupervisorState previous_safety = SAFETY_READY;
     LineRecoveryState previous_recovery = LINE_RECOVERY_FOLLOW;
@@ -329,17 +336,26 @@ static void DisplayTask(void *argument)
     bool logged_safety_loop = false;
     bool logged_sensor_frame = false;
     bool logged_control_request = false;
+    uint8_t previous_task_mask = 0xFFU;
 
+    BootTrace_TaskOnline(BOOT_TASK_DISPLAY);
+    display_ready = AppBoot_IsDisplayReady();
     (void)argument;
     for (;;) {
         MotorSafetyDiagnostics motor = {0};
         SafetySupervisorState safety;
         LineRecoveryState recovery;
         uint32_t now_ms;
+        uint8_t task_mask;
         bool redraw = false;
 
         vTaskDelay(pdMS_TO_TICKS(100U));
         now_ms = Get_Time();
+        task_mask = BootTrace_GetTaskMask();
+        if (task_mask != previous_task_mask) {
+            redraw |= RuntimeLog_PushTaskMask(now_ms, task_mask);
+            previous_task_mask = task_mask;
+        }
         if (!display_ready) {
             display_ready = Ssd1306_Init();
             if (display_ready) {
@@ -477,7 +493,5 @@ void vApplicationStackOverflowHook(TaskHandle_t task,
 {
     (void)task;
     (void)task_name;
-    Motor_Safety_Disarm();
-    for (;;) {
-    }
+    BootTrace_Fatal(BOOT_FAULT_STACK_OVERFLOW);
 }

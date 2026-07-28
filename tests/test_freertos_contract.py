@@ -16,13 +16,16 @@ class FreeRtosContract(unittest.TestCase):
         self.assertIn("#define configSUPPORT_STATIC_ALLOCATION 1", config)
         self.assertIn("#define configSUPPORT_DYNAMIC_ALLOCATION 0", config)
         self.assertIn("xTaskCreateStatic", tasks)
-        self.assertIn("Motor_Safety_Disarm()", tasks)
+        self.assertIn(
+            "BootTrace_Fatal(BOOT_FAULT_STACK_OVERFLOW)",
+            tasks,
+        )
         self.assertIn("vTaskStartScheduler()", main)
         self.assertIn("inputs.start_pressed = true;", tasks)
         self.assertNotIn("inputs.start_pressed = line_start_ready;", tasks)
         self.assertNotIn("line_start_ready = LineStartGate_Update", tasks)
 
-    def test_safety_task_arms_motor_before_waiting_for_supervisor_state(self):
+    def test_safety_task_arms_motor_only_after_all_tasks_are_online(self):
         tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
 
         control_start = tasks.index("static void ControlTask")
@@ -37,8 +40,11 @@ class FreeRtosContract(unittest.TestCase):
         self.assertIn("AppBoot_IsMotorConfigured()", safety_body)
         arm_position = safety_body.index("Motor_Safety_Arm();")
         loop_position = safety_body.index("for (;;)")
-        self.assertLess(arm_position, loop_position)
-        self.assertIn("AppBoot_IsMotorConfigured()", safety_body)
+        self.assertGreater(arm_position, loop_position)
+        self.assertIn(
+            "BootTrace_AllTasksOnline()",
+            safety_body[arm_position - 240:arm_position],
+        )
         self.assertNotIn(
             "state == SAFETY_RUNNING",
             safety_body[arm_position - 120:arm_position + 40],
