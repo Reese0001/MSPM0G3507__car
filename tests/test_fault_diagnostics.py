@@ -58,11 +58,14 @@ class FaultDiagnosticsContract(unittest.TestCase):
             self.assertIn(label, self.dashboard)
 
     def test_heartbeat_expiry_latches_and_stops(self):
-        self.assertIn("APP_CONTROL_HEARTBEAT_TIMEOUT_MS", self.tasks)
+        safety_body = self.tasks[self.tasks.index("static void SafetyTask"):]
+        safety_body = safety_body[: self.tasks.index("static void DisplayTask")]
+
         self.assertIn("APP_SENSOR_HEARTBEAT_TIMEOUT_MS", self.tasks)
         self.assertIn("APP_FAULT_SENSOR_HEARTBEAT", self.tasks)
-        self.assertIn("APP_FAULT_CONTROL_HEARTBEAT", self.tasks)
         self.assertIn("APP_FAULT_MOTOR_UART", self.tasks)
+        self.assertNotIn("APP_CONTROL_HEARTBEAT_TIMEOUT_MS", safety_body)
+        self.assertNotIn("APP_FAULT_CONTROL_HEARTBEAT", safety_body)
         self.assertRegex(
             self.tasks,
             r"latched_fault\s*!=\s*APP_FAULT_NONE[\s\S]{0,400}LED_ON\(\)",
