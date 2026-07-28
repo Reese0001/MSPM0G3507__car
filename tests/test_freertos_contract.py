@@ -35,7 +35,7 @@ class NativeRuntimeContract(unittest.TestCase):
             "void AppTasks_Poll(uint32_t now_ms)",
             "{APP_TASK_SAFETY, safety_task, APP_TASK_BASE_TICK_MS",
             "{APP_TASK_SENSOR, sensor_task, 2U * APP_TASK_BASE_TICK_MS",
-            "{APP_TASK_DISPLAY, display_task, 100U * APP_TASK_BASE_TICK_MS",
+            "{APP_TASK_DISPLAY, display_task, 10U * APP_TASK_BASE_TICK_MS",
             "SensorRuntime_Step",
             "ControlRuntime_RunOnce",
             "SafetyRuntime_Step",

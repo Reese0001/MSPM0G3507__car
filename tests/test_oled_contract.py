@@ -66,9 +66,18 @@ class OledContract(unittest.TestCase):
             combined,
         )
 
-    def test_display_task_observes_and_renders_runtime_log_at_100ms(self):
+    def test_runtime_display_flushes_one_page_per_timeslice(self):
+        self.assertIn("bool Ssd1306_FlushNextDirtyPage(void)", self.ssd_h)
+        self.assertIn("Ssd1306_FlushNextDirtyPage", self.ssd)
         self.assertIn(
-            "{APP_TASK_DISPLAY, display_task, 100U * APP_TASK_BASE_TICK_MS",
+            "{APP_TASK_DISPLAY, display_task, 10U * APP_TASK_BASE_TICK_MS",
+            self.tasks,
+        )
+        self.assertIn("Ssd1306_FlushNextDirtyPage", self.observer)
+
+    def test_display_task_observes_and_renders_runtime_log_in_small_slices(self):
+        self.assertIn(
+            "{APP_TASK_DISPLAY, display_task, 10U * APP_TASK_BASE_TICK_MS",
             self.tasks,
         )
         self.assertIn("RuntimeObserver_Update", self.tasks)

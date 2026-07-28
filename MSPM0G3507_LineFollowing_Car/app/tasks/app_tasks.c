@@ -67,7 +67,7 @@ static AppTaskSlot app_task_slots[] = {
     {APP_TASK_SAFETY, safety_task, APP_TASK_BASE_TICK_MS, 0U},
     {APP_TASK_SENSOR, sensor_task, 2U * APP_TASK_BASE_TICK_MS, 0U},
     {APP_TASK_CONTROL, control_task, APP_TASK_BASE_TICK_MS, 0U},
-    {APP_TASK_DISPLAY, display_task, 100U * APP_TASK_BASE_TICK_MS, 0U}
+    {APP_TASK_DISPLAY, display_task, 10U * APP_TASK_BASE_TICK_MS, 0U}
 };
 
 static bool task_is_due(const AppTaskSlot *slot, uint32_t now_ms)

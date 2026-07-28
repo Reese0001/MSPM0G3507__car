@@ -162,7 +162,7 @@ void Ssd1306_DrawText(uint8_t page, uint8_t column, const char *text)
     dirty_pages |= (uint8_t)(1U << page);
 }
 
-bool Ssd1306_FlushDirty(void)
+bool Ssd1306_FlushNextDirtyPage(void)
 {
     uint8_t page;
 
@@ -177,6 +177,17 @@ bool Ssd1306_FlushDirty(void)
             return false;
         }
         dirty_pages &= (uint8_t)~(1U << page);
+        return true;
+    }
+    return true;
+}
+
+bool Ssd1306_FlushDirty(void)
+{
+    while (dirty_pages != 0U) {
+        if (!Ssd1306_FlushNextDirtyPage()) {
+            return false;
+        }
     }
     return true;
 }

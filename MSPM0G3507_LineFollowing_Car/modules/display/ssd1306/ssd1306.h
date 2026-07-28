@@ -17,5 +17,7 @@ void Ssd1306_ClearBuffer(void);
 void Ssd1306_DrawText(uint8_t page, uint8_t column, const char *text);
 /* Send only the pages touched since the last successful flush. */
 bool Ssd1306_FlushDirty(void);
+/* Send at most one dirty page; keeps the cooperative scheduler responsive. */
+bool Ssd1306_FlushNextDirtyPage(void);
 
 #endif

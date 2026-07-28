@@ -23,7 +23,7 @@ class NativeScheduleContract(unittest.TestCase):
         for token in (
             "{APP_TASK_SAFETY, safety_task, APP_TASK_BASE_TICK_MS",
             "{APP_TASK_SENSOR, sensor_task, 2U * APP_TASK_BASE_TICK_MS",
-            "{APP_TASK_DISPLAY, display_task, 100U * APP_TASK_BASE_TICK_MS",
+            "{APP_TASK_DISPLAY, display_task, 10U * APP_TASK_BASE_TICK_MS",
             "MOTOR_UART_MIN_PERIOD_MS",
         ):
             self.assertIn(token, self.tasks + self.safety_runtime)

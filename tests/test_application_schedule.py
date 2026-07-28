@@ -19,7 +19,7 @@ class ApplicationScheduleTests(unittest.TestCase):
         self.assertIn("AppTasks_Poll", self.tasks)
         self.assertIn("{APP_TASK_SAFETY, safety_task, APP_TASK_BASE_TICK_MS", self.tasks)
         self.assertIn("{APP_TASK_SENSOR, sensor_task, 2U * APP_TASK_BASE_TICK_MS", self.tasks)
-        self.assertIn("{APP_TASK_DISPLAY, display_task, 100U * APP_TASK_BASE_TICK_MS", self.tasks)
+        self.assertIn("{APP_TASK_DISPLAY, display_task, 10U * APP_TASK_BASE_TICK_MS", self.tasks)
         for name in ("SensorTask", "ControlTask", "SafetyTask", "DisplayTask"):
             self.assertNotIn(name, self.tasks)
         self.assertNotIn("vTaskDelay", self.tasks)

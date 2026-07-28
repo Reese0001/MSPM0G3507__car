@@ -310,7 +310,9 @@ bool RuntimeObserver_Update(uint32_t now_ms)
     observed = true;
     if (redraw) {
         RuntimeLog_Draw();
-        display_ready = Ssd1306_FlushDirty();
+    }
+    if (display_ready) {
+        display_ready = Ssd1306_FlushNextDirtyPage();
         if (!display_ready) {
             (void)RuntimeLog_Push(now_ms, "OLED FAIL");
         }
