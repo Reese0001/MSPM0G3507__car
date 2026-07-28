@@ -14,6 +14,7 @@
 - 灰度任务固定 2 ms；跨越大于 1 个位置的跳变连续 2 帧才接受。
 - 串级 PID 保持活动：位置 `KP=14.0/KD=0.010`，角度 `KP=1.5/KD=0.55` 作为起点。
 - 查表只做辅助前馈，不能替代或绕开 PID。
+- 必须重构原职责而不是增加包装层：删除重复速度表、旧恢复状态和旧分支，不保留两套活动算法或功能开关。
 - `-1/0/+1` 查表差速为 0，位置 PID 有效误差为 0，微分噪声不得穿过中心死区。
 - 正常、ALIGN 和 SEEK 输出均满足 `0 <= left/right <= 140`；底层 450 安全限幅仍保留。
 - 丢线方向只锁定一次；不得倒车、反向、往返扫描或因 yaw/时间到阈值停车。
@@ -198,6 +199,8 @@ limit_wheels(&controller.forward, &controller.turn);
 
 删除 `forward_by_position[]`，避免查表重复；保留原位置/角度 PID 参数。`limit_wheels` 继续保证 `abs(turn)<=forward`。
 
+重构完成后 `line_cascade_control.c` 中不得再出现 `forward_by_position`、`YawSpeedBand` 或另一套位置速度表；前馈必须直接进入原 `position -> angle -> limit` 流水线，不能新增并行控制分支。
+
 - [ ] **Step 5: 运行融合和 MPU 测试**
 
 Run: `python -m unittest tests.test_line_cascade_control tests.test_mpu6050 tests.test_mpu6050_kalman -v`
@@ -314,6 +317,8 @@ Expected: FAIL，旧代码包含负轮速和 600 ms 翻转。
 ```
 
 删除 forward-search、rotate timer、负速度常量和 `recovery_direction = -recovery_direction`。
+
+`line_recovery.c` 按五状态重新组织，不允许保留旧状态并用额外 if 绕过；搜索输出只保留一个按锁定方向镜像的 helper。
 
 - [ ] **Step 4: 实现锁定方向输出**
 
@@ -456,6 +461,8 @@ Expected: 文件非空、时间戳晚于源码修改、首行为 TI-TXT 地址�
 - [ ] **Step 5: 完成需求审计**
 
 逐项提供源码/测试/构建证据：固定接线、2 ms、15位置、防抖、动态平均/差速、PID仍活动、前馈已融合、三帧趋势、单向盲走、检测恢复、全程非负限幅、K1/软启动/看门狗未回退、新 TI-TXT。
+
+同时检查活动代码不存在 `forward_by_position`、`LINE_RECOVERY_FORWARD_SEARCH`、`LINE_RECOVERY_ROTATE_SEARCH`、`LINE_ROTATE_SEARCH_MS`、`recovery_direction = -recovery_direction` 或负找线命令；这些匹配存在即视为重构未完成。
 
 - [ ] **Step 6: 提交 README**
 
