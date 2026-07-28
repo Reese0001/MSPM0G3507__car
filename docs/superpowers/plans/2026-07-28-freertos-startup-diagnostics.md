@@ -435,18 +435,42 @@ Get-FileHash 'dist\firmware\MSPM0G3507_LineFollowing_Car.txt' -Algorithm SHA256
 
 - [ ] **Step 4: Field interpretation checkpoint**
 
-- OLED `SCHED START`, LEDs `00`: scheduler trace hook not reached or immediate assert before stage 04.
-- OLED `SCHED START`, LEDs `01`: entered FreeRTOS port but SVC not entered.
+- OLED `SCHED START`, LEDs `00`: scheduler trace hook not reached. An assert uses `E1`, not static `00`.
+- OLED `SCHED START`, LEDs `01`: scheduler trace hook ran, but SVC was not entered; the stall is around the call into `xPortStartScheduler()`.
 - OLED `SCHED START`, LEDs `10`: entered SVC but first context restore not called.
-- OLED `SCHED START`, LEDs `11`: restore began but first task C entry not reached.
+- OLED `SCHED START`, LEDs `11`: restore began but no task C entry registered.
+- D1 OFF with D2 repeating 1-3 short pulses: 1-3 task entries registered, but the mask has not reached `0x0F`.
 - D1 ON with D2 repeating 1-5 pulses: `E1-E5` fatal code.
-- D1 OFF and D2 250 ms heartbeat, OLED task mask `0F`: all tasks running; continue into motor/control diagnostics.
+- D1 OFF and D2 250 ms heartbeat: all tasks reached `0x0F`; `TASK MASK 0F` is logged once and may later scroll off the OLED. Continue into motor/control diagnostics.
 
 Record this temporary field table in both READMEs next to the OLED startup
 instructions.  State clearly that it applies only to the temporary startup
 diagnostic firmware and will be removed after the root cause is confirmed.
 
 Do not claim the motor issue fixed until the field result reaches task mask `0F` and a nonzero motor request is observed.
+
+---
+
+### Task 5B: 修复最终跨阶段审查阻断项并重建
+
+**Files:**
+- Modify: `MSPM0G3507_LineFollowing_Car/modules/diagnostics/boot_trace.h`
+- Modify: `MSPM0G3507_LineFollowing_Car/modules/diagnostics/boot_trace.c`
+- Modify: `MSPM0G3507_LineFollowing_Car/app/boot/app_boot.c`
+- Create: `freertos_kernel/portasm_diagnostic.c`
+- Modify: `freertos_kernel/Makefile`
+- Modify: `freertos_kernel/freertos_kernel_ticlang.projectspec`
+- Modify: `tests/test_freertos_startup_diagnostics.py`
+- Modify: `tests/test_freertos_contract.py`
+- Modify: `README.md`
+- Modify: `MSPM0G3507_LineFollowing_Car/README.md`
+- Modify: `docs/superpowers/specs/2026-07-28-freertos-startup-diagnostics-design.md`
+
+- [ ] `BootTrace_Fatal()` begins with `__disable_irq()`, clears D2, sets D1, and uses a clearly longer inter-group gap.
+- [ ] A GPIO-only `BootTrace_Tick1ms()` reports partial task masks as 1-3 short D2 pulses with D1 off; the existing TIMG0 callback services it, and fatal interrupt masking prevents heartbeat/pattern contention.
+- [ ] Replace Makefile-only portasm flags with a repository `portasm_diagnostic.c` include wrapper that defines the two renamed symbols locally. Both the CLI Makefile and CCS projectspec compile this same wrapper; `port.c` remains unrenamed.
+- [ ] Correct both READMEs and the design: stages 03-06 are static D1:D2 codes, partial tasks are pulses, assertions use E1, stage 04 is the pre-port trace hook, and `TASK MASK 0F` may scroll off.
+- [ ] Run focused tests, dual-cache clean build, all host tests, ELF/vector checks, and regenerate/rehash TI-TXT before field handoff.
 
 ---
 
