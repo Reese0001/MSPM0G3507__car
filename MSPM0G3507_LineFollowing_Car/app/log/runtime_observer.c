@@ -1,5 +1,6 @@
 #include "runtime_observer.h"
 
+#include "../safety/safety_runtime.h"
 #include "../safety/safety_supervisor.h"
 #include "../../modules/diagnostics/boot_trace.h"
 #include "../../modules/display/runtime_log.h"
@@ -14,11 +15,13 @@ static LineRecoveryState previous_recovery;
 static int16_t previous_left;
 static int16_t previous_right;
 static MotorSafetyFaultReason previous_fault;
+static bool previous_armed;
 static bool previous_direction_wait;
 static bool logged_safety_loop;
 static bool logged_sensor_frame;
 static bool logged_control_request;
 static bool logged_test_run;
+static bool logged_sensor_wait;
 static bool safety_loop_seen;
 static bool sensor_frame_seen;
 static bool control_request_seen;
@@ -33,11 +36,13 @@ void RuntimeObserver_Init(bool ready)
     previous_left = 0;
     previous_right = 0;
     previous_fault = MOTOR_SAFETY_FAULT_NONE;
+    previous_armed = false;
     previous_direction_wait = false;
     logged_safety_loop = false;
     logged_sensor_frame = false;
     logged_control_request = false;
     logged_test_run = false;
+    logged_sensor_wait = false;
     safety_loop_seen = false;
     sensor_frame_seen = false;
     control_request_seen = false;
@@ -101,9 +106,18 @@ bool RuntimeObserver_Update(uint32_t now_ms)
         redraw |= RuntimeLog_Push(now_ms, "CONTROL REQ");
         logged_control_request = true;
     }
+    if (!logged_sensor_wait &&
+        SafetyRuntime_IsSensorHeartbeatMissing()) {
+        redraw |= RuntimeLog_Push(now_ms, "SENSOR WAIT");
+        logged_sensor_wait = true;
+    }
     if ((!observed || safety != previous_safety) &&
         safety == SAFETY_RUNNING) {
-        redraw |= RuntimeLog_Push(now_ms, "MOTOR ARM");
+        redraw |= RuntimeLog_Push(now_ms, "SAFETY RUN");
+    }
+    if ((!observed || motor.armed != previous_armed) &&
+        motor.armed) {
+        redraw |= RuntimeLog_Push(now_ms, "MOTOR ARMED");
     }
     if (!observed || motor.fault_reason != previous_fault) {
         if (motor.fault_reason == MOTOR_SAFETY_FAULT_UART_TIMEOUT) {
@@ -138,6 +152,7 @@ bool RuntimeObserver_Update(uint32_t now_ms)
     previous_left = motor.left_applied;
     previous_right = motor.right_applied;
     previous_fault = motor.fault_reason;
+    previous_armed = motor.armed;
     previous_direction_wait = motor.direction_wait;
     observed = true;
     if (redraw) {

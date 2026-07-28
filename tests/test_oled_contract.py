@@ -75,7 +75,9 @@ class OledContract(unittest.TestCase):
         self.assertIn("WATCHDOG", self.observer)
         self.assertIn("DIR WAIT", self.observer)
         self.assertIn("LINE LOST", self.observer)
-        self.assertIn("MOTOR ARM", self.observer)
+        self.assertIn("SAFETY RUN", self.observer)
+        self.assertIn("MOTOR ARMED", self.observer)
+        self.assertNotIn('"MOTOR ARM"', self.observer)
         self.assertIn("RuntimeLog_PushMotor", self.observer)
 
     def test_oled_failure_never_stops_the_motors(self):

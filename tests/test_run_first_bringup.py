@@ -39,6 +39,19 @@ class RunFirstBringupContract(unittest.TestCase):
             safety.index("AppMailbox_ReadMotionRequest"),
         )
         self.assertNotIn("APP_FAULT_CONTROL_HEARTBEAT", safety)
+        self.assertNotIn("latched_fault = APP_FAULT_SENSOR_HEARTBEAT", safety)
+        self.assertIn("sensor_heartbeat_missing", safety)
+
+    def test_zero_line_request_cannot_hide_initial_test_run(self):
+        safety = self.safety_runtime
+        self.assertIn("LineRequestCanOverride", safety)
+        self.assertIn("motion_output_seen", safety)
+        override = safety[
+            safety.index("static bool LineRequestCanOverride"):
+            safety.index("static SafetyInputs BuildInputs")
+        ]
+        self.assertIn("MotionRequestHasOutput", override)
+        self.assertIn("motion_output_seen", override)
 
     def test_k1_can_request_run_after_boot(self):
         self.assertIn('#include "../../modules/key/key.h"', self.safety_runtime)

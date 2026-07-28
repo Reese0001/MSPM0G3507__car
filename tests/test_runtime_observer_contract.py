@@ -17,8 +17,12 @@ class RuntimeObserverContract(unittest.TestCase):
             "RuntimeObserver_MarkControlRequest",
             "RuntimeObserver_Update",
             '"TEST RUN"',
+            '"SENSOR WAIT"',
+            '"SAFETY RUN"',
+            '"MOTOR ARMED"',
             '"UART TIMEOUT"',
             '"WATCHDOG"',
+            "SafetyRuntime_IsSensorHeartbeatMissing",
         ):
             self.assertIn(token, header + source)
         self.assertNotIn("RuntimeLog_Push(now_ms", tasks)

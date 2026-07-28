@@ -19,6 +19,7 @@
 static uint32_t sensor_alive_ms;
 static uint32_t last_frame_ms;
 static bool motor_armed;
+static bool sensor_heartbeat_missing;
 static uint8_t latched_fault;
 
 static void StopRequest(uint32_t now_ms, MotionRequest *request)
@@ -31,13 +32,25 @@ static void StopRequest(uint32_t now_ms, MotionRequest *request)
 
 static void UpdateFaultLatch(uint32_t now_ms)
 {
+    sensor_heartbeat_missing =
+        (uint32_t)(now_ms - sensor_alive_ms) >
+        APP_SENSOR_HEARTBEAT_TIMEOUT_MS;
+
     if (Motor_Safety_IsFaultLatched() != 0U) {
         latched_fault = APP_FAULT_MOTOR_UART;
-    } else if (latched_fault == APP_FAULT_NONE &&
-               (uint32_t)(now_ms - sensor_alive_ms) >
-                   APP_SENSOR_HEARTBEAT_TIMEOUT_MS) {
-        latched_fault = APP_FAULT_SENSOR_HEARTBEAT;
     }
+}
+
+static bool MotionRequestHasOutput(const MotionRequest *request)
+{
+    return request != 0 &&
+           (request->left_speed != 0 || request->right_speed != 0);
+}
+
+static bool LineRequestCanOverride(const MotionRequest *request,
+                                   bool motion_output_seen)
+{
+    return motion_output_seen || MotionRequestHasOutput(request);
 }
 
 static SafetyInputs BuildInputs(void)
@@ -59,10 +72,15 @@ static MotionRequest BuildRequest(uint32_t now_ms)
 {
     MotionRequest request = {0};
     MotionRequest line_request = {0};
+    MotorSafetyDiagnostics motor = {0};
+    bool motion_output_seen;
 
+    Motor_Safety_GetDiagnostics(&motor);
+    motion_output_seen = motor.left_applied != 0 || motor.right_applied != 0;
     (void)RunController_BuildRequest(now_ms, &request);
     if (AppMailbox_ReadMotionRequest(&line_request) &&
         line_request.valid &&
+        LineRequestCanOverride(&line_request, motion_output_seen) &&
         (uint32_t)(now_ms - line_request.timestamp_ms) <=
             MOTION_REQUEST_MAX_AGE_MS) {
         request = line_request;
@@ -76,7 +94,7 @@ static MotionRequest BuildRequest(uint32_t now_ms)
 
 static void ArmWhenReady(void)
 {
-    if (!motor_armed && BootTrace_AllTasksOnline() &&
+    if (!motor_armed && BootTrace_MotionTasksOnline() &&
         AppBoot_IsMotorConfigured() &&
         Motor_Safety_IsFaultLatched() == 0U) {
         Motor_Safety_Arm();
@@ -91,12 +109,14 @@ void SafetyRuntime_Init(uint32_t now_ms)
     sensor_alive_ms = now_ms;
     last_frame_ms = 0U;
     motor_armed = false;
+    sensor_heartbeat_missing = false;
     latched_fault = APP_FAULT_NONE;
 }
 
 void SafetyRuntime_OnSensorFrame(uint32_t now_ms)
 {
     sensor_alive_ms = now_ms;
+    sensor_heartbeat_missing = false;
 }
 
 void SafetyRuntime_Step(uint32_t now_ms)
@@ -121,4 +141,9 @@ void SafetyRuntime_Step(uint32_t now_ms)
     if (BootTrace_AllTasksOnline()) {
         LED_HeartbeatService(now_ms);
     }
+}
+
+bool SafetyRuntime_IsSensorHeartbeatMissing(void)
+{
+    return sensor_heartbeat_missing;
 }

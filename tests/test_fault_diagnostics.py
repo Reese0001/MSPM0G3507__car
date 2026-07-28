@@ -63,16 +63,22 @@ class FaultDiagnosticsContract(unittest.TestCase):
         ):
             self.assertIn(label, self.dashboard)
 
-    def test_heartbeat_expiry_latches_and_stops(self):
+    def test_motor_uart_fault_latches_and_stops(self):
         self.assertIn("APP_SENSOR_HEARTBEAT_TIMEOUT_MS", self.safety_runtime)
-        self.assertIn("APP_FAULT_SENSOR_HEARTBEAT", self.safety_runtime)
         self.assertIn("APP_FAULT_MOTOR_UART", self.safety_runtime)
         self.assertNotIn("APP_CONTROL_HEARTBEAT_TIMEOUT_MS", self.safety_runtime)
         self.assertNotIn("APP_FAULT_CONTROL_HEARTBEAT", self.safety_runtime)
+        self.assertIn("latched_fault = APP_FAULT_MOTOR_UART", self.safety_runtime)
         self.assertRegex(
             self.safety_runtime,
             r"latched_fault\s*!=\s*APP_FAULT_NONE[\s\S]{0,400}LED_ON\(\)",
         )
+
+    def test_sensor_heartbeat_is_diagnostic_not_motor_stop(self):
+        self.assertIn("sensor_heartbeat_missing", self.safety_runtime)
+        self.assertIn("SafetyRuntime_IsSensorHeartbeatMissing", self.safety_runtime)
+        self.assertNotIn("latched_fault = APP_FAULT_SENSOR_HEARTBEAT", self.safety_runtime)
+        self.assertIn('RuntimeLog_Push(now_ms, "SENSOR WAIT")', self.observer)
 
     def test_display_failure_stays_recoverable(self):
         self.assertIn("Ssd1306_Init()", self.observer)

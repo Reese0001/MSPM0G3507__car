@@ -29,10 +29,13 @@ class FreeRtosContract(unittest.TestCase):
         self.assertNotIn("inputs.start_pressed = line_start_ready;", safety_runtime)
         self.assertNotIn("line_start_ready = LineStartGate_Update", tasks + safety_runtime)
 
-    def test_safety_task_arms_motor_only_after_all_tasks_are_online(self):
+    def test_safety_task_arms_motor_after_motion_tasks_are_online(self):
         tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
         safety_runtime = (
             ROOT / "app/safety/safety_runtime.c"
+        ).read_text(encoding="utf-8")
+        boot_trace_h = (
+            ROOT / "modules/diagnostics/boot_trace.h"
         ).read_text(encoding="utf-8")
 
         control_start = tasks.index("static void ControlTask")
@@ -46,10 +49,15 @@ class FreeRtosContract(unittest.TestCase):
         self.assertNotIn("line_start_ready", tasks)
         self.assertIn("SafetyRuntime_Step", safety_body)
         self.assertIn("AppBoot_IsMotorConfigured()", safety_runtime)
+        self.assertIn("BootTrace_MotionTasksOnline", boot_trace_h + safety_runtime)
         arm_position = safety_runtime.index("Motor_Safety_Arm();")
         loop_position = safety_runtime.index("static void ArmWhenReady")
         self.assertGreater(arm_position, loop_position)
         self.assertIn(
+            "BootTrace_MotionTasksOnline()",
+            safety_runtime[arm_position - 240:arm_position],
+        )
+        self.assertNotIn(
             "BootTrace_AllTasksOnline()",
             safety_runtime[arm_position - 240:arm_position],
         )

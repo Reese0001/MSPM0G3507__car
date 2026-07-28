@@ -32,11 +32,14 @@ typedef enum {
 #define BOOT_TASK_CONTROL (1U << 2)
 #define BOOT_TASK_DISPLAY (1U << 3)
 #define BOOT_TASK_ALL     (0x0FU)
+#define BOOT_TASK_MOTION_REQUIRED \
+    (BOOT_TASK_SAFETY | BOOT_TASK_SENSOR | BOOT_TASK_CONTROL)
 
 void BootTrace_Init(void);
 void BootTrace_Mark(BootTraceStage stage);
 void BootTrace_TaskOnline(uint8_t bit);
 void BootTrace_Tick1ms(void);
+bool BootTrace_MotionTasksOnline(void);
 bool BootTrace_AllTasksOnline(void);
 uint8_t BootTrace_GetTaskMask(void);
 __attribute__((noreturn)) void BootTrace_Fatal(BootTraceFault fault);

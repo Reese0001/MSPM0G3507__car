@@ -104,8 +104,10 @@ class FreeRtosStartupDiagnostics(unittest.TestCase):
         self.assertNotIn("/", tick)
         self.assertNotIn("%", tick)
 
-    def test_all_tasks_register_and_motor_waits_for_all(self):
+    def test_all_tasks_register_and_motor_waits_for_motion_tasks_only(self):
         tasks = (ROOT / "app/tasks/app_tasks.c").read_text("utf-8")
+        boot_trace = (ROOT / "modules/diagnostics/boot_trace.c").read_text("utf-8")
+        boot_trace_h = (ROOT / "modules/diagnostics/boot_trace.h").read_text("utf-8")
         safety_runtime = (
             ROOT / "app/safety/safety_runtime.c"
         ).read_text("utf-8")
@@ -114,8 +116,11 @@ class FreeRtosStartupDiagnostics(unittest.TestCase):
             "BOOT_TASK_CONTROL", "BOOT_TASK_DISPLAY",
         ):
             self.assertIn(f"BootTrace_TaskOnline({bit})", tasks)
+        self.assertIn("BOOT_TASK_MOTION_REQUIRED", boot_trace_h)
+        self.assertIn("bool BootTrace_MotionTasksOnline(void)", boot_trace)
         arm = safety_runtime.index("Motor_Safety_Arm();")
-        self.assertIn("BootTrace_AllTasksOnline()", safety_runtime[arm - 240:arm])
+        self.assertIn("BootTrace_MotionTasksOnline()", safety_runtime[arm - 240:arm])
+        self.assertNotIn("BootTrace_AllTasksOnline()", safety_runtime[arm - 240:arm])
 
     def test_all_tasks_clear_startup_leds_before_heartbeat_handoff(self):
         source = (

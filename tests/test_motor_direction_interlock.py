@@ -36,6 +36,7 @@ class MotorDirectionInterlockContract(unittest.TestCase):
         self.assertIn("MOTOR_SAFETY_FAULT_UART_TIMEOUT", header)
         self.assertIn("MOTOR_SAFETY_FAULT_WATCHDOG", header)
         self.assertIn("MotorSafetyDiagnostics", header)
+        self.assertIn("bool armed;", header)
         self.assertIn("Motor_Safety_GetDiagnostics(MotorSafetyDiagnostics *out)", header)
 
     def test_only_motor_adapter_submits_speed_requests(self):

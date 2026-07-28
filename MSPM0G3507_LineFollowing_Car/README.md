@@ -75,7 +75,7 @@ UniFlash 只选择并烧录 `dist/firmware/MSPM0G3507_LineFollowing_Car.txt`（T
 
 - D1 熄灭且 D2 重复 1～3 个 100 ms 短脉冲，并带明显长间隔：已有 1～3 个任务入口上线，任务位图尚未达到 `0x0F`。
 - D1 常亮且 D2 重复闪烁 1～5 次：分别是致命码 `E1`～`E5`。
-- D1 熄灭且 D2 以 250 ms 心跳：四个任务均已达到 `0x0F`。`TASK MASK 0F` 只记录一次，可能已从流动 OLED 日志中滚走，此后以 D2 心跳为准；随后继续观察 `MOTOR ARM` 和非零 `TX`，不要仅据此宣称电机已修复。
+- D1 熄灭且 D2 以 250 ms 心跳：四个任务均已达到 `0x0F`。`TASK MASK 0F` 只记录一次，可能已从流动 OLED 日志中滚走，此后以 D2 心跳为准；随后继续观察 `SAFETY RUN`、`MOTOR ARMED` 和非零 `TX`，不要仅据此宣称电机已修复。
 
 OLED 使用 PA10=SCL、PA11=SDA、地址 `0x3C`，作为流动行为日志；调试串口保持 115200。按下 RESET 后固件自动启动，K1 不是启动门，也不等待循迹有效帧才允许电机软启动。正常启动时 OLED 必须完整显示：
 
@@ -85,7 +85,8 @@ OLED 使用 PA10=SCL、PA11=SDA、地址 `0x3C`，作为流动行为日志；调
 0020 AUTO START
 0022 MOTOR CFG
 0525 CFG OK
-0526 MOTOR ARM
+0526 SAFETY RUN
+0526 MOTOR ARMED
 0626 TX L030 R030
 0726 TX L060 R060
 ```

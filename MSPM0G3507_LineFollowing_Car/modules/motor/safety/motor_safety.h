@@ -24,6 +24,7 @@ typedef enum {
 typedef struct {
     int16_t left_applied;
     int16_t right_applied;
+    bool armed;
     bool direction_wait;
     MotorSafetyFaultReason fault_reason;
 } MotorSafetyDiagnostics;

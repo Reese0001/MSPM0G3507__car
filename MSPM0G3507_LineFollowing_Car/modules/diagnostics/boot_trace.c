@@ -156,6 +156,12 @@ bool BootTrace_AllTasksOnline(void)
     return task_mask == BOOT_TASK_ALL;
 }
 
+bool BootTrace_MotionTasksOnline(void)
+{
+    return (task_mask & BOOT_TASK_MOTION_REQUIRED) ==
+           BOOT_TASK_MOTION_REQUIRED;
+}
+
 uint8_t BootTrace_GetTaskMask(void)
 {
     return task_mask;
