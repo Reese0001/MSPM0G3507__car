@@ -65,6 +65,7 @@ SOURCES := \
     app/mailbox/app_mailbox.c \
     app/run/run_controller.c \
     app/line/line_motion.c \
+    app/log/runtime_observer.c \
     app/tasks/app_tasks.c \
     bsp/bsp_i2c.c \
     modules/line_tracking/scanner/line_mux.c \
@@ -113,6 +114,7 @@ CPPFLAGS := \
     -Iapp/mailbox \
     -Iapp/run \
     -Iapp/line \
+    -Iapp/log \
     -Iapp/safety \
     -Iapp/tasks \
     -Iconfig \

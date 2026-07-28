@@ -16,6 +16,7 @@ class AppTaskDecompositionContract(unittest.TestCase):
         self.assertNotIn("BuildBringupRunRequest", self.tasks)
         self.assertNotIn("BuildMotionRequest", self.tasks)
         self.assertNotIn("RuntimeLog_Push(now_ms", self.tasks)
+        self.assertNotIn("CREATE_APP_TASK", self.tasks)
 
     def test_new_app_modules_exist(self):
         for path in (

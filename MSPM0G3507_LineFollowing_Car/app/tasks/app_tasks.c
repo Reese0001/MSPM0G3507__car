@@ -8,62 +8,48 @@
 
 #include "../boot/app_boot.h"
 #include "../line/line_motion.h"
+#include "../log/runtime_observer.h"
 #include "../mailbox/app_mailbox.h"
 #include "../run/run_controller.h"
-#include "../../modules/display/dashboard.h"
 #include "../../modules/diagnostics/boot_trace.h"
-#include "../../modules/line_tracking/recovery/line_recovery.h"
 #include "../safety/safety_supervisor.h"
 #include "../../config/line_following_profile.h"
 #include "../../config/safety_config.h"
 #include "../../modules/time/timer.h"
 #include "../../modules/led/led.h"
 #include "../../modules/line_tracking/decoder/line_position.h"
-#include "../../modules/display/runtime_log.h"
-#include "../../modules/display/ssd1306/ssd1306.h"
 #include "../../modules/key/key.h"
 #include "../../modules/line_tracking/scanner/line_scanner.h"
 #include "../../modules/motor/adapter/motor_adapter.h"
 #include "../../modules/motor/safety/motor_safety.h"
 
-/* Fixed priorities: fresh sensor data immediately preempts the sensor
- * task through the control notification; safety preempts everything. */
 #define APP_TASK_PRIORITY_DISPLAY 1U
 #define APP_TASK_PRIORITY_SENSOR  2U
 #define APP_TASK_PRIORITY_CONTROL 3U
 #define APP_TASK_PRIORITY_SAFETY  4U
-
 #define APP_SENSOR_STACK_WORDS  160U
 #define APP_CONTROL_STACK_WORDS 192U
 #define APP_SAFETY_STACK_WORDS  160U
 #define APP_DISPLAY_STACK_WORDS 160U
-
-/* Service the MPU transaction every fifth 2 ms sensor cycle (10 ms). */
 #define APP_IMU_SERVICE_CYCLES 5U
 
-static StaticTask_t sensor_tcb;
+static StaticTask_t sensor_tcb, control_tcb, safety_tcb, display_tcb;
 static StackType_t sensor_stack[APP_SENSOR_STACK_WORDS];
-static StaticTask_t control_tcb;
 static StackType_t control_stack[APP_CONTROL_STACK_WORDS];
-static StaticTask_t safety_tcb;
 static StackType_t safety_stack[APP_SAFETY_STACK_WORDS];
-static StaticTask_t display_tcb;
 static StackType_t display_stack[APP_DISPLAY_STACK_WORDS];
-
-static TaskHandle_t sensor_task_handle;
-static TaskHandle_t control_task_handle;
-static TaskHandle_t safety_task_handle;
-static TaskHandle_t display_task_handle;
-
-/* Written by their owner tasks, read by SafetyTask for supervision. */
+static TaskHandle_t sensor_task_handle, control_task_handle;
+static TaskHandle_t safety_task_handle, display_task_handle;
 static volatile uint32_t sensor_alive_ms;
-static volatile uint32_t control_alive_ms;
-/* One-shot task-boundary markers consumed by DisplayTask for field diagnosis. */
-static volatile bool safety_loop_seen;
-static volatile bool sensor_frame_seen;
-static volatile bool control_request_seen;
-/* Only SafetyTask writes this; latched codes are never cleared. */
+static volatile bool safety_loop_seen, sensor_frame_seen, control_request_seen;
 static volatile uint8_t latched_fault = APP_FAULT_NONE;
+
+static TaskHandle_t CreateTask(TaskFunction_t entry, const char *name,
+                               uint32_t words, UBaseType_t priority,
+                               StackType_t *stack, StaticTask_t *tcb)
+{
+    return xTaskCreateStatic(entry, name, words, NULL, priority, stack, tcb);
+}
 
 static void SensorTask(void *argument)
 {
@@ -118,7 +104,6 @@ static void ControlTask(void *argument)
 
         (void)ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         now_ms = Get_Time();
-        control_alive_ms = now_ms;
         if (!AppMailbox_ReadLineSample(&sample) ||
             sample.sequence == last_sequence) {
             continue;
@@ -159,7 +144,6 @@ static void SafetyTask(void *argument)
             motor_armed = true;
         }
 
-        /* Latch actionable faults: motor UART first, then silent tasks. */
         if (Motor_Safety_IsFaultLatched() != 0U) {
             latched_fault = APP_FAULT_MOTOR_UART;
         } else if (latched_fault == APP_FAULT_NONE) {
@@ -172,7 +156,6 @@ static void SafetyTask(void *argument)
         inputs.ultrasonic_required = LINE_FOLLOWING_USE_ULTRASONIC != 0;
         inputs.imu_required = LINE_FOLLOWING_REQUIRE_IMU != 0;
         inputs.vision_required = LINE_FOLLOWING_USE_VISION != 0;
-        /* RESET begins the run; line acquisition must not block arming. */
         inputs.start_pressed = true;
         inputs.reset_pressed = false;
         inputs.power_qualified = (LINE_FOLLOWING_POWER_QUALIFIED != 0) &&
@@ -197,12 +180,6 @@ static void SafetyTask(void *argument)
 
         MotorAdapter_Apply(&decision);
 
-        /*
-         * RequestSpeed() already sends an immediate zero when a non-zero
-         * applied command is rejected.  Keep the regular service frame
-         * rate-limited so the highest-priority task cannot monopolize the
-         * CPU with repeated blocking UART zero frames.
-         */
         if ((uint32_t)(now_ms - last_frame_ms) >= MOTOR_UART_MIN_PERIOD_MS) {
             Motor_Safety_Service();
             last_frame_ms = now_ms;
@@ -215,112 +192,18 @@ static void SafetyTask(void *argument)
 
 static void DisplayTask(void *argument)
 {
-    bool display_ready;
-    bool observed = false;
-    SafetySupervisorState previous_safety = SAFETY_READY;
-    LineRecoveryState previous_recovery = LINE_RECOVERY_FOLLOW;
-    int16_t previous_left = 0;
-    int16_t previous_right = 0;
-    MotorSafetyFaultReason previous_fault = MOTOR_SAFETY_FAULT_NONE;
-    bool previous_direction_wait = false;
-    bool logged_safety_loop = false;
-    bool logged_sensor_frame = false;
-    bool logged_control_request = false;
-    bool logged_test_run = false;
-    uint8_t previous_task_mask = 0xFFU;
-
     BootTrace_TaskOnline(BOOT_TASK_DISPLAY);
-    display_ready = AppBoot_IsDisplayReady();
     (void)argument;
     for (;;) {
-        MotorSafetyDiagnostics motor = {0};
-        SafetySupervisorState safety;
-        LineRecoveryState recovery;
+        RuntimeObserverInputs inputs = {0};
         uint32_t now_ms;
-        uint8_t task_mask;
-        bool redraw = false;
 
         vTaskDelay(pdMS_TO_TICKS(100U));
         now_ms = Get_Time();
-        task_mask = BootTrace_GetTaskMask();
-        if (task_mask != previous_task_mask) {
-            redraw |= RuntimeLog_PushTaskMask(now_ms, task_mask);
-            previous_task_mask = task_mask;
-        }
-        if (!display_ready) {
-            display_ready = Ssd1306_Init();
-            if (display_ready) {
-                (void)RuntimeLog_Push(now_ms, "OLED OK");
-                RuntimeLog_Draw();
-                display_ready = Ssd1306_FlushDirty();
-                if (!display_ready) {
-                    (void)RuntimeLog_Push(now_ms, "OLED FAIL");
-                }
-            }
-            continue;
-        }
-
-        Motor_Safety_GetDiagnostics(&motor);
-        safety = SafetySupervisor_GetState();
-        recovery = LineRecovery_GetState();
-
-        if (!logged_safety_loop && safety_loop_seen) {
-            redraw |= RuntimeLog_Push(now_ms, "SAFETY TASK");
-            logged_safety_loop = true;
-        }
-        if (!logged_sensor_frame && sensor_frame_seen) {
-            redraw |= RuntimeLog_Push(now_ms, "SENSOR FRAME");
-            logged_sensor_frame = true;
-        }
-        if (!logged_control_request && control_request_seen) {
-            redraw |= RuntimeLog_Push(now_ms, "CONTROL REQ");
-            logged_control_request = true;
-        }
-        if ((!observed || safety != previous_safety) &&
-            safety == SAFETY_RUNNING) {
-            redraw |= RuntimeLog_Push(now_ms, "MOTOR ARM");
-        }
-        if (!observed || motor.fault_reason != previous_fault) {
-            if (motor.fault_reason == MOTOR_SAFETY_FAULT_UART_TIMEOUT) {
-                redraw |= RuntimeLog_Push(now_ms, "UART TIMEOUT");
-            } else if (motor.fault_reason == MOTOR_SAFETY_FAULT_WATCHDOG) {
-                redraw |= RuntimeLog_Push(now_ms, "WATCHDOG");
-            }
-        }
-        if ((!observed || motor.direction_wait != previous_direction_wait) &&
-            motor.direction_wait) {
-            redraw |= RuntimeLog_Push(now_ms, "DIR WAIT");
-        }
-        if ((!observed || recovery != previous_recovery) &&
-            recovery == LINE_RECOVERY_STOPPED) {
-            redraw |= RuntimeLog_Push(now_ms, "LINE LOST");
-        }
-        if (!logged_test_run &&
-            (motor.left_applied != 0 || motor.right_applied != 0)) {
-            redraw |= RuntimeLog_Push(now_ms, "TEST RUN");
-            logged_test_run = true;
-        }
-        if (observed &&
-            (motor.left_applied != previous_left ||
-             motor.right_applied != previous_right)) {
-            redraw |= RuntimeLog_PushMotor(now_ms, motor.left_applied,
-                                           motor.right_applied);
-        }
-
-        previous_safety = safety;
-        previous_recovery = recovery;
-        previous_left = motor.left_applied;
-        previous_right = motor.right_applied;
-        previous_fault = motor.fault_reason;
-        previous_direction_wait = motor.direction_wait;
-        observed = true;
-        if (redraw) {
-            RuntimeLog_Draw();
-            display_ready = Ssd1306_FlushDirty();
-            if (!display_ready) {
-                (void)RuntimeLog_Push(now_ms, "OLED FAIL");
-            }
-        }
+        inputs.safety_loop_seen = safety_loop_seen;
+        inputs.sensor_frame_seen = sensor_frame_seen;
+        inputs.control_request_seen = control_request_seen;
+        (void)RuntimeObserver_Update(now_ms, &inputs);
     }
 }
 
@@ -333,37 +216,21 @@ bool AppTasks_Create(void)
     AppLineMotion_Init(now_ms);
     SafetySupervisor_Init();
     RunController_Init();
+    RuntimeObserver_Init(AppBoot_IsDisplayReady());
     sensor_alive_ms = now_ms;
-    control_alive_ms = now_ms;
 
-    sensor_task_handle = xTaskCreateStatic(SensorTask,
-                                           "Sensor",
-                                           APP_SENSOR_STACK_WORDS,
-                                           NULL,
-                                           APP_TASK_PRIORITY_SENSOR,
-                                           sensor_stack,
-                                           &sensor_tcb);
-    control_task_handle = xTaskCreateStatic(ControlTask,
-                                            "Control",
-                                            APP_CONTROL_STACK_WORDS,
-                                            NULL,
-                                            APP_TASK_PRIORITY_CONTROL,
-                                            control_stack,
-                                            &control_tcb);
-    safety_task_handle = xTaskCreateStatic(SafetyTask,
-                                           "Safety",
-                                           APP_SAFETY_STACK_WORDS,
-                                           NULL,
-                                           APP_TASK_PRIORITY_SAFETY,
-                                           safety_stack,
-                                           &safety_tcb);
-    display_task_handle = xTaskCreateStatic(DisplayTask,
-                                            "Display",
-                                            APP_DISPLAY_STACK_WORDS,
-                                            NULL,
-                                            APP_TASK_PRIORITY_DISPLAY,
-                                            display_stack,
-                                            &display_tcb);
+    sensor_task_handle = CreateTask(SensorTask, "Sensor",
+        APP_SENSOR_STACK_WORDS, APP_TASK_PRIORITY_SENSOR, sensor_stack,
+        &sensor_tcb);
+    control_task_handle = CreateTask(ControlTask, "Control",
+        APP_CONTROL_STACK_WORDS, APP_TASK_PRIORITY_CONTROL, control_stack,
+        &control_tcb);
+    safety_task_handle = CreateTask(SafetyTask, "Safety",
+        APP_SAFETY_STACK_WORDS, APP_TASK_PRIORITY_SAFETY, safety_stack,
+        &safety_tcb);
+    display_task_handle = CreateTask(DisplayTask, "Display",
+        APP_DISPLAY_STACK_WORDS, APP_TASK_PRIORITY_DISPLAY, display_stack,
+        &display_tcb);
     return sensor_task_handle != NULL && control_task_handle != NULL &&
            safety_task_handle != NULL && display_task_handle != NULL;
 }
