@@ -36,6 +36,7 @@ typedef enum {
 void BootTrace_Init(void);
 void BootTrace_Mark(BootTraceStage stage);
 void BootTrace_TaskOnline(uint8_t bit);
+void BootTrace_Tick1ms(void);
 bool BootTrace_AllTasksOnline(void);
 uint8_t BootTrace_GetTaskMask(void);
 __attribute__((noreturn)) void BootTrace_Fatal(BootTraceFault fault);

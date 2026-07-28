@@ -8,6 +8,7 @@
 #include "../../modules/time/timer.h"
 #include "../../modules/display/runtime_log.h"
 #include "../../modules/display/ssd1306/ssd1306.h"
+#include "../../modules/diagnostics/boot_trace.h"
 
 static bool motor_configured = false;
 static bool display_ready = false;
@@ -24,6 +25,7 @@ static void AppBoot_Tick1ms(void)
 {
     Buzzer_Handle();
     Motor_Safety_Tick1ms();
+    BootTrace_Tick1ms();
 }
 
 void AppBoot_Init(void)

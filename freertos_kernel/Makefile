@@ -15,11 +15,9 @@ CPPFLAGS := -D__MSPM0G3507__ \
     -I$(SDK_DIR)/source/third_party/CMSIS/Core/Include \
     -I$(SDK_DIR)/source
 CFLAGS := -mcpu=cortex-m0plus -march=thumbv6m -mfloat-abi=soft -mthumb -O2 -Wall
-PORTASM_DIAG_FLAGS := -DSVC_Handler=FreeRTOS_SVC_Handler \
-    -DvRestoreContextOfFirstTask=FreeRTOS_vRestoreContextOfFirstTask
 
 SOURCES := $(FREERTOS_DIR)/tasks.c $(FREERTOS_DIR)/list.c \
-    $(PORT_DIR)/port.c $(PORT_DIR)/portasm.c
+    $(PORT_DIR)/port.c portasm_diagnostic.c
 OBJECTS := $(BUILD_DIR)/tasks.o $(BUILD_DIR)/list.o \
     $(BUILD_DIR)/port.o $(BUILD_DIR)/portasm.o
 
@@ -39,8 +37,8 @@ $(BUILD_DIR)/list.o: $(FREERTOS_DIR)/list.c $(CONFIG_DIR)/FreeRTOSConfig.h | $(B
 $(BUILD_DIR)/port.o: $(PORT_DIR)/port.c $(CONFIG_DIR)/FreeRTOSConfig.h | $(BUILD_DIR)
 	$(TIARMCLANG) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
 
-$(BUILD_DIR)/portasm.o: $(PORT_DIR)/portasm.c $(CONFIG_DIR)/FreeRTOSConfig.h | $(BUILD_DIR)
-	$(TIARMCLANG) -c $(CPPFLAGS) $(CFLAGS) $(PORTASM_DIAG_FLAGS) -o $@ $<
+$(BUILD_DIR)/portasm.o: portasm_diagnostic.c $(PORT_DIR)/portasm.c $(CONFIG_DIR)/FreeRTOSConfig.h | $(BUILD_DIR)
+	$(TIARMCLANG) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
 
 $(LIBRARY): $(OBJECTS)
 	$(TIARMAR) r $@ $(OBJECTS)

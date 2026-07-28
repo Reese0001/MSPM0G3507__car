@@ -34,6 +34,6 @@
         <file path="${COM_TI_MSPM0_SDK_INSTALL_DIR}/kernel/freertos/Source/tasks.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="freertos" />
         <file path="${COM_TI_MSPM0_SDK_INSTALL_DIR}/kernel/freertos/Source/list.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="freertos" />
         <file path="${COM_TI_MSPM0_SDK_INSTALL_DIR}/kernel/freertos/Source/portable/TI_ARM_CLANG/ARM_CM0/port.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="freertos/portable/TI_ARM_CLANG/ARM_CM0" />
-        <file path="${COM_TI_MSPM0_SDK_INSTALL_DIR}/kernel/freertos/Source/portable/TI_ARM_CLANG/ARM_CM0/portasm.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="freertos/portable/TI_ARM_CLANG/ARM_CM0" />
+        <file path="${WORKSPACE_LOC}/freertos_kernel/portasm_diagnostic.c" openOnCreation="false" excludeFromBuild="false" action="link" targetDirectory="freertos/portable/TI_ARM_CLANG/ARM_CM0" />
     </project>
 </projectSpec>

@@ -1,5 +1,6 @@
 from pathlib import Path
 import unittest
+import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
@@ -103,7 +104,7 @@ class FreeRtosContract(unittest.TestCase):
             self.assertIn("tasks.c", source)
             self.assertIn("list.c", source)
             self.assertIn("port.c", source)
-            self.assertIn("portasm.c", source)
+            self.assertIn("portasm_diagnostic.c", source)
             self.assertNotIn("heap_", source)
             self.assertNotIn("timers.c", source)
 
@@ -112,6 +113,26 @@ class FreeRtosContract(unittest.TestCase):
         self.assertIn("${WORKSPACE_LOC}/freertos_kernel_ticlang/Debug", car_cproject)
         self.assertNotIn("freertos_builds_LP_MSPM0G3507_release_ticlang", car_project)
         self.assertNotIn("freertos_builds_LP_MSPM0G3507_release_ticlang", car_cproject)
+
+    def test_cli_and_ccs_share_the_local_diagnostic_portasm_wrapper(self):
+        kernel = REPOSITORY / "freertos_kernel"
+        project_path = kernel / "freertos_kernel_ticlang.projectspec"
+        project = project_path.read_text(encoding="utf-8")
+        makefile = (kernel / "Makefile").read_text(encoding="utf-8")
+
+        ET.parse(project_path)
+        self.assertIn("portasm_diagnostic.c", makefile)
+        self.assertIn("portasm_diagnostic.c", project)
+        self.assertNotIn(
+            "portable/TI_ARM_CLANG/ARM_CM0/portasm.c\"",
+            project,
+        )
+        port_rule = makefile[
+            makefile.index("$(BUILD_DIR)/port.o:"):
+            makefile.index("$(BUILD_DIR)/portasm.o:")
+        ]
+        self.assertNotIn("SVC_Handler", port_rule)
+        self.assertNotIn("vRestoreContextOfFirstTask", port_rule)
 
 
 if __name__ == "__main__":
