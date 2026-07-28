@@ -4,14 +4,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef struct {
-    bool safety_loop_seen;
-    bool sensor_frame_seen;
-    bool control_request_seen;
-} RuntimeObserverInputs;
-
 void RuntimeObserver_Init(bool display_ready);
-bool RuntimeObserver_Update(uint32_t now_ms,
-                            const RuntimeObserverInputs *inputs);
+void RuntimeObserver_MarkSafetyLoop(void);
+void RuntimeObserver_MarkSensorFrame(void);
+void RuntimeObserver_MarkControlRequest(void);
+bool RuntimeObserver_Update(uint32_t now_ms);
 
 #endif

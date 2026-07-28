@@ -17,6 +17,18 @@ class AppTaskDecompositionContract(unittest.TestCase):
         self.assertNotIn("BuildMotionRequest", self.tasks)
         self.assertNotIn("RuntimeLog_Push(now_ms", self.tasks)
         self.assertNotIn("CREATE_APP_TASK", self.tasks)
+        for token in (
+            "LineScanner_ReadFrame",
+            "LinePosition_Update",
+            "AppLineMotion_BuildRequest",
+            "AppMailbox_PublishMotionRequest",
+            "SafetySupervisor_Step",
+            "MotorAdapter_Apply",
+            "Motor_Safety_Arm",
+            "Motor_Safety_Service",
+            "Key_PollEvent",
+        ):
+            self.assertNotIn(token, self.tasks)
 
     def test_new_app_modules_exist(self):
         for path in (
@@ -26,6 +38,12 @@ class AppTaskDecompositionContract(unittest.TestCase):
             "app/line/line_motion.h",
             "app/log/runtime_observer.c",
             "app/log/runtime_observer.h",
+            "app/sensor/sensor_runtime.c",
+            "app/sensor/sensor_runtime.h",
+            "app/control/control_runtime.c",
+            "app/control/control_runtime.h",
+            "app/safety/safety_runtime.c",
+            "app/safety/safety_runtime.h",
         ):
             self.assertTrue((ROOT / path).is_file(), path)
 
@@ -35,6 +53,9 @@ class AppTaskDecompositionContract(unittest.TestCase):
             "app/run/run_controller.c",
             "app/line/line_motion.c",
             "app/log/runtime_observer.c",
+            "app/sensor/sensor_runtime.c",
+            "app/control/control_runtime.c",
+            "app/safety/safety_runtime.c",
         ):
             self.assertIn(source, makefile)
 

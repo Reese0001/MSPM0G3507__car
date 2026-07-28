@@ -9,7 +9,9 @@ class LineMotionContract(unittest.TestCase):
     def test_line_motion_owns_line_to_request_logic(self):
         header = (ROOT / "app/line/line_motion.h").read_text(encoding="utf-8")
         source = (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
-        tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
+        control = (ROOT / "app/control/control_runtime.c").read_text(
+            encoding="utf-8"
+        )
         for token in (
             "AppLineMotion_Init",
             "AppLineMotion_ServiceImu",
@@ -18,10 +20,7 @@ class LineMotionContract(unittest.TestCase):
             "LineRecovery_Step",
         ):
             self.assertIn(token, header + source)
-        self.assertNotIn("LineLookupControl_Step", tasks)
-        self.assertNotIn("LineRecovery_Step", tasks)
-        self.assertNotIn("Mpu6050_Service", tasks)
-        self.assertIn("AppLineMotion_BuildRequest", tasks)
+        self.assertIn("AppLineMotion_BuildRequest", control)
 
     def test_noise_and_bad_inputs_do_not_publish_valid_line_request(self):
         source = (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")

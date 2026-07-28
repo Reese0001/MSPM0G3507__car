@@ -64,9 +64,12 @@ SOURCES := \
     modules/display/runtime_log.c \
     app/mailbox/app_mailbox.c \
     app/run/run_controller.c \
+    app/sensor/sensor_runtime.c \
+    app/control/control_runtime.c \
     app/line/line_motion.c \
     app/log/runtime_observer.c \
     app/tasks/app_tasks.c \
+    app/safety/safety_runtime.c \
     bsp/bsp_i2c.c \
     modules/line_tracking/scanner/line_mux.c \
     modules/display/i2c/oled_i2c.c \
@@ -113,6 +116,8 @@ CPPFLAGS := \
     -Iapp/boot \
     -Iapp/mailbox \
     -Iapp/run \
+    -Iapp/sensor \
+    -Iapp/control \
     -Iapp/line \
     -Iapp/log \
     -Iapp/safety \

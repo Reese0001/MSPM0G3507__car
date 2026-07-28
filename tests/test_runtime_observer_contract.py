@@ -11,8 +11,10 @@ class RuntimeObserverContract(unittest.TestCase):
         source = (ROOT / "app/log/runtime_observer.c").read_text(encoding="utf-8")
         tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
         for token in (
-            "RuntimeObserverInputs",
             "RuntimeObserver_Init",
+            "RuntimeObserver_MarkSafetyLoop",
+            "RuntimeObserver_MarkSensorFrame",
+            "RuntimeObserver_MarkControlRequest",
             "RuntimeObserver_Update",
             '"TEST RUN"',
             '"UART TIMEOUT"',

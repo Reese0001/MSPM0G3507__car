@@ -1,0 +1,124 @@
+#include "safety_runtime.h"
+
+#include <stdbool.h>
+
+#include "../boot/app_boot.h"
+#include "../mailbox/app_mailbox.h"
+#include "../run/run_controller.h"
+#include "safety_supervisor.h"
+#include "../../config/line_following_profile.h"
+#include "../../config/line_lookup_config.h"
+#include "../../config/safety_config.h"
+#include "../../modules/diagnostics/boot_trace.h"
+#include "../../modules/display/dashboard.h"
+#include "../../modules/key/key.h"
+#include "../../modules/led/led.h"
+#include "../../modules/motor/adapter/motor_adapter.h"
+#include "../../modules/motor/safety/motor_safety.h"
+
+static uint32_t sensor_alive_ms;
+static uint32_t last_frame_ms;
+static bool motor_armed;
+static uint8_t latched_fault;
+
+static void StopRequest(uint32_t now_ms, MotionRequest *request)
+{
+    request->left_speed = 0;
+    request->right_speed = 0;
+    request->timestamp_ms = now_ms;
+    request->valid = false;
+}
+
+static void UpdateFaultLatch(uint32_t now_ms)
+{
+    if (Motor_Safety_IsFaultLatched() != 0U) {
+        latched_fault = APP_FAULT_MOTOR_UART;
+    } else if (latched_fault == APP_FAULT_NONE &&
+               (uint32_t)(now_ms - sensor_alive_ms) >
+                   APP_SENSOR_HEARTBEAT_TIMEOUT_MS) {
+        latched_fault = APP_FAULT_SENSOR_HEARTBEAT;
+    }
+}
+
+static SafetyInputs BuildInputs(void)
+{
+    SafetyInputs inputs = {0};
+
+    inputs.ultrasonic_required = LINE_FOLLOWING_USE_ULTRASONIC != 0;
+    inputs.imu_required = LINE_FOLLOWING_REQUIRE_IMU != 0;
+    inputs.vision_required = LINE_FOLLOWING_USE_VISION != 0;
+    inputs.start_pressed = true;
+    inputs.reset_pressed = false;
+    inputs.power_qualified = (LINE_FOLLOWING_POWER_QUALIFIED != 0) &&
+                             AppBoot_IsMotorConfigured();
+    inputs.motor_fault = Motor_Safety_IsFaultLatched() != 0U;
+    return inputs;
+}
+
+static MotionRequest BuildRequest(uint32_t now_ms)
+{
+    MotionRequest request = {0};
+    MotionRequest line_request = {0};
+
+    (void)RunController_BuildRequest(now_ms, &request);
+    if (AppMailbox_ReadMotionRequest(&line_request) &&
+        line_request.valid &&
+        (uint32_t)(now_ms - line_request.timestamp_ms) <=
+            MOTION_REQUEST_MAX_AGE_MS) {
+        request = line_request;
+    }
+    if (latched_fault != APP_FAULT_NONE) {
+        StopRequest(now_ms, &request);
+        LED_ON();
+    }
+    return request;
+}
+
+static void ArmWhenReady(void)
+{
+    if (!motor_armed && BootTrace_AllTasksOnline() &&
+        AppBoot_IsMotorConfigured() &&
+        Motor_Safety_IsFaultLatched() == 0U) {
+        Motor_Safety_Arm();
+        motor_armed = true;
+    }
+}
+
+void SafetyRuntime_Init(uint32_t now_ms)
+{
+    SafetySupervisor_Init();
+    RunController_Init();
+    sensor_alive_ms = now_ms;
+    last_frame_ms = 0U;
+    motor_armed = false;
+    latched_fault = APP_FAULT_NONE;
+}
+
+void SafetyRuntime_OnSensorFrame(uint32_t now_ms)
+{
+    sensor_alive_ms = now_ms;
+}
+
+void SafetyRuntime_Step(uint32_t now_ms)
+{
+    SafetyInputs inputs;
+    SafetyDecision decision = {0};
+    MotionRequest request;
+
+    RunController_OnKeyEvent(Key_PollEvent());
+    ArmWhenReady();
+    UpdateFaultLatch(now_ms);
+    inputs = BuildInputs();
+    request = BuildRequest(now_ms);
+
+    (void)SafetySupervisor_Step(&inputs, &request, now_ms, &decision);
+    MotorAdapter_Apply(&decision);
+
+    if ((uint32_t)(now_ms - last_frame_ms) >= MOTOR_UART_MIN_PERIOD_MS) {
+        Motor_Safety_Service();
+        last_frame_ms = now_ms;
+    }
+    if (BootTrace_AllTasksOnline()) {
+        LED_HeartbeatService(now_ms);
+    }
+}

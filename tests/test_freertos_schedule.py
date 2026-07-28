@@ -8,26 +8,36 @@ ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 class FreeRtosScheduleContract(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tasks = (ROOT / "application/freertos/app_tasks.c").read_text(
+        cls.tasks = (ROOT / "app/tasks/app_tasks.c").read_text(
             encoding="utf-8"
         )
-        cls.mailbox = (ROOT / "application/freertos/app_mailbox.c").read_text(
+        cls.line_motion = (ROOT / "app/line/line_motion.c").read_text(
             encoding="utf-8"
         )
-        cls.config = (ROOT / "application/config/safety_config.h").read_text(
+        cls.sensor_runtime = (ROOT / "app/sensor/sensor_runtime.c").read_text(
+            encoding="utf-8"
+        )
+        cls.safety_runtime = (ROOT / "app/safety/safety_runtime.c").read_text(
+            encoding="utf-8"
+        )
+        cls.mailbox = (ROOT / "app/mailbox/app_mailbox.c").read_text(
+            encoding="utf-8"
+        )
+        cls.config = (ROOT / "config/safety_config.h").read_text(
             encoding="utf-8"
         )
         cls.entry = (ROOT / "empty.c").read_text(encoding="utf-8")
         cls.scanner_h = (
-            ROOT / "modules/line_tracking/line_scanner.h"
+            ROOT / "modules/line_tracking/scanner/line_scanner.h"
         ).read_text(encoding="utf-8")
         cls.scanner_c = (
-            ROOT / "modules/line_tracking/line_scanner.c"
+            ROOT / "modules/line_tracking/scanner/line_scanner.c"
         ).read_text(encoding="utf-8")
-        cls.timer = (ROOT / "bsp/time/timer.c").read_text(encoding="utf-8")
+        cls.timer = (ROOT / "modules/time/timer.c").read_text(encoding="utf-8")
 
     def test_four_static_tasks_with_expected_timing(self):
-        self.assertGreaterEqual(self.tasks.count("xTaskCreateStatic"), 4)
+        self.assertIn("xTaskCreateStatic", self.tasks)
+        self.assertGreaterEqual(self.tasks.count("CreateTask("), 4)
         self.assertIn("pdMS_TO_TICKS(2U)", self.tasks)
         self.assertIn("pdMS_TO_TICKS(1U)", self.tasks)
         self.assertIn("vTaskDelayUntil", self.tasks)
@@ -42,7 +52,18 @@ class FreeRtosScheduleContract(unittest.TestCase):
 
     def test_motor_uart_is_rate_limited_to_five_ms(self):
         self.assertIn("MOTOR_UART_MIN_PERIOD_MS (5U)", self.config)
-        self.assertIn("MOTOR_UART_MIN_PERIOD_MS", self.tasks)
+        self.assertIn("MOTOR_UART_MIN_PERIOD_MS", self.safety_runtime)
+
+    def test_safety_task_does_not_bypass_uart_rate_limit_for_rejected_zero(self):
+        safety_body = self.tasks[
+            self.tasks.index("static void SafetyTask")
+            : self.tasks.index("static void DisplayTask")
+        ]
+        self.assertNotIn(
+            "if (immediate_zero ||",
+            safety_body,
+            "A rejected zero request must not send a blocking UART frame every 1 ms.",
+        )
 
     def test_cooperative_polling_is_not_the_active_path(self):
         self.assertNotIn("AppScheduler_Run(now_ms)", self.entry)
@@ -55,12 +76,12 @@ class FreeRtosScheduleContract(unittest.TestCase):
             self.scanner_h,
         )
         self.assertIn("LINE_SCAN_FRAME_BUDGET_US", self.scanner_c)
-        self.assertIn("LineScanner_ReadFrame", self.tasks)
-        self.assertIn("LinePosition_Update", self.tasks)
+        self.assertIn("LineScanner_ReadFrame", self.sensor_runtime)
+        self.assertIn("LinePosition_Update", self.sensor_runtime)
 
     def test_mpu_completion_loop_is_bounded_to_one_millisecond(self):
-        self.assertIn("BSP_I2C_Service", self.tasks)
-        self.assertIn("< 1000U", self.tasks)
+        self.assertIn("BSP_I2C_Service", self.line_motion)
+        self.assertIn("< 1000U", self.line_motion)
 
     def test_mailboxes_copy_snapshots_inside_critical_sections(self):
         self.assertIn("taskENTER_CRITICAL()", self.mailbox)

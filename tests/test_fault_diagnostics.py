@@ -12,6 +12,12 @@ class FaultDiagnosticsContract(unittest.TestCase):
         cls.tasks = (ROOT / "app/tasks/app_tasks.c").read_text(
             encoding="utf-8"
         )
+        cls.observer = (ROOT / "app/log/runtime_observer.c").read_text(
+            encoding="utf-8"
+        )
+        cls.safety_runtime = (
+            ROOT / "app/safety/safety_runtime.c"
+        ).read_text(encoding="utf-8")
         cls.dashboard_h = (
             ROOT / "modules/display/dashboard.h"
         ).read_text(encoding="utf-8")
@@ -58,28 +64,21 @@ class FaultDiagnosticsContract(unittest.TestCase):
             self.assertIn(label, self.dashboard)
 
     def test_heartbeat_expiry_latches_and_stops(self):
-        safety_body = self.tasks[self.tasks.index("static void SafetyTask"):]
-        safety_body = safety_body[: self.tasks.index("static void DisplayTask")]
-
-        self.assertIn("APP_SENSOR_HEARTBEAT_TIMEOUT_MS", self.tasks)
-        self.assertIn("APP_FAULT_SENSOR_HEARTBEAT", self.tasks)
-        self.assertIn("APP_FAULT_MOTOR_UART", self.tasks)
-        self.assertNotIn("APP_CONTROL_HEARTBEAT_TIMEOUT_MS", safety_body)
-        self.assertNotIn("APP_FAULT_CONTROL_HEARTBEAT", safety_body)
+        self.assertIn("APP_SENSOR_HEARTBEAT_TIMEOUT_MS", self.safety_runtime)
+        self.assertIn("APP_FAULT_SENSOR_HEARTBEAT", self.safety_runtime)
+        self.assertIn("APP_FAULT_MOTOR_UART", self.safety_runtime)
+        self.assertNotIn("APP_CONTROL_HEARTBEAT_TIMEOUT_MS", self.safety_runtime)
+        self.assertNotIn("APP_FAULT_CONTROL_HEARTBEAT", self.safety_runtime)
         self.assertRegex(
-            self.tasks,
+            self.safety_runtime,
             r"latched_fault\s*!=\s*APP_FAULT_NONE[\s\S]{0,400}LED_ON\(\)",
         )
 
     def test_display_failure_stays_recoverable(self):
-        display_body = re.search(
-            r"static void DisplayTask\(void \*argument\)\s*\{([\s\S]*?)\n\}",
-            self.tasks,
-        )
-        self.assertIsNotNone(display_body)
-        self.assertIn("Ssd1306_Init()", display_body.group(1))
-        self.assertIn('RuntimeLog_Push(now_ms, "OLED FAIL")', display_body.group(1))
-        self.assertNotIn("Motor_Safety_Disarm", display_body.group(1))
+        self.assertIn("Ssd1306_Init()", self.observer)
+        self.assertIn('RuntimeLog_Push(now_ms, "OLED FAIL")', self.observer)
+        self.assertNotIn("Motor_Safety_Disarm", self.observer)
+        self.assertNotIn("Motor_Safety_Disarm", self.tasks)
 
 
 if __name__ == "__main__":

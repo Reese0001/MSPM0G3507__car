@@ -11,6 +11,9 @@ class FreeRtosContract(unittest.TestCase):
     def test_static_only_1khz_kernel_and_safe_start(self):
         config = (ROOT / "FreeRTOSConfig.h").read_text(encoding="utf-8")
         tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
+        safety_runtime = (
+            ROOT / "app/safety/safety_runtime.c"
+        ).read_text(encoding="utf-8")
         main = (ROOT / "empty.c").read_text(encoding="utf-8")
 
         self.assertIn("#define configTICK_RATE_HZ 1000", config)
@@ -22,12 +25,15 @@ class FreeRtosContract(unittest.TestCase):
             tasks,
         )
         self.assertIn("vTaskStartScheduler()", main)
-        self.assertIn("inputs.start_pressed = true;", tasks)
-        self.assertNotIn("inputs.start_pressed = line_start_ready;", tasks)
-        self.assertNotIn("line_start_ready = LineStartGate_Update", tasks)
+        self.assertIn("inputs.start_pressed = true;", safety_runtime)
+        self.assertNotIn("inputs.start_pressed = line_start_ready;", safety_runtime)
+        self.assertNotIn("line_start_ready = LineStartGate_Update", tasks + safety_runtime)
 
     def test_safety_task_arms_motor_only_after_all_tasks_are_online(self):
         tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
+        safety_runtime = (
+            ROOT / "app/safety/safety_runtime.c"
+        ).read_text(encoding="utf-8")
 
         control_start = tasks.index("static void ControlTask")
         safety_start = tasks.index("static void SafetyTask")
@@ -38,17 +44,18 @@ class FreeRtosContract(unittest.TestCase):
         self.assertNotIn("Motor_Safety_Arm()", control_body)
         self.assertNotIn("LineStartGate_Reset();", tasks)
         self.assertNotIn("line_start_ready", tasks)
-        self.assertIn("AppBoot_IsMotorConfigured()", safety_body)
-        arm_position = safety_body.index("Motor_Safety_Arm();")
-        loop_position = safety_body.index("for (;;)")
+        self.assertIn("SafetyRuntime_Step", safety_body)
+        self.assertIn("AppBoot_IsMotorConfigured()", safety_runtime)
+        arm_position = safety_runtime.index("Motor_Safety_Arm();")
+        loop_position = safety_runtime.index("static void ArmWhenReady")
         self.assertGreater(arm_position, loop_position)
         self.assertIn(
             "BootTrace_AllTasksOnline()",
-            safety_body[arm_position - 240:arm_position],
+            safety_runtime[arm_position - 240:arm_position],
         )
         self.assertNotIn(
             "state == SAFETY_RUNNING",
-            safety_body[arm_position - 120:arm_position + 40],
+            safety_runtime[arm_position - 120:arm_position + 40],
         )
 
     def test_safety_task_is_the_only_production_motor_arm_caller(self):
@@ -61,17 +68,19 @@ class FreeRtosContract(unittest.TestCase):
             if "Motor_Safety_Arm(" in source.read_text(encoding="utf-8"):
                 callers.append(source.relative_to(ROOT).as_posix())
 
-        self.assertEqual(callers, ["app/tasks/app_tasks.c"])
+        self.assertEqual(callers, ["app/safety/safety_runtime.c"])
 
     def test_motor_arm_call_is_unique_and_inside_safety_task(self):
-        tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
-        arm_call = tasks.index("Motor_Safety_Arm()")
-        safety_start = tasks.index("static void SafetyTask")
-        display_start = tasks.index("static void DisplayTask")
+        safety_runtime = (
+            ROOT / "app/safety/safety_runtime.c"
+        ).read_text(encoding="utf-8")
+        arm_call = safety_runtime.index("Motor_Safety_Arm()")
+        safety_start = safety_runtime.index("void SafetyRuntime_Step")
+        helper_start = safety_runtime.index("static void ArmWhenReady")
 
-        self.assertEqual(tasks.count("Motor_Safety_Arm()"), 1)
-        self.assertGreater(arm_call, safety_start)
-        self.assertLess(arm_call, display_start)
+        self.assertEqual(safety_runtime.count("Motor_Safety_Arm()"), 1)
+        self.assertGreater(arm_call, helper_start)
+        self.assertLess(helper_start, safety_start)
 
     def test_cm0_handlers_are_bound_for_ti_arm_clang(self):
         config = (ROOT / "FreeRTOSConfig.h").read_text(encoding="utf-8")

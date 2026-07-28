@@ -24,6 +24,9 @@ class OledContract(unittest.TestCase):
         cls.tasks = (ROOT / "app/tasks/app_tasks.c").read_text(
             encoding="utf-8"
         )
+        cls.observer = (ROOT / "app/log/runtime_observer.c").read_text(
+            encoding="utf-8"
+        )
         cls.cproject = (ROOT / ".cproject").read_text(encoding="utf-8")
 
     def test_pa10_pa11_become_oled_gpio_and_uart0_is_gone(self):
@@ -65,14 +68,15 @@ class OledContract(unittest.TestCase):
 
     def test_display_task_observes_and_renders_runtime_log_at_100ms(self):
         self.assertIn("pdMS_TO_TICKS(100U)", self.tasks)
-        self.assertIn("RuntimeLog_Draw", self.tasks)
+        self.assertIn("RuntimeObserver_Update", self.tasks)
+        self.assertIn("RuntimeLog_Draw", self.observer)
         self.assertNotIn("Dashboard_Render", self.tasks)
-        self.assertIn("UART TIMEOUT", self.tasks)
-        self.assertIn("WATCHDOG", self.tasks)
-        self.assertIn("DIR WAIT", self.tasks)
-        self.assertIn("LINE LOST", self.tasks)
-        self.assertIn("MOTOR ARM", self.tasks)
-        self.assertIn("RuntimeLog_PushMotor", self.tasks)
+        self.assertIn("UART TIMEOUT", self.observer)
+        self.assertIn("WATCHDOG", self.observer)
+        self.assertIn("DIR WAIT", self.observer)
+        self.assertIn("LINE LOST", self.observer)
+        self.assertIn("MOTOR ARM", self.observer)
+        self.assertIn("RuntimeLog_PushMotor", self.observer)
 
     def test_oled_failure_never_stops_the_motors(self):
         display_body = re.search(

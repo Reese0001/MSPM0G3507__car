@@ -106,13 +106,16 @@ class FreeRtosStartupDiagnostics(unittest.TestCase):
 
     def test_all_tasks_register_and_motor_waits_for_all(self):
         tasks = (ROOT / "app/tasks/app_tasks.c").read_text("utf-8")
+        safety_runtime = (
+            ROOT / "app/safety/safety_runtime.c"
+        ).read_text("utf-8")
         for bit in (
             "BOOT_TASK_SAFETY", "BOOT_TASK_SENSOR",
             "BOOT_TASK_CONTROL", "BOOT_TASK_DISPLAY",
         ):
             self.assertIn(f"BootTrace_TaskOnline({bit})", tasks)
-        arm = tasks.index("Motor_Safety_Arm();")
-        self.assertIn("BootTrace_AllTasksOnline()", tasks[arm - 240:arm])
+        arm = safety_runtime.index("Motor_Safety_Arm();")
+        self.assertIn("BootTrace_AllTasksOnline()", safety_runtime[arm - 240:arm])
 
     def test_all_tasks_clear_startup_leds_before_heartbeat_handoff(self):
         source = (

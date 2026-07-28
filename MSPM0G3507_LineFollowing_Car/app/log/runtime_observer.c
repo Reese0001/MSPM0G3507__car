@@ -19,6 +19,9 @@ static bool logged_safety_loop;
 static bool logged_sensor_frame;
 static bool logged_control_request;
 static bool logged_test_run;
+static bool safety_loop_seen;
+static bool sensor_frame_seen;
+static bool control_request_seen;
 static uint8_t previous_task_mask;
 
 void RuntimeObserver_Init(bool ready)
@@ -35,11 +38,28 @@ void RuntimeObserver_Init(bool ready)
     logged_sensor_frame = false;
     logged_control_request = false;
     logged_test_run = false;
+    safety_loop_seen = false;
+    sensor_frame_seen = false;
+    control_request_seen = false;
     previous_task_mask = 0xFFU;
 }
 
-bool RuntimeObserver_Update(uint32_t now_ms,
-                            const RuntimeObserverInputs *inputs)
+void RuntimeObserver_MarkSafetyLoop(void)
+{
+    safety_loop_seen = true;
+}
+
+void RuntimeObserver_MarkSensorFrame(void)
+{
+    sensor_frame_seen = true;
+}
+
+void RuntimeObserver_MarkControlRequest(void)
+{
+    control_request_seen = true;
+}
+
+bool RuntimeObserver_Update(uint32_t now_ms)
 {
     MotorSafetyDiagnostics motor = {0};
     SafetySupervisorState safety;
@@ -47,9 +67,6 @@ bool RuntimeObserver_Update(uint32_t now_ms,
     uint8_t task_mask;
     bool redraw = false;
 
-    if (inputs == 0) {
-        return display_ready;
-    }
     task_mask = BootTrace_GetTaskMask();
     if (task_mask != previous_task_mask) {
         redraw |= RuntimeLog_PushTaskMask(now_ms, task_mask);
@@ -72,15 +89,15 @@ bool RuntimeObserver_Update(uint32_t now_ms,
     safety = SafetySupervisor_GetState();
     recovery = LineRecovery_GetState();
 
-    if (!logged_safety_loop && inputs->safety_loop_seen) {
+    if (!logged_safety_loop && safety_loop_seen) {
         redraw |= RuntimeLog_Push(now_ms, "SAFETY TASK");
         logged_safety_loop = true;
     }
-    if (!logged_sensor_frame && inputs->sensor_frame_seen) {
+    if (!logged_sensor_frame && sensor_frame_seen) {
         redraw |= RuntimeLog_Push(now_ms, "SENSOR FRAME");
         logged_sensor_frame = true;
     }
-    if (!logged_control_request && inputs->control_request_seen) {
+    if (!logged_control_request && control_request_seen) {
         redraw |= RuntimeLog_Push(now_ms, "CONTROL REQ");
         logged_control_request = true;
     }
