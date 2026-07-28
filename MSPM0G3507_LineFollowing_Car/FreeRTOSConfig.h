@@ -28,6 +28,21 @@
 #define configUSE_TICK_HOOK 0
 #define configUSE_MALLOC_FAILED_HOOK 0
 
+/* Keep kernel assertions observable on the target; do not silently discard
+ * a failed first-task/vector/critical-section invariant. */
+void App_FreeRTOS_Assert(void);
+#define configASSERT(x) ((x) ? (void)0 : App_FreeRTOS_Assert())
+
+/* FreeRTOS 11.2 passes the idle-task handle array to this trace hook just
+ * before xPortStartScheduler().  The bridge keeps boot_trace types out of the
+ * kernel build. */
+void BootTrace_PortStart(void);
+#define traceSTARTING_SCHEDULER(xIdleTaskHandles) \
+    do {                                           \
+        (void)(xIdleTaskHandles);                  \
+        BootTrace_PortStart();                     \
+    } while (0)
+
 #define INCLUDE_vTaskDelayUntil 1
 #define INCLUDE_vTaskDelay 1
 #define INCLUDE_vTaskDelete 0

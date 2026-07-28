@@ -96,6 +96,10 @@ OBJECTS := $(foreach s,$(SOURCES),$(call mangle,$(s))) \
     $(OBJ_DIR)/ti_msp_dl_config.o \
     $(OBJ_DIR)/startup_mspm0g350x_ticlang.o
 
+STARTUP_TRACE_ASM := modules/diagnostics/freertos_startup_wrappers.S
+STARTUP_TRACE_OBJ := $(OBJ_DIR)/modules_diagnostics_freertos_startup_wrappers.o
+OBJECTS += $(STARTUP_TRACE_OBJ)
+
 CPPFLAGS := \
     -D__MSPM0G3507__ \
     -D__USE_SYSCONFIG__ \
@@ -190,6 +194,9 @@ $(OBJ_DIR)/ti_msp_dl_config.o: $(GEN_CONFIG) | $(OBJ_DIR)
 	$(TIARMCLANG) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
 
 $(OBJ_DIR)/startup_mspm0g350x_ticlang.o: $(STARTUP_SRC) $(GEN_CONFIG) | $(OBJ_DIR)
+	$(TIARMCLANG) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
+
+$(STARTUP_TRACE_OBJ): $(STARTUP_TRACE_ASM) $(GEN_CONFIG) | $(OBJ_DIR)
 	$(TIARMCLANG) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
 
 $(TARGET): $(OBJECTS) $(GEN_LINKER) $(GEN_GENLIBS) $(KERNEL_LIB)
