@@ -22,6 +22,9 @@ static void BootTrace_SetStagePins(BootTraceStage value)
     case BOOT_TRACE_FIRST_RESTORE:
         DL_GPIO_setPins(LED_PORT, LED_D1_PIN | LED_D2_PIN);
         break;
+    case BOOT_TRACE_ALL_TASKS:
+        DL_GPIO_clearPins(LED_PORT, LED_D1_PIN | LED_D2_PIN);
+        break;
     default:
         break;
     }
@@ -51,11 +54,14 @@ void BootTrace_Mark(BootTraceStage value)
 void BootTrace_TaskOnline(uint8_t bit)
 {
     uint32_t primask = __get_PRIMASK();
+    uint8_t previous_mask;
 
     __disable_irq();
+    previous_mask = task_mask;
     task_mask = (uint8_t)(task_mask | (bit & BOOT_TASK_ALL));
-    if (task_mask == BOOT_TASK_ALL) {
+    if (previous_mask != BOOT_TASK_ALL && task_mask == BOOT_TASK_ALL) {
         stage = BOOT_TRACE_ALL_TASKS;
+        BootTrace_SetStagePins(BOOT_TRACE_ALL_TASKS);
     }
     __set_PRIMASK(primask);
 }

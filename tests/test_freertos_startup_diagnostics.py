@@ -48,6 +48,29 @@ class FreeRtosStartupDiagnostics(unittest.TestCase):
         arm = tasks.index("Motor_Safety_Arm();")
         self.assertIn("BootTrace_AllTasksOnline()", tasks[arm - 240:arm])
 
+    def test_all_tasks_clear_startup_leds_before_heartbeat_handoff(self):
+        source = (
+            ROOT / "modules/diagnostics/boot_trace.c"
+        ).read_text("utf-8")
+        self.assertIn("case BOOT_TRACE_ALL_TASKS:", source)
+        all_tasks_case = source[
+            source.index("case BOOT_TRACE_ALL_TASKS:"):
+            source.index("default:", source.index("case BOOT_TRACE_ALL_TASKS:"))
+        ]
+        task_online = source[
+            source.index("void BootTrace_TaskOnline"):
+            source.index("bool BootTrace_AllTasksOnline")
+        ]
+
+        self.assertIn(
+            "DL_GPIO_clearPins(LED_PORT, LED_D1_PIN | LED_D2_PIN);",
+            all_tasks_case,
+        )
+        self.assertIn(
+            "BootTrace_SetStagePins(BOOT_TRACE_ALL_TASKS);",
+            task_online,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
