@@ -57,7 +57,10 @@ class ModularArchitectureContract(unittest.TestCase):
         ).read_text(encoding="utf-8")
         mailbox = (ROOT / "app/mailbox/app_mailbox.h").read_text(encoding="utf-8")
         safety = (ROOT / "app/safety/safety_supervisor.h").read_text(encoding="utf-8")
-        self.assertIn("inputs.start_pressed = true;", safety_runtime)
+        self.assertIn(
+            "inputs.start_pressed = RunController_IsRunRequested();",
+            safety_runtime,
+        )
         self.assertNotIn("LineStartGate_Update", tasks)
         self.assertIn("SafetySupervisor_Step", safety_runtime + safety)
         self.assertIn("shared/motion_request.h", mailbox.replace("\\", "/"))

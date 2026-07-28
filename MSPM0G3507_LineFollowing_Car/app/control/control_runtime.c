@@ -2,6 +2,7 @@
 
 #include "../line/line_motion.h"
 #include "../mailbox/app_mailbox.h"
+#include "../run/run_controller.h"
 
 static uint16_t last_sequence;
 
@@ -15,7 +16,8 @@ bool ControlRuntime_RunOnce(uint32_t now_ms)
     AppLineSample sample;
     MotionRequest request;
 
-    if (!AppMailbox_ReadLineSample(&sample) ||
+    if (!RunController_IsRunRequested() ||
+        !AppMailbox_ReadLineSample(&sample) ||
         sample.sequence == last_sequence) {
         return false;
     }

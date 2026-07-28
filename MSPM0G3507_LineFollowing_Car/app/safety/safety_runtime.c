@@ -45,18 +45,6 @@ static void UpdateFaultLatch(uint32_t now_ms)
     }
 }
 
-static bool MotionRequestHasOutput(const MotionRequest *request)
-{
-    return request != 0 &&
-           (request->left_speed != 0 || request->right_speed != 0);
-}
-
-static bool LineRequestCanOverride(const MotionRequest *request,
-                                   bool motion_output_seen)
-{
-    return motion_output_seen || MotionRequestHasOutput(request);
-}
-
 static SafetyInputs BuildInputs(void)
 {
     SafetyInputs inputs = {0};
@@ -64,7 +52,7 @@ static SafetyInputs BuildInputs(void)
     inputs.ultrasonic_required = LINE_FOLLOWING_USE_ULTRASONIC != 0;
     inputs.imu_required = LINE_FOLLOWING_REQUIRE_IMU != 0;
     inputs.vision_required = LINE_FOLLOWING_USE_VISION != 0;
-    inputs.start_pressed = true;
+    inputs.start_pressed = RunController_IsRunRequested();
     inputs.reset_pressed = false;
     inputs.power_qualified = (LINE_FOLLOWING_POWER_QUALIFIED != 0) &&
                              AppBoot_IsMotorConfigured();
@@ -74,17 +62,12 @@ static SafetyInputs BuildInputs(void)
 
 static MotionRequest BuildRequest(uint32_t now_ms)
 {
-    MotionRequest request = {0};
+    MotionRequest request;
     MotionRequest line_request = {0};
-    MotorSafetyDiagnostics motor = {0};
-    bool motion_output_seen;
 
-    Motor_Safety_GetDiagnostics(&motor);
-    motion_output_seen = motor.left_applied != 0 || motor.right_applied != 0;
-    (void)RunController_BuildRequest(now_ms, &request);
+    StopRequest(now_ms, &request);
     if (AppMailbox_ReadMotionRequest(&line_request) &&
         line_request.valid &&
-        LineRequestCanOverride(&line_request, motion_output_seen) &&
         (uint32_t)(now_ms - line_request.timestamp_ms) <=
             MOTION_REQUEST_MAX_AGE_MS) {
         request = line_request;
@@ -100,10 +83,11 @@ static void ArmWhenReady(void)
 {
     bool configured = AppBoot_IsMotorConfigured();
     bool faulted = Motor_Safety_IsFaultLatched() != 0U;
+    bool run_requested = RunController_IsRunRequested();
 
     arm_waiting_for_config = !motor_armed && !configured;
     arm_blocked_by_fault = !motor_armed && faulted;
-    if (!motor_armed && configured && !faulted) {
+    if (!motor_armed && run_requested && configured && !faulted) {
         Motor_Safety_Arm();
         motor_armed = true;
         arm_waiting_for_config = false;

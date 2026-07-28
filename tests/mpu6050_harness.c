@@ -83,6 +83,7 @@ int main(void)
 {
     Mpu6050Snapshot snapshot;
     float first_positive;
+    float first_angle;
     uint32_t now_ms;
 
     fake_gyro_z = 655;
@@ -105,6 +106,8 @@ int main(void)
     assert(snapshot.status.valid);
     assert(snapshot.yaw_rate_dps > -0.1f);
     assert(snapshot.yaw_rate_dps < 0.1f);
+    assert(snapshot.yaw_angle_deg > -0.1f);
+    assert(snapshot.yaw_angle_deg < 0.1f);
 
     fake_gyro_z = 6550;
     service_twice(now_ms);
@@ -112,6 +115,8 @@ int main(void)
     assert(snapshot.yaw_rate_dps > 0.0f);
     assert(snapshot.yaw_rate_dps < 90.0f);
     first_positive = snapshot.yaw_rate_dps;
+    first_angle = snapshot.yaw_angle_deg;
+    assert(first_angle > 0.0f);
 
     now_ms += 10U;
     fake_gyro_z = -5240;
@@ -119,6 +124,7 @@ int main(void)
     assert(Mpu6050_GetSnapshot(&snapshot));
     assert(snapshot.yaw_rate_dps < first_positive);
     assert(snapshot.yaw_rate_dps < 0.0f);
+    assert(snapshot.yaw_angle_deg < first_angle);
 
     fake_force_error = true;
     for (uint8_t error = 0U; error < 3U; error++) {

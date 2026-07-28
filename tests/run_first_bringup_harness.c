@@ -13,6 +13,7 @@ static int16_t last_motor2;
 static int16_t last_motor3;
 static int16_t last_motor4;
 static uint32_t nonzero_frame_ms = 0xFFFFFFFFU;
+static uint32_t key_poll_count;
 
 #define CHECK(condition)                                                     \
     do {                                                                     \
@@ -53,6 +54,10 @@ void LED_HeartbeatService(uint32_t now_ms)
 
 KeyEvent Key_PollEvent(void)
 {
+    key_poll_count++;
+    if (key_poll_count == 3000U) {
+        return KEY_EVENT_PRESS;
+    }
     return KEY_EVENT_NONE;
 }
 
@@ -92,12 +97,30 @@ int main(void)
 {
     uint32_t now_ms;
     MotorSafetyDiagnostics diagnostics;
+    MotionRequest line_request = {0};
 
     AppMailbox_Init();
     Motor_Safety_Init();
     SafetyRuntime_Init(0U);
 
-    for (now_ms = 0U; now_ms <= 350U; ++now_ms) {
+    for (now_ms = 0U; now_ms <= 3200U; ++now_ms) {
+        SafetyRuntime_Step(now_ms);
+        Motor_Safety_Tick1ms();
+    }
+
+    Motor_Safety_GetDiagnostics(&diagnostics);
+    CHECK(diagnostics.armed);
+    CHECK(diagnostics.fault_reason == MOTOR_SAFETY_FAULT_NONE);
+    CHECK(nonzero_frame_ms == 0xFFFFFFFFU);
+    CHECK(diagnostics.left_applied == 0);
+    CHECK(diagnostics.right_applied == 0);
+
+    line_request.left_speed = 80;
+    line_request.right_speed = 80;
+    line_request.timestamp_ms = 3201U;
+    line_request.valid = true;
+    AppMailbox_PublishMotionRequest(&line_request);
+    for (now_ms = 3201U; now_ms <= 3400U; ++now_ms) {
         SafetyRuntime_Step(now_ms);
         Motor_Safety_Tick1ms();
         Motor_Safety_GetDiagnostics(&diagnostics);
@@ -109,11 +132,9 @@ int main(void)
         }
     }
 
-    Motor_Safety_GetDiagnostics(&diagnostics);
-    CHECK(diagnostics.armed);
-    CHECK(diagnostics.fault_reason == MOTOR_SAFETY_FAULT_NONE);
     CHECK(nonzero_frame_ms != 0xFFFFFFFFU);
-    CHECK(nonzero_frame_ms <= 350U);
+    CHECK(nonzero_frame_ms >= 3201U);
+    CHECK(nonzero_frame_ms <= 3400U);
     CHECK(last_motor1 == 0);
     CHECK(last_motor3 == 0);
     CHECK(last_motor2 > 0);

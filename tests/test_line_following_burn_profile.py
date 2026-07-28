@@ -22,11 +22,11 @@ class LineFollowingBurnProfileContract(unittest.TestCase):
             self.assertIn(token, profile)
         self.assertNotIn("LINE_KEY_TASK_PERIOD_MS", profile)
 
-    def test_reset_automatically_starts_without_key_gate(self):
+    def test_reset_waits_for_k1_start_gate(self):
         run = (ROOT / "app/run/run_controller.c").read_text(encoding="utf-8")
         safety = (ROOT / "app/safety/safety_runtime.c").read_text(encoding="utf-8")
-        self.assertIn("run_requested = true", run)
-        self.assertIn("inputs.start_pressed = true", safety)
+        self.assertIn("run_requested = false", run)
+        self.assertIn("RunController_IsRunRequested()", safety)
         self.assertIn("RunController_OnKeyEvent(Key_PollEvent())", safety)
         self.assertNotIn("KEY_EVENT_", safety)
 
@@ -81,7 +81,9 @@ class LineFollowingBurnProfileContract(unittest.TestCase):
         self.assertIn("ClearRequest(now_ms, request)", line_motion)
         self.assertNotIn("Motor_Safety_Disarm", line_motion)
         self.assertNotIn("RunController_Init", line_motion)
-        self.assertIn("RunController_BuildRequest", safety)
+        self.assertNotIn("RunController_BuildRequest", safety)
+        self.assertIn("AppMailbox_ReadMotionRequest", safety)
+        self.assertIn("StopRequest(now_ms, &request)", safety)
 
 
 if __name__ == "__main__":

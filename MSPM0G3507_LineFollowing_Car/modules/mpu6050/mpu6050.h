@@ -16,6 +16,7 @@ typedef enum {
 typedef struct {
     ModuleStatus status;
     float yaw_rate_dps;
+    float yaw_angle_deg;
 } Mpu6050Snapshot;
 
 void Mpu6050_Init(uint32_t now_ms);

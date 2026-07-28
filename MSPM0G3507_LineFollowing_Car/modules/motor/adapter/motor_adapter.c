@@ -21,6 +21,7 @@ void MotorAdapter_Apply(const SafetyDecision *decision)
         Motor_Safety_RequestSpeed(0, 0, 0, 0);
         return;
     }
-    Motor_Safety_RequestSpeed(0, decision->left_speed,
-                              0, decision->right_speed);
+    /* Real chassis wiring: M2 is the right wheel, M4 is the left wheel. */
+    Motor_Safety_RequestSpeed(0, decision->right_speed,
+                              0, decision->left_speed);
 }

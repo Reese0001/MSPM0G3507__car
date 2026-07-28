@@ -18,15 +18,17 @@ class MotorAuthorityContract(unittest.TestCase):
         self.assertEqual(1, len(callers), callers)
         self.assertTrue(callers[0].endswith("modules/motor/adapter/motor_adapter.c"))
 
-    def test_adapter_maps_only_m2_and_m4(self):
+    def test_adapter_maps_logical_wheels_to_physical_m2_m4(self):
         source = (ROOT / "modules/motor/adapter/motor_adapter.c").read_text(
             encoding="utf-8"
         )
         self.assertIn(
-            "Motor_Safety_RequestSpeed(0, decision->left_speed,",
+            "Motor_Safety_RequestSpeed(0, decision->right_speed,",
             source,
         )
-        self.assertIn("0, decision->right_speed)", source)
+        self.assertIn("0, decision->left_speed)", source)
+        self.assertIn("M2 is the right wheel", source)
+        self.assertIn("M4 is the left wheel", source)
         self.assertIn("MOTOR_ADAPTER_MAX_COMMAND (450)", source)
 
     def test_boot_path_remains_disarmed(self):

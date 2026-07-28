@@ -2,6 +2,7 @@
 
 #include "../../bsp/bsp_i2c.h"
 #include "mpu6050_config.h"
+#include "mpu6050_kalman.h"
 
 #define MPU6050_REG_SMPLRT_DIV (0x19U)
 #define MPU6050_REG_CONFIG (0x1AU)
@@ -33,12 +34,15 @@ static TransferKind transfer_kind;
 static uint8_t transfer_buffer[2];
 static uint8_t consecutive_errors;
 static uint32_t last_sample_ms;
+static uint32_t last_processed_sample_ms;
 static uint32_t calibration_started_ms;
 static uint32_t retry_started_ms;
 static uint16_t calibration_samples;
 static float calibration_sum;
 static float gyro_bias_dps;
 static float filtered_yaw_rate_dps;
+static float yaw_angle_deg;
+static Mpu6050KalmanState yaw_kalman;
 static bool initialized;
 static bool calibrated;
 
@@ -85,7 +89,10 @@ static void start_calibration(uint32_t now_ms)
     calibration_sum = 0.0f;
     gyro_bias_dps = 0.0f;
     filtered_yaw_rate_dps = 0.0f;
+    yaw_angle_deg = MPU6050_ANGLE_RESET;
+    Mpu6050Kalman_Reset(&yaw_kalman);
     last_sample_ms = now_ms - MPU6050_SAMPLE_PERIOD_MS;
+    last_processed_sample_ms = now_ms;
     published.status.valid = false;
     published.status.health = MODULE_HEALTH_UNKNOWN;
 }
@@ -93,6 +100,7 @@ static void start_calibration(uint32_t now_ms)
 static void publish_rate(float yaw_rate_dps, uint32_t now_ms)
 {
     published.yaw_rate_dps = yaw_rate_dps;
+    published.yaw_angle_deg = yaw_angle_deg;
     published.status.timestamp_ms = now_ms;
     published.status.sequence++;
     published.status.valid = true;
@@ -103,6 +111,9 @@ static void finish_calibration(uint32_t now_ms)
 {
     gyro_bias_dps = calibration_sum / (float)calibration_samples;
     filtered_yaw_rate_dps = 0.0f;
+    yaw_angle_deg = MPU6050_ANGLE_RESET;
+    Mpu6050Kalman_Reset(&yaw_kalman);
+    last_processed_sample_ms = now_ms;
     calibrated = true;
     state = MPU6050_STATE_READY;
     publish_rate(0.0f, now_ms);
@@ -114,6 +125,9 @@ static void process_gyro_sample(uint32_t now_ms)
                             (uint16_t)transfer_buffer[1]);
     float sensor_rate =
         ((float)raw / MPU6050_GYRO_LSB_PER_DPS) * MPU6050_YAW_SIGN;
+    float published_rate;
+    bool stationary;
+    uint32_t elapsed_ms;
 
     if (!calibrated) {
         if (state != MPU6050_STATE_CALIBRATING) {
@@ -132,13 +146,26 @@ static void process_gyro_sample(uint32_t now_ms)
     }
 
     sensor_rate = clamp_rate(sensor_rate - gyro_bias_dps);
-    if (absolute_value(sensor_rate) < MPU6050_DEADBAND_DPS) {
-        sensor_rate = 0.0f;
-    }
+    stationary = absolute_value(sensor_rate) < MPU6050_DEADBAND_DPS;
     filtered_yaw_rate_dps +=
         MPU6050_FILTER_ALPHA * (sensor_rate - filtered_yaw_rate_dps);
+    published_rate = stationary ? 0.0f : filtered_yaw_rate_dps;
+    elapsed_ms = (uint32_t)(now_ms - last_processed_sample_ms);
+    last_processed_sample_ms = now_ms;
+    if (elapsed_ms == 0U) {
+        elapsed_ms = MPU6050_SAMPLE_PERIOD_MS;
+    }
+    if (elapsed_ms > MPU6050_KALMAN_MAX_DT_MS) {
+        elapsed_ms = MPU6050_KALMAN_MAX_DT_MS;
+    }
+    yaw_angle_deg = Mpu6050Kalman_Update(
+        &yaw_kalman,
+        filtered_yaw_rate_dps,
+        sensor_rate,
+        (float)elapsed_ms / 1000.0f,
+        stationary);
     state = MPU6050_STATE_READY;
-    publish_rate(filtered_yaw_rate_dps, now_ms);
+    publish_rate(published_rate, now_ms);
 }
 
 static void complete_initialization(uint32_t now_ms)
@@ -255,6 +282,8 @@ void Mpu6050_Init(uint32_t now_ms)
     calibration_sum = 0.0f;
     gyro_bias_dps = 0.0f;
     filtered_yaw_rate_dps = 0.0f;
+    yaw_angle_deg = MPU6050_ANGLE_RESET;
+    Mpu6050Kalman_Reset(&yaw_kalman);
     initialized = false;
     calibrated = false;
     published.status.timestamp_ms = now_ms;

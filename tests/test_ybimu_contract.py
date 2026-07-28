@@ -153,6 +153,7 @@ class YbImuContract(unittest.TestCase):
         active = (
             (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
             + (ROOT / "app/sensor/sensor_runtime.c").read_text(encoding="utf-8")
+            + (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
         )
         profile = (ROOT / "config/line_following_profile.h").read_text(
             encoding="utf-8"

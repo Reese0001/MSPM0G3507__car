@@ -139,9 +139,11 @@ static int diagnostics_snapshot_reports_safety_state(void)
     if (establish_sign(100) != 0) {
         return 1;
     }
+    Motor_Safety_RequestSpeed(0, 20, 0, 30);
+    Motor_Safety_Service();
     Motor_Safety_GetDiagnostics(&diagnostics);
-    CHECK(diagnostics.left_applied == output[1]);
-    CHECK(diagnostics.right_applied == output[3]);
+    CHECK(diagnostics.left_applied == output[3]);
+    CHECK(diagnostics.right_applied == output[1]);
     Motor_Safety_RequestSpeed(0, -100, 0, -100);
     Motor_Safety_Service();
     Motor_Safety_GetDiagnostics(&diagnostics);

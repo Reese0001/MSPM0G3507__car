@@ -36,8 +36,8 @@ class LineFollowingContractTests(unittest.TestCase):
 
     def test_two_wheel_mapping_keeps_m1_and_m3_stopped(self):
         adapter = read("modules/motor/adapter/motor_adapter.c")
-        self.assertIn("Motor_Safety_RequestSpeed(0, decision->left_speed", adapter)
-        self.assertIn("decision->right_speed)", adapter)
+        self.assertIn("Motor_Safety_RequestSpeed(0, decision->right_speed", adapter)
+        self.assertIn("decision->left_speed)", adapter)
         self.assertIn("Motor_Safety_RequestSpeed(0, 0, 0, 0)", adapter)
 
     def test_timer_refreshes_motor_watchdog(self):

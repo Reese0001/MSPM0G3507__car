@@ -353,8 +353,9 @@ void Motor_Safety_GetDiagnostics(MotorSafetyDiagnostics *out)
         return;
     }
     previous_irq_state = motor_safety_enter_critical();
-    out->left_applied = (int16_t)applied_speed[1];
-    out->right_applied = (int16_t)applied_speed[3];
+    /* Real chassis wiring: M2 is the right wheel, M4 is the left wheel. */
+    out->left_applied = (int16_t)applied_speed[3];
+    out->right_applied = (int16_t)applied_speed[1];
     out->armed = safety_state == MOTOR_SAFETY_ARMED;
     out->direction_wait = (direction_wait != 0U);
     out->fault_reason = fault_reason;

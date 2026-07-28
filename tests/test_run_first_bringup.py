@@ -1,4 +1,3 @@
-import re
 import os
 import subprocess
 import tempfile
@@ -25,43 +24,24 @@ class RunFirstBringupContract(unittest.TestCase):
         self.observer = OBSERVER.read_text(encoding="utf-8")
         self.safety_runtime = SAFETY_RUNTIME.read_text(encoding="utf-8")
 
-    def test_bringup_constants_are_low_and_bounded(self):
-        self.assertIn("RUN_CONTROLLER_BRINGUP_SPEED", self.run_controller)
-        match = re.search(
-            r"#define\s+RUN_CONTROLLER_BRINGUP_SPEED\s+\((\d+)\)",
-            self.run_controller,
-        )
-        self.assertIsNotNone(match)
-        self.assertLessEqual(int(match.group(1)), 180)
+    def test_k1_is_gate_not_fixed_straight_motion(self):
+        self.assertNotIn("RUN_CONTROLLER_BRINGUP_SPEED", self.run_controller)
+        self.assertNotIn("RunController_BuildRequest", self.run_controller)
 
-    def test_safety_task_builds_default_run_without_line_frame(self):
+    def test_safety_task_stays_stopped_without_line_frame(self):
         safety = self.safety_runtime
-        self.assertIn("RunController_BuildRequest", safety)
-        self.assertLess(
-            safety.index("RunController_BuildRequest"),
-            safety.index("AppMailbox_ReadMotionRequest"),
-        )
+        self.assertNotIn("RunController_BuildRequest", safety)
+        self.assertIn("StopRequest(now_ms, &request)", safety)
         self.assertNotIn("APP_FAULT_CONTROL_HEARTBEAT", safety)
         self.assertNotIn("latched_fault = APP_FAULT_SENSOR_HEARTBEAT", safety)
         self.assertIn("sensor_heartbeat_missing", safety)
-
-    def test_zero_line_request_cannot_hide_initial_test_run(self):
-        safety = self.safety_runtime
-        self.assertIn("LineRequestCanOverride", safety)
-        self.assertIn("motion_output_seen", safety)
-        override = safety[
-            safety.index("static bool LineRequestCanOverride"):
-            safety.index("static SafetyInputs BuildInputs")
-        ]
-        self.assertIn("MotionRequestHasOutput", override)
-        self.assertIn("motion_output_seen", override)
 
     def test_k1_can_request_run_after_boot(self):
         self.assertIn('#include "../../modules/key/key.h"', self.safety_runtime)
         safety = self.safety_runtime
         self.assertIn("Key_PollEvent()", safety)
         self.assertIn("RunController_OnKeyEvent", safety)
-        self.assertIn("KEY_EVENT_SHORT", self.run_controller)
+        self.assertIn("KEY_EVENT_PRESS", self.run_controller)
         self.assertIn("run_requested = true", self.run_controller)
 
     def test_motor_output_still_goes_through_safety_layer(self):
@@ -72,7 +52,7 @@ class RunFirstBringupContract(unittest.TestCase):
     def test_oled_logs_test_run(self):
         self.assertIn('"TEST RUN"', self.observer)
 
-    def test_reset_path_reaches_nonzero_motor_frame_without_line_frame(self):
+    def test_k1_path_needs_line_request_before_motor_frame(self):
         vsdevcmd = (
             Path(os.environ["ProgramFiles"])
             / "Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat"
