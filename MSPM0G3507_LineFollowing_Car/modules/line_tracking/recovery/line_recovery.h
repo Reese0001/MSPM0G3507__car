@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "../../../shared/motion_request.h"
-#include "../line_controller.h"
+#include "../line_model.h"
 
 typedef enum {
     LINE_RECOVERY_FOLLOW = 0,

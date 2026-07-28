@@ -45,6 +45,13 @@ class LegacyQuarantineContract(unittest.TestCase):
                 self.assertNotIn("application/", text, str(path))
                 self.assertNotIn("Motion_Car_Control", text, str(path))
 
+    def test_current_recovery_path_does_not_depend_on_old_controller_module(self):
+        recovery = (ROOT / "modules/line_tracking/recovery/line_recovery.h").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("../line_controller.h", recovery)
+        self.assertIn("../line_model.h", recovery)
+
 
 if __name__ == "__main__":
     unittest.main()

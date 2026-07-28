@@ -27,6 +27,12 @@ class BuildOutputLayoutContract(unittest.TestCase):
             "modules/optional/competition/corner_maneuver.c",
             "modules/optional/competition/motion_primitives.c",
             "modules/optional/legacy/tracking/app_irtracking.c",
+            "modules/line_tracking/line_controller.c",
+            "modules/line_tracking/line_estimator.c",
+            "modules/line_tracking/line_event_classifier.c",
+            "modules/line_tracking/line_features.c",
+            "modules/line_tracking/line_trend_detector.c",
+            "modules/line_tracking/decoder/line_start_gate.c",
         ):
             self.assertNotIn(old_source, makefile)
         for excluded in ("application", "modules/optional/competition", "modules/optional/legacy"):

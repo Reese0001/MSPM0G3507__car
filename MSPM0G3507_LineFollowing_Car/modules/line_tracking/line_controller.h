@@ -4,14 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "line_estimator.h"
-#include "line_trend_detector.h"
-
-typedef struct {
-    int16_t forward;
-    int16_t turn;
-    bool valid;
-} LineControlOutput;
+#include "line_model.h"
 
 typedef struct {
     int16_t max_forward;

@@ -293,6 +293,9 @@ class LineControllerContract(unittest.TestCase):
         header = (ROOT / "modules/line_tracking/line_controller.h").read_text(
             encoding="utf-8"
         )
+        model = (ROOT / "modules/line_tracking/line_model.h").read_text(
+            encoding="utf-8"
+        )
         source = (ROOT / "modules/line_tracking/line_controller.c").read_text(
             encoding="utf-8"
         )
@@ -306,7 +309,7 @@ class LineControllerContract(unittest.TestCase):
             "valid",
             "LineController_Step",
         ):
-            self.assertIn(token, header)
+            self.assertIn(token, header + model)
         for token in (
             "predicted_error",
             "confidence",

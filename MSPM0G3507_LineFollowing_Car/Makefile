@@ -77,15 +77,9 @@ SOURCES := \
     modules/display/ssd1306/ssd1306.c \
     modules/key/key.c \
     modules/led/led.c \
-    modules/line_tracking/line_controller.c \
-    modules/line_tracking/line_estimator.c \
-    modules/line_tracking/line_event_classifier.c \
-    modules/line_tracking/line_features.c \
     modules/line_tracking/controller/line_lookup_control.c \
     modules/line_tracking/decoder/line_position.c \
-    modules/line_tracking/decoder/line_start_gate.c \
     modules/line_tracking/scanner/line_scanner.c \
-    modules/line_tracking/line_trend_detector.c \
     modules/motor/configuration/motor_configuration.c \
     modules/motor/protocol/motor_protocol.c \
     modules/motor/uart/motor_uart.c \

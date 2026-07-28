@@ -99,6 +99,9 @@ class LineTrendDetectorContract(unittest.TestCase):
         self.assertTrue(header_path.exists())
         self.assertTrue(config_path.exists())
         header = header_path.read_text(encoding="utf-8")
+        model = (ROOT / "modules/line_tracking/line_model.h").read_text(
+            encoding="utf-8"
+        )
         config = config_path.read_text(encoding="utf-8")
         for token in (
             "LINE_TREND_NORMAL",
@@ -112,7 +115,7 @@ class LineTrendDetectorContract(unittest.TestCase):
             "LineTrendDetector_Update",
             "LineTrendDetector_Reset",
         ):
-            self.assertIn(token, header)
+            self.assertIn(token, header + model)
         for token in (
             "LINE_TREND_TIGHT_ERROR (3.0f)",
             "LINE_TREND_OUTER_ERROR (4.0f)",

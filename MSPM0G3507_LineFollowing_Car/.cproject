@@ -12,7 +12,7 @@
                     <extension id="com.ti.ccs.errorparser.CompilerErrorParser_TI" point="com.ti.ccs.project.ErrorParser"/>
                 </extensions>
                 <sourceEntries>
-<entry excluding="Build_LineFollowing|Debug|application|bsp/bsp_k230_uart.c|bsp/bsp_ultrasonic.c|bsp/debug_uart.c|modules/optional/competition|modules/optional/k230|modules/optional/legacy|modules/optional/ultrasonic|modules/optional/ybimu" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+<entry excluding="Build_LineFollowing|Debug|application|bsp/bsp_k230_uart.c|bsp/bsp_ultrasonic.c|bsp/debug_uart.c|modules/line_tracking/decoder/line_start_gate.c|modules/line_tracking/line_controller.c|modules/line_tracking/line_estimator.c|modules/line_tracking/line_event_classifier.c|modules/line_tracking/line_features.c|modules/line_tracking/line_trend_detector.c|modules/optional/competition|modules/optional/k230|modules/optional/legacy|modules/optional/ultrasonic|modules/optional/ybimu" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                 </sourceEntries>
             </storageModule>
             <storageModule moduleId="cdtBuildSystem" version="4.0.0">

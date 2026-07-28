@@ -21,14 +21,21 @@ class SafetySupervisorContract(unittest.TestCase):
             "SAFETY_STOP_LATCHED",
             "SAFETY_FAULT",
             "SafetyInputs",
-            "UltrasonicSnapshot ultrasonic",
+            "SafetySensorInput ultrasonic",
             "ultrasonic_required",
-            "YbImuSnapshot imu",
-            "K230VisionSnapshot vision",
+            "ModuleStatus imu",
+            "ModuleStatus vision",
             "SafetyDecision",
             "SafetySupervisor_Step",
         ):
             self.assertIn(token, header + common)
+        for token in (
+            "modules/optional",
+            "UltrasonicSnapshot",
+            "YbImuSnapshot",
+            "K230VisionSnapshot",
+        ):
+            self.assertNotIn(token, header)
 
     def test_priority_order_and_latched_clear_gate_exist(self):
         source = (ROOT / "app/safety/safety_supervisor.c").read_text(

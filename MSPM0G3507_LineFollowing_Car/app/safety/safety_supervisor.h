@@ -4,16 +4,19 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "../../shared/module_status.h"
 #include "../../shared/motion_request.h"
 #include "../../shared/safety_decision.h"
-#include "../../modules/optional/k230/k230_link.h"
-#include "../../modules/optional/ultrasonic/ultrasonic.h"
-#include "../../modules/optional/ybimu/ybimu.h"
 
 typedef struct {
-    UltrasonicSnapshot ultrasonic;
-    YbImuSnapshot imu;
-    K230VisionSnapshot vision;
+    ModuleStatus status;
+    uint16_t distance_mm;
+} SafetySensorInput;
+
+typedef struct {
+    SafetySensorInput ultrasonic;
+    ModuleStatus imu;
+    ModuleStatus vision;
     bool ultrasonic_required;
     bool vision_required;
     bool imu_required;

@@ -121,7 +121,7 @@ bool SafetySupervisor_Step(const SafetyInputs *inputs,
     }
 
     if (inputs->imu_required &&
-        !ModuleStatus_IsFresh(&inputs->imu.status, now_ms,
+        !ModuleStatus_IsFresh(&inputs->imu, now_ms,
                               SAFETY_IMU_STALE_MS)) {
         supervisor_state = SAFETY_FAULT;
         latched_reason = SAFETY_REASON_SENSOR_STALE;
@@ -129,7 +129,7 @@ bool SafetySupervisor_Step(const SafetyInputs *inputs,
         return false;
     }
     if (inputs->vision_required &&
-        !ModuleStatus_IsFresh(&inputs->vision.status, now_ms,
+        !ModuleStatus_IsFresh(&inputs->vision, now_ms,
                               SAFETY_VISION_STALE_MS)) {
         supervisor_state = SAFETY_FAULT;
         latched_reason = SAFETY_REASON_SENSOR_STALE;
