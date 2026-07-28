@@ -17,119 +17,89 @@ class LineRecoveryContract(unittest.TestCase):
         self.source = (ROOT / "modules/line_tracking/recovery/line_recovery.c").read_text(
             encoding="utf-8"
         )
-        self.config = (
-            ROOT / "config/line_recovery_config.h"
-        ).read_text(encoding="utf-8")
+        self.config = (ROOT / "config/line_recovery_config.h").read_text(
+            encoding="utf-8"
+        )
 
-    def test_recovery_has_no_backtrack_state_or_request(self):
-        self.assertNotIn("LINE_RECOVERY_BACKTRACK", self.header)
-        self.assertNotIn("set_backtrack_request", self.source)
-        self.assertNotIn("LINE_BACKTRACK_MS", self.config)
-
-    def test_recovery_uses_forward_then_pause_then_rotate(self):
+    def test_public_contract_uses_only_five_states_and_predicted_direction(self):
         for token in (
+            "LINE_RECOVERY_FOLLOW",
+            "LINE_RECOVERY_SEEK_LEFT",
+            "LINE_RECOVERY_SEEK_RIGHT",
+            "LINE_RECOVERY_ALIGN",
+            "LINE_RECOVERY_STOPPED",
+            "LineRecoveryDiagnostics",
+            "LineRecovery_GetDiagnostics",
+            "int8_t predicted_direction",
+            "float yaw_rate_dps",
+        ):
+            self.assertIn(token, self.header)
+
+        forbidden = (
+            "LINE_RECOVERY_LOSS_CONFIRM",
             "LINE_RECOVERY_FORWARD_SEARCH",
             "LINE_RECOVERY_ROTATION_PAUSE",
             "LINE_RECOVERY_ROTATE_SEARCH",
-            "LINE_RECOVERY_ALIGN",
-        ):
-            self.assertIn(token, self.header)
-        for token in (
-            "LINE_FORWARD_SEARCH_MS (500U)",
-            "LINE_ROTATION_PAUSE_MS (120U)",
-            "LINE_ROTATE_SEARCH_MS (700U)",
-            "LINE_ROTATE_INNER_COMMAND (-60)",
-            "LINE_ROTATE_OUTER_COMMAND (100)",
-        ):
-            self.assertIn(token, self.config)
+            "LineTrendResult",
+        )
+        for token in forbidden:
+            with self.subTest(token=token):
+                self.assertNotIn(token, self.header + self.source)
 
-    def test_no_recovery_helper_commands_both_wheels_negative(self):
-        pairs = [
-            tuple(map(int, pair))
-            for pair in re.findall(
-                r"publish_request\(\s*(-?\d+|LINE_[A-Z_]+),\s*"
-                r"(-?\d+|LINE_[A-Z_]+)",
-                self.source,
-            )
-            if all(value.lstrip("-").isdigit() for value in pair)
-        ]
-        self.assertFalse(any(left < 0 and right < 0 for left, right in pairs))
-        self.assertNotRegex(
-            self.source,
-            r"publish_request\(\s*-LINE_SEARCH_[A-Z_]+,\s*"
-            r"-LINE_SEARCH_[A-Z_]+",
+    def test_configuration_contains_only_the_new_recovery_constants(self):
+        definitions = dict(
+            re.findall(r"#define\s+(LINE_[A-Z0-9_]+)\s+\(([^)]+)\)", self.config)
+        )
+        self.assertEqual(
+            definitions,
+            {
+                "LINE_REACQUIRE_COUNT": "3U",
+                "LINE_ALIGN_DURATION_MS": "300U",
+                "LINE_RECOVERY_ESTIMATE_STALE_MS": "20U",
+                "LINE_RECOVERY_MIN_CONFIDENCE": "40U",
+                "LINE_SEEK_COMMAND": "100",
+                "LINE_SEEK_LIMITED_COMMAND": "80",
+                "LINE_SEEK_HIGH_YAW_DPS": "120.0f",
+                "LINE_ALIGN_COMMAND_LIMIT": "80",
+            },
         )
 
-    def test_corner_handling_is_not_owned_by_line_recovery(self):
-        self.assertNotIn("LINE_RECOVERY_CORNER", self.header + self.source)
-        self.assertNotIn("trend_is_right_angle", self.source)
-        self.assertNotIn("set_corner_request", self.source)
-        self.assertNotIn("LINE_CORNER_", self.config)
+    def test_legacy_search_contract_is_deleted(self):
+        combined = self.header + self.source + self.config
+        for token in (
+            "LINE_FORWARD_SEARCH_MS",
+            "LINE_ROTATE_SEARCH_MS",
+            "LINE_SEARCH_",
+            "LINE_ROTATE_",
+            "LINE_RECOVERY_CENTER_ERROR",
+            "recovery_direction = (int8_t)-recovery_direction",
+            "set_forward_search",
+            "set_rotate_search",
+        ):
+            with self.subTest(token=token):
+                self.assertNotIn(token, combined)
 
-    def test_reacquisition_and_faults_are_bounded(self):
-        self.assertIn("line_is_trustworthy", self.source)
+        self.assertNotRegex(self.source, r"publish_request\(\s*-\d+")
+        self.assertEqual(self.source.count("static void set_seek_request("), 1)
+
+    def test_reacquisition_and_safety_contract_is_explicit(self):
+        self.assertIn("line->event == LINE_EVENT_NONE", self.source)
         self.assertIn("line->confidence >= LINE_RECOVERY_MIN_CONFIDENCE", self.source)
-        self.assertIn("absolute_value(line->error) <= LINE_RECOVERY_CENTER_ERROR", self.source)
         self.assertIn("reacquire_count >= LINE_REACQUIRE_COUNT", self.source)
-        self.assertIn("LINE_RECOVERY_TOTAL_TIMEOUT_MS", self.source)
-        self.assertIn("LINE_ROTATE_SEARCH_MS", self.source)
         self.assertIn("if (emergency_stop)", self.source)
         self.assertIn("request->valid = false", self.source)
-        self.assertNotIn("last_seen_error", self.source)
-        self.assertNotIn("LINE_SHARP_SEARCH_ERROR", self.source + self.config)
-        self.assertNotIn("Contrl_Speed", self.source)
-        self.assertNotIn("Motion_Car_Control", self.source)
-        self.assertNotIn("Motor_Safety_Arm", self.source)
-
-    def test_align_timer_is_not_restarted_by_each_trusted_frame(self):
-        self.assertRegex(
-            self.source,
-            r"recovery_state\s*!=\s*LINE_RECOVERY_ALIGN\s*&&\s*"
-            r"update_reacquisition",
-        )
-
-    def test_recovery_direction_is_locked_during_search(self):
-        self.assertRegex(
-            self.source,
-            r"if\s*\(recovery_state\s*==\s*LINE_RECOVERY_FOLLOW\s*\|\|\s*"
-            r"recovery_state\s*==\s*LINE_RECOVERY_LOSS_CONFIRM\)"
-            r"\s*\{\s*update_direction",
-        )
-
-    def test_forward_search_pauses_before_rotate_search(self):
-        self.assertRegex(
-            self.source,
-            r"LINE_RECOVERY_FORWARD_SEARCH[\s\S]{0,500}"
-            r"LINE_RECOVERY_ROTATION_PAUSE",
-        )
-        self.assertRegex(
-            self.source,
-            r"LINE_RECOVERY_ROTATION_PAUSE[\s\S]{0,500}"
-            r"LINE_ROTATION_PAUSE_MS[\s\S]{0,500}"
-            r"LINE_RECOVERY_ROTATE_SEARCH",
-        )
-
-    def test_every_recovery_command_stays_inside_competition_limit(self):
-        values = {
-            name: int(value)
-            for name, value in re.findall(
-                r"#define\s+(LINE_(?:SEARCH|ROTATE)_[A-Z_]+)\s+\((-?\d+)\)",
-                self.config,
-            )
-        }
-        self.assertGreaterEqual(len(values), 5)
-        for name, value in values.items():
-            with self.subTest(name=name):
-                self.assertLessEqual(abs(value), 450)
-        pause = re.search(
-            r"LINE_ROTATION_PAUSE_MS\s+\((\d+)U\)", self.config
-        )
-        self.assertIsNotNone(pause)
-        self.assertGreaterEqual(int(pause.group(1)), 120)
+        self.assertNotIn("LINE_RECOVERY_TOTAL_TIMEOUT_MS", self.source + self.config)
+        for token in (
+            "Contrl_Speed",
+            "Motion_Car_Control",
+            "Motor_Safety_Arm",
+            "LineTrendResult",
+        ):
+            self.assertNotIn(token, self.source)
 
 
 class LineRecoveryRuntime(unittest.TestCase):
-    def test_host_harness_exercises_no_reverse_recovery_state_machine(self):
+    def test_host_harness_exercises_one_way_recovery_state_machine(self):
         vsdevcmd = (
             Path(os.environ["ProgramFiles"])
             / "Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat"
@@ -138,7 +108,6 @@ class LineRecoveryRuntime(unittest.TestCase):
         source = ROOT / "modules/line_tracking/recovery/line_recovery.c"
 
         self.assertTrue(vsdevcmd.exists(), "Visual Studio host toolchain missing")
-        self.assertTrue(harness.exists(), "line recovery harness missing")
         with tempfile.TemporaryDirectory() as temp_dir:
             executable = Path(temp_dir) / "line_recovery_harness.exe"
             compile_command = (
@@ -156,9 +125,7 @@ class LineRecoveryRuntime(unittest.TestCase):
                 shell=True,
                 executable=os.environ["ComSpec"],
             )
-            self.assertEqual(
-                build.returncode, 0, (build.stdout or "") + build.stderr
-            )
+            self.assertEqual(build.returncode, 0, (build.stdout or "") + build.stderr)
             run = subprocess.run(
                 [str(executable)], capture_output=True, text=True, check=False
             )

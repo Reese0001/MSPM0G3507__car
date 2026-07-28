@@ -9,26 +9,31 @@
 
 typedef enum {
     LINE_RECOVERY_FOLLOW = 0,
-    LINE_RECOVERY_LOSS_CONFIRM,
-    LINE_RECOVERY_FORWARD_SEARCH,
-    LINE_RECOVERY_ROTATION_PAUSE,
-    LINE_RECOVERY_ROTATE_SEARCH,
+    LINE_RECOVERY_SEEK_LEFT,
+    LINE_RECOVERY_SEEK_RIGHT,
     LINE_RECOVERY_ALIGN,
-    /* Exhausted search: motors stop, but trustworthy line frames
-     * resume control; ordinary loss never latches a permanent fault. */
     LINE_RECOVERY_STOPPED
 } LineRecoveryState;
+
+typedef struct {
+    LineRecoveryState state;
+    int8_t direction;
+    float yaw_delta_deg;
+    bool yaw_fresh;
+} LineRecoveryDiagnostics;
 
 void LineRecovery_Init(void);
 void LineRecovery_Reset(void);
 LineRecoveryState LineRecovery_GetState(void);
 bool LineRecovery_Step(const LineEstimate *line,
-                       const LineTrendResult *trend,
+                       int8_t predicted_direction,
                        const LineControlOutput *follow,
                        float yaw_deg,
+                       float yaw_rate_dps,
                        bool yaw_fresh,
                        bool emergency_stop,
                        uint32_t now_ms,
                        MotionRequest *request);
+void LineRecovery_GetDiagnostics(LineRecoveryDiagnostics *out);
 
 #endif
