@@ -74,6 +74,8 @@ SOURCES := \
     modules/key/key.c \
     modules/led/led.c \
     modules/line_tracking/controller/line_lookup_control.c \
+    modules/line_tracking/controller/line_cascade_control.c \
+    modules/line_tracking/prediction/line_direction_predictor.c \
     modules/line_tracking/decoder/line_position.c \
     modules/line_tracking/scanner/line_scanner.c \
     modules/motor/configuration/motor_configuration.c \
@@ -81,6 +83,7 @@ SOURCES := \
     modules/motor/uart/motor_uart.c \
     modules/motor/adapter/motor_adapter.c \
     modules/motor/safety/motor_safety.c \
+    modules/mpu6050/mpu6050_kalman.c \
     modules/mpu6050/mpu6050.c
 
 # Object names are flattened so no nested directories have to be created.
@@ -116,6 +119,7 @@ CPPFLAGS := \
     -Imodules/line_tracking \
     -Imodules/line_tracking/controller \
     -Imodules/line_tracking/decoder \
+    -Imodules/line_tracking/prediction \
     -Imodules/line_tracking/recovery \
     -Imodules/line_tracking/scanner \
     -Imodules/motor \

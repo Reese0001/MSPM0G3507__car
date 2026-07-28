@@ -31,14 +31,14 @@ class FaultDiagnosticsContract(unittest.TestCase):
             ROOT / "modules/line_tracking/controller/line_lookup_control.c"
         ).read_text(encoding="utf-8")
 
-    def test_supervision_constants_exist(self):
-        self.assertIn("LINE_LOOKUP_HIGH_YAW_DPS (95.0f)", self.config)
-        self.assertIn("LINE_LOOKUP_IMU_DEGRADED_LIMIT (280)", self.config)
+    def test_lookup_limit_and_supervision_constants_exist(self):
+        self.assertIn("LINE_LOOKUP_COMMAND_LIMIT (140)", self.config)
         self.assertIn("APP_CONTROL_HEARTBEAT_TIMEOUT_MS (30U)", self.config)
         self.assertIn("APP_SENSOR_HEARTBEAT_TIMEOUT_MS (20U)", self.config)
 
-    def test_stale_imu_caps_lookup_output(self):
-        self.assertIn("LINE_LOOKUP_IMU_DEGRADED_LIMIT", self.lookup)
+    def test_lookup_is_pure_feedforward(self):
+        self.assertIn("LINE_LOOKUP_COMMAND_LIMIT", self.lookup)
+        self.assertNotIn("yaw", self.lookup.lower())
         self.assertNotIn("yaw_pid", self.lookup)
         self.assertNotIn("integral", self.lookup)
 

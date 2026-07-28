@@ -67,14 +67,29 @@ class OledContract(unittest.TestCase):
         )
 
     def test_display_task_observes_and_renders_runtime_log_at_100ms(self):
-        self.assertIn("APP_DISPLAY_PERIOD_MS (100U)", self.tasks)
+        self.assertIn(
+            "{APP_TASK_DISPLAY, display_task, 100U * APP_TASK_BASE_TICK_MS",
+            self.tasks,
+        )
         self.assertIn("RuntimeObserver_Update", self.tasks)
         self.assertIn("RuntimeLog_Draw", self.observer)
         self.assertNotIn("Dashboard_Render", self.tasks)
         self.assertIn("UART TIMEOUT", self.observer)
         self.assertIn("WATCHDOG", self.observer)
         self.assertIn("DIR WAIT", self.observer)
-        self.assertIn("LINE LOST", self.observer)
+        for state in (
+            "LINE SEEK L",
+            "LINE SEEK R",
+            "LINE ALIGN",
+            "LINE SAFE STOP",
+            "LINE FOLLOW",
+        ):
+            self.assertIn(state, self.observer)
+        self.assertNotIn("LINE SEEK F", self.observer)
+        self.assertNotIn("LINE SEEK ROT", self.observer)
+        self.assertIn("LineRecovery_GetDiagnostics", self.observer)
+        self.assertIn("yaw_delta_deg", self.observer)
+        self.assertIn("LineCascadeControl_IsImuUsed() ? 'U' : 'B'", self.observer)
         self.assertIn("SAFETY RUN", self.observer)
         self.assertIn("MOTOR ARMED", self.observer)
         self.assertNotIn('"MOTOR ARM"', self.observer)
@@ -82,8 +97,7 @@ class OledContract(unittest.TestCase):
 
     def test_oled_failure_never_stops_the_motors(self):
         display_body = re.search(
-            r"if \(\(uint32_t\)\(now_ms - last_display_ms\) >= "
-            r"APP_DISPLAY_PERIOD_MS\) \{([\s\S]*?)\n    \}",
+            r"static void display_task\(uint32_t now_ms\)\n\{([\s\S]*?)\n\}",
             self.tasks,
         )
         self.assertIsNotNone(display_body)

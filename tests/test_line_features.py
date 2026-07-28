@@ -195,7 +195,9 @@ int main(void)
         line_motion = (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
         tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
         self.assertIn("LineRecovery_Step", line_motion)
+        self.assertIn("LineCascadeControl_Step", line_motion)
         self.assertIn("LineLookupControl_Step", line_motion)
+        self.assertIn("LineDirectionPredictor_Predict", line_motion)
         for forbidden in (
             "LineFeatureExtractor_Update",
             "LineEstimator_Update(&line_features",

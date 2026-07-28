@@ -1,14 +1,22 @@
 #include "runtime_observer.h"
 
 #include <stdio.h>
+#include <string.h>
 
+#include "../mailbox/app_mailbox.h"
 #include "../safety/safety_runtime.h"
 #include "../safety/safety_supervisor.h"
+#include "../../modules/mpu6050/mpu6050.h"
+#include "../../modules/mpu6050/mpu6050_config.h"
 #include "../../modules/diagnostics/boot_trace.h"
 #include "../../modules/display/runtime_log.h"
 #include "../../modules/display/ssd1306/ssd1306.h"
+#include "../../modules/line_tracking/controller/line_cascade_control.h"
 #include "../../modules/line_tracking/recovery/line_recovery.h"
 #include "../../modules/motor/safety/motor_safety.h"
+#include "../../shared/module_status.h"
+
+#define IMU_LOG_PERIOD_MS (500U)
 
 static bool display_ready;
 static bool observed;
@@ -34,6 +42,100 @@ static bool safety_loop_seen;
 static bool sensor_frame_seen;
 static bool control_request_seen;
 static uint8_t previous_task_mask;
+static Mpu6050State previous_mpu_state;
+static uint32_t last_imu_log_ms;
+
+static int clamp_log_value(float value)
+{
+    if (value > 999.0f) {
+        return 999;
+    }
+    if (value < -999.0f) {
+        return -999;
+    }
+    return (int)(value + (value >= 0.0f ? 0.5f : -0.5f));
+}
+
+static void format_signed_3(char *out, int value)
+{
+    unsigned int magnitude;
+
+    out[0] = value < 0 ? '-' : '+';
+    magnitude = value < 0 ? (unsigned int)-value : (unsigned int)value;
+    out[1] = (char)('0' + (magnitude / 100U));
+    out[2] = (char)('0' + ((magnitude / 10U) % 10U));
+    out[3] = (char)('0' + (magnitude % 10U));
+}
+
+static const char *imu_state_label(Mpu6050State state)
+{
+    switch (state) {
+    case MPU6050_STATE_STARTUP:
+        return "IMU START";
+    case MPU6050_STATE_CALIBRATING:
+        return "IMU CAL";
+    case MPU6050_STATE_READY:
+        return "IMU READY";
+    default:
+        return "IMU DEG";
+    }
+}
+
+static const char *recovery_state_label(LineRecoveryState state)
+{
+    switch (state) {
+    case LINE_RECOVERY_SEEK_LEFT:
+        return "LINE SEEK L";
+    case LINE_RECOVERY_SEEK_RIGHT:
+        return "LINE SEEK R";
+    case LINE_RECOVERY_ALIGN:
+        return "LINE ALIGN";
+    case LINE_RECOVERY_STOPPED:
+        return "LINE SAFE STOP";
+    default:
+        return "LINE FOLLOW";
+    }
+}
+
+static bool observe_imu(uint32_t now_ms,
+                        const LineRecoveryDiagnostics *recovery,
+                        char payload[18])
+{
+    Mpu6050Snapshot imu = {0};
+    Mpu6050State state = Mpu6050_GetState();
+    bool redraw = false;
+    bool fresh;
+
+    if (!observed || state != previous_mpu_state) {
+        redraw |= RuntimeLog_Push(now_ms, imu_state_label(state));
+        previous_mpu_state = state;
+    }
+    if ((uint32_t)(now_ms - last_imu_log_ms) < IMU_LOG_PERIOD_MS) {
+        return redraw;
+    }
+    last_imu_log_ms = now_ms;
+    fresh = AppMailbox_ReadImu(&imu) &&
+            ModuleStatus_IsFresh(&imu.status, now_ms, MPU6050_STALE_MS);
+    if (!fresh) {
+        return redraw | RuntimeLog_Push(now_ms, "IMU STALE");
+    }
+    {
+        static const char imu_template[] = "IMU U Y+000 G+000";
+
+        (void)memcpy(payload, imu_template, sizeof(imu_template));
+    }
+    payload[4] = LineCascadeControl_IsImuUsed() ? 'U' : 'B';
+    if (recovery->state == LINE_RECOVERY_SEEK_LEFT ||
+        recovery->state == LINE_RECOVERY_SEEK_RIGHT) {
+        payload[6] = 'D';
+        format_signed_3(&payload[7],
+                        clamp_log_value(recovery->yaw_delta_deg));
+    } else {
+        format_signed_3(&payload[7], clamp_log_value(imu.yaw_angle_deg));
+    }
+    format_signed_3(&payload[13], clamp_log_value(imu.yaw_rate_dps));
+    return redraw | RuntimeLog_Push(now_ms, payload);
+}
 
 void RuntimeObserver_Init(bool ready)
 {
@@ -61,6 +163,8 @@ void RuntimeObserver_Init(bool ready)
     sensor_frame_seen = false;
     control_request_seen = false;
     previous_task_mask = 0xFFU;
+    previous_mpu_state = MPU6050_STATE_DEGRADED;
+    last_imu_log_ms = 0U;
 }
 
 void RuntimeObserver_MarkSafetyLoop(void)
@@ -82,6 +186,7 @@ bool RuntimeObserver_Update(uint32_t now_ms)
 {
     MotorSafetyDiagnostics motor = {0};
     SafetyRuntimeDiagnostics runtime = {0};
+    LineRecoveryDiagnostics recovery_diagnostics = {0};
     SafetySupervisorState safety;
     LineRecoveryState recovery;
     uint8_t task_mask;
@@ -109,7 +214,9 @@ bool RuntimeObserver_Update(uint32_t now_ms)
     Motor_Safety_GetDiagnostics(&motor);
     SafetyRuntime_GetDiagnostics(&runtime);
     safety = SafetySupervisor_GetState();
-    recovery = LineRecovery_GetState();
+    LineRecovery_GetDiagnostics(&recovery_diagnostics);
+    recovery = recovery_diagnostics.state;
+    redraw |= observe_imu(now_ms, &recovery_diagnostics, payload);
 
     if (!logged_arm_wait_config && runtime.arm_waiting_for_config) {
         redraw |= RuntimeLog_Push(now_ms, "ARM WAIT CFG");
@@ -173,9 +280,8 @@ bool RuntimeObserver_Update(uint32_t now_ms)
         motor.direction_wait) {
         redraw |= RuntimeLog_Push(now_ms, "DIR WAIT");
     }
-    if ((!observed || recovery != previous_recovery) &&
-        recovery == LINE_RECOVERY_STOPPED) {
-        redraw |= RuntimeLog_Push(now_ms, "LINE LOST");
+    if (!observed || recovery != previous_recovery) {
+        redraw |= RuntimeLog_Push(now_ms, recovery_state_label(recovery));
     }
     if (!logged_test_run &&
         (motor.left_applied != 0 || motor.right_applied != 0)) {

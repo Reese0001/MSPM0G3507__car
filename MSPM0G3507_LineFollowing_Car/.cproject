@@ -66,6 +66,7 @@
                                     <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/controller"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/decoder"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/prediction"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/recovery"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/scanner"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/led"/>

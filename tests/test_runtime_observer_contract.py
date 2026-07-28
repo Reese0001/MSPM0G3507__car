@@ -23,8 +23,24 @@ class RuntimeObserverContract(unittest.TestCase):
             '"UART TIMEOUT"',
             '"WATCHDOG"',
             "SafetyRuntime_IsSensorHeartbeatMissing",
+            "AppMailbox_ReadImu",
+            "Mpu6050_GetState",
+            "LineCascadeControl_IsImuUsed",
+            '"IMU READY"',
+            '"IMU DEG"',
+            '"IMU U Y+000 G+000"',
+            "format_signed_3",
+            "LineRecovery_GetDiagnostics",
+            "yaw_delta_deg",
+            '"LINE SEEK L"',
+            '"LINE SEEK R"',
+            '"LINE ALIGN"',
+            '"LINE SAFE STOP"',
+            '"LINE FOLLOW"',
         ):
             self.assertIn(token, header + source)
+        self.assertNotIn('"LINE SEEK F"', source)
+        self.assertNotIn('"LINE SEEK ROT"', source)
         self.assertNotIn("RuntimeLog_Push(now_ms", tasks)
         self.assertIn("RuntimeObserver_Update", tasks)
         self.assertNotIn('"TEST RUN"', tasks)

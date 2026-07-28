@@ -54,19 +54,10 @@ static void set_line(LineEstimate *line,
     line->event = event;
 }
 
-static void set_trend(LineTrendResult *trend, uint32_t now_ms)
-{
-    (void)memset(trend, 0, sizeof(*trend));
-    trend->status.timestamp_ms = now_ms;
-    trend->status.valid = true;
-    trend->status.health = MODULE_HEALTH_OK;
-    trend->direction = -1;
-}
-
 static bool scheduler_step(const LineFeatures *features,
                            const LinePathEvent *path_event,
                            const LineEstimate *line,
-                           const LineTrendResult *trend,
+                           int8_t direction,
                            const LineControlOutput *follow,
                            uint32_t now_ms,
                            CornerManeuverOutput *corner,
@@ -78,17 +69,16 @@ static bool scheduler_step(const LineFeatures *features,
         *request = corner->request;
         return true;
     }
-    return LineRecovery_Step(line, trend, follow, 0.0f, false, false, now_ms,
-                             request);
+    return LineRecovery_Step(line, direction, follow, 0.0f, 0.0f, false,
+                             false, now_ms, request);
 }
 
-static int test_lost_follow_reaches_recovery_after_three_frames(void)
+static int test_lost_follow_reaches_recovery_on_first_frame(void)
 {
     const LineControlOutput lost_follow = {0, 0, false};
     LineFeatures features;
     LinePathEvent path_event;
     LineEstimate line;
-    LineTrendResult trend;
     CornerManeuverOutput corner;
     MotionRequest request;
     uint32_t now_ms;
@@ -102,20 +92,17 @@ static int test_lost_follow_reaches_recovery_after_three_frames(void)
         set_features(&features, now_ms, sequence, 0U);
         set_path_event(&path_event, now_ms, sequence, LINE_PATH_LOST);
         set_line(&line, now_ms, sequence, LINE_EVENT_LOST);
-        set_trend(&trend, now_ms);
-        recovery_owns = scheduler_step(&features, &path_event, &line, &trend,
+        recovery_owns = scheduler_step(&features, &path_event, &line, -1,
                                        &lost_follow, now_ms, &corner, &request);
         CHECK(!corner.fault);
         CHECK(!corner.owns_motion);
         CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_FOLLOW);
-        if (sequence < 3U) {
-            CHECK(!recovery_owns);
-            CHECK(!request.valid);
-        }
+        CHECK(recovery_owns);
+        CHECK(request.valid);
     }
     CHECK(recovery_owns);
-    CHECK(LineRecovery_GetState() == LINE_RECOVERY_FORWARD_SEARCH);
-    CHECK(request.valid && request.left_speed == 80 && request.right_speed == 120);
+    CHECK(LineRecovery_GetState() == LINE_RECOVERY_SEEK_LEFT);
+    CHECK(request.left_speed == 0 && request.right_speed == 100);
     return 0;
 }
 
@@ -168,7 +155,6 @@ static int test_settle_loss_returns_control_to_recovery(void)
     LineFeatures features;
     LinePathEvent path_event;
     LineEstimate line;
-    LineTrendResult trend;
     CornerManeuverOutput corner;
     MotionRequest request;
     uint32_t now_ms;
@@ -204,20 +190,19 @@ static int test_settle_loss_returns_control_to_recovery(void)
     set_features(&features, now_ms, 7U, 0U);
     set_path_event(&path_event, now_ms, 7U, LINE_PATH_LOST);
     set_line(&line, now_ms, 7U, LINE_EVENT_LOST);
-    set_trend(&trend, now_ms);
-    recovery_owns = scheduler_step(&features, &path_event, &line, &trend,
+    recovery_owns = scheduler_step(&features, &path_event, &line, -1,
                                    &lost_follow, now_ms, &corner, &request);
     CHECK(!corner.fault);
     CHECK(!corner.owns_motion);
     CHECK(CornerManeuver_GetState() == CORNER_MANEUVER_FOLLOW);
-    CHECK(!recovery_owns && !request.valid);
-    CHECK(LineRecovery_GetState() == LINE_RECOVERY_LOSS_CONFIRM);
+    CHECK(recovery_owns && request.valid);
+    CHECK(LineRecovery_GetState() == LINE_RECOVERY_SEEK_LEFT);
     return 0;
 }
 
 int main(void)
 {
-    if (test_lost_follow_reaches_recovery_after_three_frames() != 0) {
+    if (test_lost_follow_reaches_recovery_on_first_frame() != 0) {
         return 1;
     }
     if (test_seek_keeps_pivot_during_temporary_lost_frames() != 0) {

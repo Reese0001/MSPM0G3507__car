@@ -32,11 +32,35 @@ class AppRuntimePipelineContract(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, self.tasks)
 
+    def test_task_scheduler_is_fixed_timeslice_table(self):
+        for token in (
+            "APP_TASK_BASE_TICK_MS",
+            "AppTaskSlot",
+            "app_task_slots[]",
+            "APP_TASK_SAFETY",
+            "APP_TASK_SENSOR",
+            "APP_TASK_CONTROL",
+            "APP_TASK_DISPLAY",
+            "AppTaskFunction",
+            "run_task_slot",
+        ):
+            self.assertIn(token, self.tasks)
+        self.assertLess(
+            self.tasks.index("APP_TASK_SAFETY"),
+            self.tasks.index("APP_TASK_SENSOR"),
+        )
+        self.assertNotIn("APP_SAFETY_PERIOD_MS", self.tasks)
+        self.assertNotIn("APP_SENSOR_PERIOD_MS", self.tasks)
+        self.assertNotIn("else if (id ==", self.tasks)
+        self.assertIn("last_run_ms = now_ms", self.tasks)
+        self.assertNotIn("last_run_ms +=", self.tasks)
+
     def test_line_request_pipeline_order_is_owned_by_line_motion(self):
         positions = [
-            self.line.index("LinePosition_Reset"),
-            self.line.index("LineRecovery_Init"),
+            self.line.index("LineDirectionPredictor_Record"),
+            self.line.index("LineDirectionPredictor_Predict"),
             self.line.index("LineLookupControl_Step"),
+            self.line.index("LineCascadeControl_Step"),
             self.line.index("LineRecovery_Step"),
         ]
         self.assertEqual(positions, sorted(positions))
@@ -45,6 +69,7 @@ class AppRuntimePipelineContract(unittest.TestCase):
 
     def test_control_publishes_only_valid_line_requests(self):
         self.assertIn("AppLineMotion_BuildRequest", self.control)
+        self.assertIn("RunController_IsRunRequested", self.control)
         self.assertIn("return false;", self.control)
         self.assertLess(
             self.control.index("AppLineMotion_BuildRequest"),
@@ -52,33 +77,33 @@ class AppRuntimePipelineContract(unittest.TestCase):
         )
 
     def test_safety_runtime_is_the_single_motor_authority_bridge(self):
-        self.assertIn("RunController_BuildRequest", self.safety)
+        self.assertIn("AppMailbox_ReadMotionRequest", self.safety)
+        self.assertIn("StopRequest(now_ms, &request)", self.safety)
+        self.assertNotIn("RunController_BuildRequest", self.safety)
         self.assertIn("SafetySupervisor_Step", self.safety)
         self.assertIn("MotorAdapter_Apply", self.safety)
         self.assertIn("Motor_Safety_Arm", self.safety)
         self.assertNotIn("LineStartGate_Update", self.safety + self.tasks)
 
-    def test_integration_keeps_confirmed_pd_and_speed_limits(self):
-        config = (ROOT / "modules/optional/competition/line_tracking/line_control_config.h").read_text(encoding="utf-8")
+    def test_integration_keeps_damped_pd_and_speed_limits(self):
+        config = (ROOT / "config/line_cascade_config.h").read_text(encoding="utf-8")
         safety = (ROOT / "config/safety_config.h").read_text(encoding="utf-8")
-        self.assertIn("LINE_CONTROL_KP (28.0f)", config)
-        self.assertIn("LINE_MAX_FORWARD (400)", config)
+        self.assertIn("LINE_CASCADE_POSITION_KP (14.0f)", config)
+        self.assertIn("LINE_CASCADE_MAX_COMMAND (140)", config)
         self.assertIn("SAFETY_RUNNING_SPEED_LIMIT (450)", safety)
 
     def test_optional_mpu6050_is_serviced_and_fails_soft(self):
         for token in (
             "Mpu6050_Init",
-            "BSP_I2C_Service",
             "Mpu6050_Service",
             "Mpu6050_GetSnapshot",
             "MPU6050_STATE_CALIBRATING",
             "ModuleStatus_IsFresh",
+            "LineCascadeControl_Step",
+            "yaw_angle_deg",
         ):
             self.assertIn(token, self.line)
-        lookup = (ROOT / "modules/line_tracking/controller/line_lookup_control.c").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn("LINE_LOOKUP_IMU_DEGRADED_LIMIT", lookup)
+        self.assertIn("BSP_I2C_Service", self.tasks)
         self.assertIn(
             "inputs.imu_required = LINE_FOLLOWING_REQUIRE_IMU != 0",
             self.safety,

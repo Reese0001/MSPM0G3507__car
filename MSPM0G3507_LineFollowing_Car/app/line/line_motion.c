@@ -1,16 +1,22 @@
 #include "line_motion.h"
 
-#include "../../bsp/bsp_i2c.h"
 #include "../../config/line_following_profile.h"
+#include "../../modules/line_tracking/controller/line_cascade_control.h"
 #include "../../modules/line_tracking/controller/line_lookup_control.h"
+#include "../../modules/line_tracking/prediction/line_direction_predictor.h"
 #include "../../modules/line_tracking/recovery/line_recovery.h"
 #include "../../modules/line_tracking/decoder/line_position.h"
 #include "../../modules/mpu6050/mpu6050.h"
 #include "../../modules/mpu6050/mpu6050_config.h"
-#include "../../modules/time/timer.h"
 #include "../../shared/module_status.h"
 
 static uint32_t imu_started_ms;
+static const LineEvent event_by_pattern[] = {
+    LINE_EVENT_LOST,
+    LINE_EVENT_NONE,
+    LINE_EVENT_WIDE_BLACK,
+    LINE_EVENT_NONE
+};
 
 static void ClearRequest(uint32_t now_ms, MotionRequest *request)
 {
@@ -27,8 +33,7 @@ static void PublishImuSnapshot(void)
 {
     Mpu6050Snapshot snapshot;
 
-    if (Mpu6050_GetState() == MPU6050_STATE_READY &&
-        Mpu6050_GetSnapshot(&snapshot)) {
+    if (Mpu6050_GetSnapshot(&snapshot)) {
         AppMailbox_PublishImu(&snapshot);
     }
 }
@@ -48,34 +53,23 @@ static bool ImuStartupHold(uint32_t now_ms)
            state == MPU6050_STATE_DEGRADED;
 }
 
-static bool ReadFreshYawRate(uint32_t now_ms, float *yaw_rate_dps)
+static bool ReadFreshImu(uint32_t now_ms, Mpu6050Snapshot *snapshot)
 {
-    Mpu6050Snapshot snapshot;
-
     if (LINE_FOLLOWING_USE_IMU == 0 ||
-        !AppMailbox_ReadImu(&snapshot) ||
-        !ModuleStatus_IsFresh(&snapshot.status, now_ms, MPU6050_STALE_MS)) {
+        snapshot == 0 ||
+        !AppMailbox_ReadImu(snapshot) ||
+        !ModuleStatus_IsFresh(&snapshot->status, now_ms, MPU6050_STALE_MS)) {
         return false;
     }
-    *yaw_rate_dps = snapshot.yaw_rate_dps;
     return true;
-}
-
-static int8_t PositionSign(int8_t position)
-{
-    if (position < 0) {
-        return -1;
-    }
-    if (position > 0) {
-        return 1;
-    }
-    return 0;
 }
 
 void AppLineMotion_Init(uint32_t now_ms)
 {
     LinePosition_Reset();
+    LineDirectionPredictor_Reset();
     LineRecovery_Init();
+    LineCascadeControl_Init(now_ms);
     if (LINE_FOLLOWING_USE_IMU != 0) {
         Mpu6050_Init(now_ms);
     }
@@ -84,13 +78,6 @@ void AppLineMotion_Init(uint32_t now_ms)
 
 void AppLineMotion_ServiceImu(uint32_t now_ms)
 {
-    uint32_t started_us = BSP_Time_GetUs();
-
-    Mpu6050_Service(now_ms);
-    while (BSP_I2C_GetStatus() == BSP_I2C_STATUS_BUSY &&
-           (uint32_t)(BSP_Time_GetUs() - started_us) < 1000U) {
-        BSP_I2C_Service(BSP_Time_GetUs());
-    }
     Mpu6050_Service(now_ms);
     PublishImuSnapshot();
 }
@@ -100,24 +87,29 @@ bool AppLineMotion_BuildRequest(const AppLineSample *sample,
                                 MotionRequest *request)
 {
     LineEstimate estimate = {0};
-    LineTrendResult trend = {0};
+    LineLookupCommand lookup = {0};
     LineControlOutput follow = {0};
-    LineLookupCommand command;
-    float yaw_rate_dps = 0.0f;
-    bool yaw_fresh;
+    Mpu6050Snapshot imu = {0};
+    int8_t predicted_direction;
+    bool imu_fresh;
     bool pattern_known;
 
     ClearRequest(now_ms, request);
-    if (sample == 0 || request == 0 ||
-        sample->position.type == LINE_PATTERN_NOISE) {
+    if (sample == 0 || request == 0) {
+        return false;
+    }
+    if (sample->position.type == LINE_PATTERN_NOISE) {
+        LineCascadeControl_Init(now_ms);
         return false;
     }
     if (ImuStartupHold(now_ms)) {
         LinePosition_Reset();
+        LineDirectionPredictor_Reset();
         LineRecovery_Reset();
+        LineCascadeControl_Init(now_ms);
         return false;
     }
-    yaw_fresh = ReadFreshYawRate(now_ms, &yaw_rate_dps);
+    imu_fresh = ReadFreshImu(now_ms, &imu);
 
     pattern_known = sample->position.type == LINE_PATTERN_POSITION ||
                     sample->position.type == LINE_PATTERN_WIDE;
@@ -125,22 +117,29 @@ bool AppLineMotion_BuildRequest(const AppLineSample *sample,
     estimate.status.sequence = sample->sequence;
     estimate.status.valid = true;
     estimate.status.health = MODULE_HEALTH_OK;
-    estimate.event = sample->position.type == LINE_PATTERN_LOST
-                         ? LINE_EVENT_LOST
-                         : LINE_EVENT_NONE;
+    estimate.event = event_by_pattern[sample->position.type];
     estimate.error = (float)sample->position.stable_position;
     estimate.predicted_error = (float)sample->position.stable_position;
     estimate.confidence = pattern_known ? 60U : 0U;
 
-    trend.status = estimate.status;
-    trend.direction = PositionSign(sample->position.stable_position);
+    if (sample->position.type == LINE_PATTERN_POSITION) {
+        LineDirectionPredictor_Record(sample->position.stable_position);
+    }
+    predicted_direction = LineDirectionPredictor_Predict();
+    if (pattern_known) {
+        lookup = LineLookupControl_Step(sample->position.stable_position);
+    }
 
-    command = LineLookupControl_Step(sample->position.stable_position,
-                                     yaw_rate_dps, yaw_fresh);
-    follow.forward = command.base;
-    follow.turn = command.diff;
-    follow.valid = command.valid;
+    if (!LineCascadeControl_Step(&estimate,
+                                 &lookup,
+                                 imu_fresh ? &imu : 0,
+                                 imu_fresh,
+                                 now_ms,
+                                 &follow)) {
+        follow.valid = false;
+    }
 
-    return LineRecovery_Step(&estimate, &trend, &follow, yaw_rate_dps,
-                             yaw_fresh, false, now_ms, request);
+    return LineRecovery_Step(&estimate, predicted_direction, &follow,
+                             imu.yaw_angle_deg, imu.yaw_rate_dps,
+                             imu_fresh, false, now_ms, request);
 }
