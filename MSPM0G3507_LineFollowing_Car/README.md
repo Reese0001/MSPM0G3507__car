@@ -4,7 +4,7 @@
 
 ## 目录职责
 
-- `empty.c`：硬件初始化、应用创建和 FreeRTOS 启动入口。
+- `empty.c`：硬件初始化和裸机时间片轮询入口。
 - `empty.syscfg`：引脚与外设配置的唯一真实来源。
 - `app/`：启动、任务、邮箱和安全编排。
 - `config/`：循迹、电机安全和传感器参数。
@@ -60,38 +60,29 @@ UniFlash 只选择并烧录 `dist/firmware/MSPM0G3507_LineFollowing_Car.txt`（T
 
 上车前先确认黑白电平、X1/X8 顺序和 M2/M4 正方向。未确认前只做断电测试或架空轮测试。
 
-## OLED 运行日志与 RESET 启动
+## OLED 运行日志与 K1 启动
 
-### 临时 FreeRTOS 启动诊断判读
-
-下表仅适用于当前的**临时启动诊断固件**；确认根因并修复后必须删除这些诊断检查点，恢复 D1/D2 的原用途。
-
-| OLED 停在 `SCHED START` 时的静态 D1:D2 | 含义 |
-|---|---|
-| `00` | 阶段 03：调度器的 port 启动前 trace hook 未到；断言会显示 `E1`，不会显示静态 `00`。 |
-| `01` | 阶段 04：port 启动前 trace hook 已执行，但尚未进入 SVC。 |
-| `10` | 已进入 SVC，但尚未开始首次上下文恢复。 |
-| `11` | 已开始首次上下文恢复，但尚未到达任务 C 入口。 |
-
-- D1 熄灭且 D2 重复 1～3 个 100 ms 短脉冲，并带明显长间隔：已有 1～3 个任务入口上线，任务位图尚未达到 `0x0F`。
-- D1 常亮且 D2 重复闪烁 1～5 次：分别是致命码 `E1`～`E5`。
-- D1 熄灭且 D2 以 250 ms 心跳：四个任务均已达到 `0x0F`。`TASK MASK 0F` 只记录一次，可能已从流动 OLED 日志中滚走，此后以 D2 心跳为准；随后继续观察 `SAFETY RUN`、`MOTOR ARMED` 和非零 `TX`，不要仅据此宣称电机已修复。
-
-OLED 使用 PA10=SCL、PA11=SDA、地址 `0x3C`，作为流动行为日志；调试串口保持 115200。按下 RESET 后固件自动启动，K1 不是启动门，也不等待循迹有效帧才允许电机软启动。正常启动时 OLED 必须完整显示：
+OLED 使用 PA10=SCL、PA11=SDA、地址 `0x3C`，作为流动行为日志。RESET 后完成配置并保持零速，按下 K1 只解除运行门控；有效循迹请求尚未产生时电机仍保持零速。D1 常亮表示故障，D2 正常以 250 ms 周期心跳。典型日志为：
 
 ```text
 0000 BOOT
 0012 OLED OK
-0020 AUTO START
 0022 MOTOR CFG
 0525 CFG OK
-0526 SAFETY RUN
-0526 MOTOR ARMED
-0626 TX L030 R030
-0726 TX L060 R060
+PRESS K1
+.... MOTOR ARMED
+.... SAFETY RUN
+.... CONTROL REQ
+.... IMU READY
+.... IMU U Y+000 G+000
+.... TX Lxxx Rxxx
 ```
 
-第一次硬件测试：先断开或架空驱动轮，连接 12.6 V，按 RESET；在放下驱动轮前观察完整 OLED 日志。出现 `UART TIMEOUT`、`WATCHDOG`、`DIR WAIT` 或 `LINE LOST` 时，立即断开 12.6 V 并诊断，驱动轮落地时不要重复 RESET。OLED 不亮时检查 3.3 V、共地、PA10/PA11、地址和 UniFlash 的最新 `.txt`。
+`U Y...` 表示角度环正在使用 MPU6050，`B Y...` 表示暂时旁路。丢线时根据最近 3 个合法位置锁定方向，显示 `LINE SEEK L` 或 `LINE SEEK R`，只沿该方向原地旋转，不倒车也不来回摆动；连续 3 帧重新找到线后显示 `LINE ALIGN`，低速对齐 300 ms。只有急停、传感器数据过期或非法状态才显示 `LINE SAFE STOP`。
+
+正常循迹每 2 ms 读取八路灰度并解码为 `-7..+7`。查表输出基础速度/差速前馈，位置 PD（`Kp=14.0`、`Kd=0.010`）和 MPU6050 角度环（`Kp=1.5`、`Kd=0.55`）只做辅助修正；最终命令仍由软启动、限幅和失控监控统一约束。
+
+第一次硬件测试：先断开或架空驱动轮，连接 12.6 V，按 RESET，配置完成后按 K1；在放下驱动轮前观察完整 OLED 日志。出现 `UART TIMEOUT`、`WATCHDOG`、`DIR WAIT` 或 `LINE SAFE STOP` 时，立即断开 12.6 V 并诊断，驱动轮落地时不要重复 RESET。OLED 不亮时检查 3.3 V、共地、PA10/PA11、地址和 UniFlash 的最新 `.txt`。
 
 ## 电机安全
 

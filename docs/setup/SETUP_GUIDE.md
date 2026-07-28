@@ -27,7 +27,7 @@ MSPM0G3507_LineFollowing_Car/empty.syscfg
 | 灰度选通 | PA15 AD0 / PA16 AD1 / PA17 AD2 | X1～X8 |
 | 灰度输出 | PA18 OUT | 黑线有效电平由配置定义 |
 | LED D1/D2 | PB2 / PB3 | 故障 / 心跳 |
-| 按键 K1 | PA2 | GPIO 输入；不是启动门 |
+| 按键 K1 | PA2 | GPIO 输入；RESET 后按下 K1 才运行 |
 | 蜂鸣器 | PB24 | TIMA0 PWM |
 
 面向车头时，X1 在右侧、X8 在左侧。软件位置约定为：
@@ -77,19 +77,23 @@ PA18 与灰度 OUT 和 BSL Invoke 复用。无法进入 BSL 时，先断电并�
 
 ## 5. 上电检查顺序
 
-按 RESET 后固件自动启动；K1 不是启动门，且不再等待循迹有效帧才允许电机软启动。OLED 使用 PA10=SCL、PA11=SDA、地址 `0x3C`，调试串口保持 115200。启动时必须看到以下完整流动日志：
+按 RESET 后固件完成配置并保持零速；按下 K1 只解除运行门控，灰度循迹尚未产生有效请求时电机仍保持零速。OLED 使用 PA10=SCL、PA11=SDA、地址 `0x3C`，调试串口保持 115200。典型流动日志为：
 
 ```text
 0000 BOOT
 0012 OLED OK
-0020 AUTO START
 0022 MOTOR CFG
 0525 CFG OK
-0526 SAFETY RUN
-0526 MOTOR ARMED
-0626 TX L030 R030
-0726 TX L060 R060
+PRESS K1
+.... MOTOR ARMED
+.... SAFETY RUN
+.... CONTROL REQ
+.... IMU READY
+.... IMU U Y+000 G+000
+.... TX Lxxx Rxxx
 ```
+
+`U Y...` 表示控制器正在使用 MPU6050 角度环，`B Y...` 表示旁路；转动车身时 `Y`（航向角）和 `G`（角速度）应变化。`LINE SEEK L/R` 表示车辆按丢线趋势锁定一个方向原地找线，不倒车、不换向；`LINE ALIGN` 表示重新找到线后的低速对齐。`LINE SAFE STOP` 才表示急停、传感器数据过期或非法状态。
 
 第一次接通电机动力前必须确认：
 
