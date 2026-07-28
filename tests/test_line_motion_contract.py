@@ -40,14 +40,12 @@ class LineMotionContract(unittest.TestCase):
         ]
         self.assertEqual(positions, sorted(positions))
 
-    def test_only_position_samples_update_direction_history(self):
+    def test_position_and_wide_samples_update_direction_history(self):
         source = (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
-        self.assertRegex(
-            source,
-            r"if \(sample->position\.type == LINE_PATTERN_POSITION\)\s*\{"
-            r"[\s\S]{0,160}LineDirectionPredictor_Record"
-            r"\(sample->position\.stable_position\)",
-        )
+        self.assertIn("control_position = sample->position.stable_position;", source)
+        self.assertIn("sample->position.type == LINE_PATTERN_WIDE", source)
+        self.assertIn("control_position != 0", source)
+        self.assertIn("LineDirectionPredictor_Record(control_position)", source)
 
     def test_build_links_each_active_line_module_once(self):
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")

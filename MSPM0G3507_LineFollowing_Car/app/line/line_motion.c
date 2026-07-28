@@ -91,6 +91,7 @@ bool AppLineMotion_BuildRequest(const AppLineSample *sample,
     LineControlOutput follow = {0};
     Mpu6050Snapshot imu = {0};
     int8_t predicted_direction;
+    int8_t control_position;
     bool imu_fresh;
     bool pattern_known;
 
@@ -123,16 +124,23 @@ bool AppLineMotion_BuildRequest(const AppLineSample *sample,
     estimate.status.valid = true;
     estimate.status.health = MODULE_HEALTH_OK;
     estimate.event = event_by_pattern[sample->position.type];
-    estimate.error = (float)sample->position.stable_position;
-    estimate.predicted_error = (float)sample->position.stable_position;
     estimate.confidence = pattern_known ? 60U : 0U;
 
-    if (sample->position.type == LINE_PATTERN_POSITION) {
-        LineDirectionPredictor_Record(sample->position.stable_position);
+    control_position = sample->position.stable_position;
+    if (sample->position.type == LINE_PATTERN_WIDE) {
+        control_position = sample->position.candidate_position;
+    }
+    estimate.error = (float)control_position;
+    estimate.predicted_error = (float)control_position;
+
+    if (sample->position.type == LINE_PATTERN_POSITION ||
+        (sample->position.type == LINE_PATTERN_WIDE &&
+         control_position != 0)) {
+        LineDirectionPredictor_Record(control_position);
     }
     predicted_direction = LineDirectionPredictor_Predict();
     if (pattern_known) {
-        lookup = LineLookupControl_Step(sample->position.stable_position);
+        lookup = LineLookupControl_Step(control_position);
     }
 
     if (!LineCascadeControl_Step(&estimate,

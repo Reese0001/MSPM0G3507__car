@@ -21,6 +21,22 @@ static int8_t stable_position;
 static int8_t candidate_position;
 static uint8_t candidate_frames;
 
+static int8_t wide_position(uint8_t bits)
+{
+    static const int8_t sensor_position[8] = {7, 5, 3, 1, -1, -3, -5, -7};
+    int16_t sum = 0;
+    uint8_t count = 0U;
+    uint8_t index;
+
+    for (index = 0U; index < 8U; index++) {
+        if ((bits & (uint8_t)(1U << index)) != 0U) {
+            sum += sensor_position[index];
+            count++;
+        }
+    }
+    return count == 0U ? 0 : (int8_t)(sum / (int16_t)count);
+}
+
 void LinePosition_Reset(void)
 {
     has_stable = false;
@@ -70,7 +86,12 @@ LinePositionResult LinePosition_Update(uint8_t black_bits)
     LinePositionResult result;
     LinePatternType type = ClassifyBits(black_bits);
 
-    if (type != LINE_PATTERN_POSITION) {
+    if (type == LINE_PATTERN_WIDE) {
+        /* A corner often presents three or more adjacent sensors. Keep its
+         * signed side for steering and direction prediction. */
+        candidate_position = wide_position(black_bits);
+        candidate_frames = 1U;
+    } else if (type != LINE_PATTERN_POSITION) {
         /* Illegal frame: hold the stable value and restart debouncing. */
         candidate_position = stable_position;
         candidate_frames = 0U;

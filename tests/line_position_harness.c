@@ -54,7 +54,13 @@ int main(void)
 
     /* A contiguous run of three or more sensors is WIDE. */
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x07U).type == LINE_PATTERN_WIDE);
+    result = LinePosition_Update(0x07U);
+    CHECK(result.type == LINE_PATTERN_WIDE);
+    CHECK(result.candidate_position > 0);
+    LinePosition_Reset();
+    result = LinePosition_Update(0xE0U);
+    CHECK(result.type == LINE_PATTERN_WIDE);
+    CHECK(result.candidate_position < 0);
     LinePosition_Reset();
     CHECK(LinePosition_Update(0xFFU).type == LINE_PATTERN_WIDE);
 
