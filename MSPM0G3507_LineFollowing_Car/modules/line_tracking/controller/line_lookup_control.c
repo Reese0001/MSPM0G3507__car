@@ -1,7 +1,5 @@
 #include "line_lookup_control.h"
 
-#include <math.h>
-
 #include "../../../config/line_lookup_config.h"
 
 typedef struct {
@@ -13,31 +11,18 @@ typedef struct {
  * with the differential sign mirrored. */
 static const LineLookupEntry table[8] = {LINE_LOOKUP_TABLE_ENTRIES};
 
-static int16_t clamp_degraded(int16_t value)
-{
-    if (value > LINE_LOOKUP_IMU_DEGRADED_LIMIT) {
-        return (int16_t)LINE_LOOKUP_IMU_DEGRADED_LIMIT;
-    }
-    if (value < -LINE_LOOKUP_IMU_DEGRADED_LIMIT) {
-        return (int16_t)-LINE_LOOKUP_IMU_DEGRADED_LIMIT;
-    }
-    return value;
-}
-
 static int16_t clamp_command(int32_t value)
 {
     if (value > LINE_LOOKUP_COMMAND_LIMIT) {
         return (int16_t)LINE_LOOKUP_COMMAND_LIMIT;
     }
-    if (value < -LINE_LOOKUP_COMMAND_LIMIT) {
-        return (int16_t)-LINE_LOOKUP_COMMAND_LIMIT;
+    if (value < 0) {
+        return 0;
     }
     return (int16_t)value;
 }
 
-LineLookupCommand LineLookupControl_Step(int8_t position,
-                                         float yaw_rate_dps,
-                                         bool yaw_fresh)
+LineLookupCommand LineLookupControl_Step(int8_t position)
 {
     LineLookupCommand command = {0, 0, 0, 0, false};
     int8_t magnitude_index;
@@ -57,22 +42,9 @@ LineLookupCommand LineLookupControl_Step(int8_t position,
         diff = (int16_t)-diff;
     }
 
-    /* MPU acts only as a corner limiter: if the car already yaws fast
-     * in a sharp corner, shrink the differential without reversing it. */
-    if (yaw_fresh &&
-        magnitude_index >= LINE_LOOKUP_YAW_LIMIT_MIN_POSITION &&
-        fabsf(yaw_rate_dps) >= LINE_LOOKUP_HIGH_YAW_DPS) {
-        diff = (int16_t)(diff * 3 / 4);
-    }
-
     command.diff = diff;
     command.left = clamp_command((int32_t)command.base - diff);
     command.right = clamp_command((int32_t)command.base + diff);
-    if (!yaw_fresh) {
-        /* A stale IMU cannot supervise sharp corners: degrade speed. */
-        command.left = clamp_degraded(command.left);
-        command.right = clamp_degraded(command.right);
-    }
     command.valid = true;
     return command;
 }

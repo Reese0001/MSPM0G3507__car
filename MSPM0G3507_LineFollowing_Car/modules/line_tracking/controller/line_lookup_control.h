@@ -7,9 +7,9 @@
 /*
  * Open-loop lookup controller: converts a stable 15-position line
  * estimate (-7..7, negative = line left of center) into bounded
- * left/right motor commands. Positive differential slows the left
- * wheel and turns left. No PID state is kept; the fresh MPU yaw rate
- * only limits excessive differential in sharp corners.
+ * left/right motor feedforward commands. Positive differential slows
+ * the left wheel and turns left. The raw base/diff values are preserved
+ * for the downstream cascade PID.
  */
 
 typedef struct {
@@ -20,8 +20,6 @@ typedef struct {
     bool valid;
 } LineLookupCommand;
 
-LineLookupCommand LineLookupControl_Step(int8_t position,
-                                         float yaw_rate_dps,
-                                         bool yaw_fresh);
+LineLookupCommand LineLookupControl_Step(int8_t position);
 
 #endif

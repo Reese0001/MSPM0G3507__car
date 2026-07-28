@@ -10,7 +10,7 @@ PROJECT = ROOT / "MSPM0G3507_LineFollowing_Car"
 
 
 class LineLookupControlRuntime(unittest.TestCase):
-    def test_symmetric_bounded_lookup_table(self):
+    def test_symmetric_bounded_feedforward_lookup_table(self):
         vsdevcmd = (
             Path(os.environ["ProgramFiles"])
             / "Microsoft Visual Studio/2022/Community/Common7/Tools/VsDevCmd.bat"
