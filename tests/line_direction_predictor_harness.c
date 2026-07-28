@@ -38,6 +38,7 @@ int main(void)
     LineDirectionPredictor_Record(-2);
     LineDirectionPredictor_Record(0);
     failures += expect_prediction(1);
+    failures += expect_prediction(1);
 
     LineDirectionPredictor_Reset();
     LineDirectionPredictor_Record(2);
@@ -46,20 +47,22 @@ int main(void)
     failures += expect_prediction(1);
 
     LineDirectionPredictor_Reset();
-    LineDirectionPredictor_Record(-7);
-    failures += expect_prediction(-1);
+    LineDirectionPredictor_Record(-1);
+    LineDirectionPredictor_Record(7);
+    failures += expect_prediction(1);
 
     LineDirectionPredictor_Reset();
-    LineDirectionPredictor_Record(7);
+    LineDirectionPredictor_Record(1);
+    LineDirectionPredictor_Record(3);
+    LineDirectionPredictor_Record(5);
+    LineDirectionPredictor_Record(-8);
     failures += expect_prediction(1);
 
     LineDirectionPredictor_Reset();
     LineDirectionPredictor_Record(-1);
     LineDirectionPredictor_Record(-3);
     LineDirectionPredictor_Record(-5);
-    LineDirectionPredictor_Record(-8);
     LineDirectionPredictor_Record(8);
-    failures += expect_prediction(-1);
     failures += expect_prediction(-1);
 
     return failures == 0 ? 0 : 1;
