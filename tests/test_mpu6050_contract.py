@@ -6,18 +6,17 @@ ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
 
 
 class Mpu6050Contract(unittest.TestCase):
-    def test_sysconfig_assigns_mpu6050_bus(self):
+    def test_sysconfig_assigns_active_ybimu_bus(self):
         syscfg = (ROOT / "empty.syscfg").read_text(encoding="utf-8")
         self.assertIn("GPIO5.$name", syscfg)
-        self.assertIn('"MPU6050_I2C"', syscfg)
-        self.assertIn('"PA12"', syscfg)
-        self.assertIn('"PA13"', syscfg)
+        self.assertIn('"YBIMU_I2C"', syscfg)
+        self.assertIn('"PA1"', syscfg)
+        self.assertIn('"PA0"', syscfg)
 
-    def test_nonblocking_bus_uses_mpu6050_gpio(self):
+    def test_nonblocking_bus_uses_active_ybimu_gpio(self):
         source = (ROOT / "bsp/bsp_i2c.c").read_text(encoding="utf-8")
-        self.assertIn("MPU6050_I2C_SCL_PIN", source)
-        self.assertIn("MPU6050_I2C_SDA_PIN", source)
-        self.assertNotIn("YBIMU_I2C_", source)
+        self.assertIn("YBIMU_I2C_SCL_PIN", source)
+        self.assertIn("YBIMU_I2C_SDA_PIN", source)
         self.assertNotIn("delay_us", source)
         self.assertNotRegex(source, r"while\s*\(")
 

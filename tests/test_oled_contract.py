@@ -33,7 +33,7 @@ class OledContract(unittest.TestCase):
         self.assertNotIn('"UART_0"', self.syscfg)
         self.assertNotIn("UART_0_INST", self.syscfg)
         # Pin names are globally unique in SysConfig, so the OLED lines are
-        # CLK/DAT; MPU6050_I2C keeps SCL/SDA.
+        # CLK/DAT; YBIMU_I2C keeps SCL/SDA.
         self.assertRegex(
             self.syscfg,
             r'OLED_I2C[\s\S]{0,400}"CLK";[\s\S]{0,80}"PA10"',
@@ -44,7 +44,7 @@ class OledContract(unittest.TestCase):
         )
         self.assertRegex(
             self.syscfg,
-            r'MPU6050_I2C[\s\S]{0,400}"SCL";[\s\S]{0,80}"PA12"',
+            r'YBIMU_I2C[\s\S]{0,400}"SCL";[\s\S]{0,80}"PA1"',
         )
         self.assertIn("debug_uart.c", self.cproject)
 
@@ -98,13 +98,11 @@ class OledContract(unittest.TestCase):
         self.assertNotIn("LINE SEEK ROT", self.observer)
         self.assertIn("LineRecovery_GetDiagnostics", self.observer)
         self.assertIn("yaw_delta_deg", self.observer)
-        self.assertIn("LineCascadeControl_IsImuUsed() ? 'U' : 'B'", self.observer)
-        self.assertIn('"U Y+000 G+000"', self.observer)
-        self.assertNotIn('"IMU U Y+000 G+000"', self.observer)
-        self.assertIn("payload[0] = LineCascadeControl_IsImuUsed()", self.observer)
-        self.assertIn("payload[2] = 'D'", self.observer)
-        self.assertIn("format_signed_3(&payload[3]", self.observer)
-        self.assertIn("format_signed_3(&payload[9]", self.observer)
+        self.assertIn("LineOfficialControl_GetDiagnostics", self.observer)
+        self.assertIn('"B%02X P%+d D%c"', self.observer)
+        self.assertIn('"G%+04d C%+04d I%u"', self.observer)
+        self.assertIn('"CMD %03d/%03d"', self.observer)
+        self.assertIn('"IMU BYPASS"', self.observer)
         self.assertIn("SAFETY RUN", self.observer)
         self.assertIn("MOTOR ARMED", self.observer)
         self.assertNotIn('"MOTOR ARM"', self.observer)
