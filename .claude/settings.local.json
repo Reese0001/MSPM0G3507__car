@@ -7,7 +7,16 @@
       "Bash(mkdir -p docs_backup/pdf docs_backup/images docs_backup/archives)",
       "Bash(mv docs_backup/*.pdf docs_backup/pdf/)",
       "Bash(mv docs_backup/*.png docs_backup/*.jpg docs_backup/images/)",
-      "Bash(mv docs_backup/*.zip docs_backup/archives/)"
+      "Bash(mv docs_backup/*.zip docs_backup/archives/)",
+      "Bash(git -C /d/DevProject/MSPM0G3507__car log --oneline -8)",
+      "Bash(git -C /d/DevProject/MSPM0G3507__car status --short)",
+      "Bash(python -m unittest tests.test_line_lookup_control -v)",
+      "Bash(python -m unittest discover -s tests -v)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'feat: add open-loop line speed table *)",
+      "Bash(git push *)",
+      "Bash(tasklist //FI \"IMAGENAME eq git.exe\")",
+      "Bash(rm /d/DevProject/MSPM0G3507__car/.git/index.lock)"
     ]
   },
   "enabledMcpjsonServers": [
