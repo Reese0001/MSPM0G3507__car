@@ -17,6 +17,14 @@ class OfficialBaselineProfileTests(unittest.TestCase):
             "(LINE_CONTROL_MODE_OFFICIAL_BASELINE)",
             profile,
         )
+        self.assertIn("LINE_FOLLOWING_REQUIRE_IMU (0)", profile)
+
+    def test_imu_is_not_an_authority_in_baseline_recovery(self):
+        source = (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
+        start = source.index("BuildOfficialBaselineRequest")
+        baseline = source[start : source.index("BuildAssistedRequest")]
+        recovery = baseline[baseline.index("LineRecovery_Step") :]
+        self.assertIn("0.0f,\n                             0.0f,\n                             false", recovery)
 
     def test_cli_and_ccs_build_include_ybimu(self):
         makefile = (ROOT / "Makefile").read_text(encoding="utf-8")

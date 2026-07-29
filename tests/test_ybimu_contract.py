@@ -70,6 +70,24 @@ class YbImuContract(unittest.TestCase):
         self.assertIn("read_index++", service)
         self.assertIn("working.status.timestamp_ms = now_ms", source)
 
+    def test_active_profile_reads_gyro_only(self):
+        source = (ROOT / "modules/optional/ybimu/ybimu.c").read_text(
+            encoding="utf-8"
+        )
+        config = (ROOT / "modules/optional/ybimu/ybimu_config.h").read_text(
+            encoding="utf-8"
+        )
+        self.assertRegex(config, r"#define\s+YBIMU_GYRO_ONLY\s+\(1\)")
+        self.assertIn("#if YBIMU_GYRO_ONLY", source)
+        gyro_branch = source[
+            source.index("#if YBIMU_GYRO_ONLY") :
+            source.index("#else", source.index("#if YBIMU_GYRO_ONLY"))
+        ]
+        self.assertIn("YBIMU_REG_GYRO", gyro_branch)
+        for unused in ("YBIMU_REG_MAG", "YBIMU_REG_QUAT", "YBIMU_REG_EULER"):
+            self.assertNotIn(unused, gyro_branch)
+        self.assertIn("working.magnetic_heading_healthy = false", source)
+
     def test_bsp_i2c_is_nonblocking_open_drain_state_machine(self):
         header_path = ROOT / "bsp/bsp_i2c.h"
         source_path = ROOT / "bsp/bsp_i2c.c"

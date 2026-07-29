@@ -4,6 +4,15 @@
 #include "ybimu_config.h"
 #include "ybimu_protocol.h"
 
+#if YBIMU_GYRO_ONLY
+enum {
+    YBIMU_READ_GYRO = 0,
+    YBIMU_READ_COUNT
+};
+
+static const uint8_t registers[] = {YBIMU_REG_GYRO};
+static const uint8_t register_lengths[] = {6U};
+#else
 enum {
     YBIMU_READ_GYRO = 0,
     YBIMU_READ_MAG,
@@ -20,6 +29,7 @@ static const uint8_t registers[] = {
 };
 
 static const uint8_t register_lengths[] = {6U, 6U, 16U, 12U};
+#endif
 
 static YbImuSnapshot published = {0};
 static YbImuSnapshot working = {0};
@@ -50,10 +60,12 @@ static uint32_t elapsed_ms(uint32_t now_ms, uint32_t start_ms)
     return (uint32_t)(now_ms - start_ms);
 }
 
+#if !YBIMU_GYRO_ONLY
 static float abs_float(float value)
 {
     return (value < 0.0f) ? -value : value;
 }
+#endif
 
 static void map_vector(const float sensor[3], float body[3])
 {
@@ -74,6 +86,7 @@ static void decode_current_register(const uint8_t bytes[16])
         sensor[2] = (float)YbImuProtocol_DecodeI16LE(&bytes[4]) *
                     YBIMU_GYRO_SCALE_RAD_S;
         map_vector(sensor, working.gyro_rad_s);
+#if !YBIMU_GYRO_ONLY
     } else if (read_index == YBIMU_READ_MAG) {
         sensor[0] = (float)YbImuProtocol_DecodeI16LE(&bytes[0]) *
                     YBIMU_MAG_SCALE_UT;
@@ -92,6 +105,7 @@ static void decode_current_register(const uint8_t bytes[16])
         sensor[1] = YbImuProtocol_DecodeFloatLE(&bytes[4]) * YBIMU_RAD_TO_DEG;
         sensor[2] = YbImuProtocol_DecodeFloatLE(&bytes[8]) * YBIMU_RAD_TO_DEG;
         map_vector(sensor, working.euler_deg);
+#endif
     }
 }
 
@@ -106,6 +120,7 @@ static void mark_group_failed(void)
     read_index = 0U;
 }
 
+#if !YBIMU_GYRO_ONLY
 static void update_magnetic_health(void)
 {
     float norm_sq = working.mag_uT[0] * working.mag_uT[0] +
@@ -126,10 +141,15 @@ static void update_magnetic_health(void)
     previous_mag_norm_sq = norm_sq;
     previous_mag_valid = true;
 }
+#endif
 
 static void publish_complete_group(uint32_t now_ms)
 {
+#if YBIMU_GYRO_ONLY
+    working.magnetic_heading_healthy = false;
+#else
     update_magnetic_health();
+#endif
     working.status.timestamp_ms = now_ms;
     working.status.sequence = (uint16_t)(published.status.sequence + 1U);
     working.status.valid = true;

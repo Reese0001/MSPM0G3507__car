@@ -3,6 +3,7 @@
 
 #define YBIMU_SAMPLE_PERIOD_MS          (10U)
 #define YBIMU_STALE_TIMEOUT_MS          (50U)
+#define YBIMU_GYRO_ONLY                 (1)
 #define YBIMU_MAX_CONSECUTIVE_ERRORS    (3U)
 #define YBIMU_CAL_POLL_PERIOD_MS         (100U)
 #define YBIMU_CAL_IMU_TIMEOUT_MS         (7000U)
