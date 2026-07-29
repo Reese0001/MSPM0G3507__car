@@ -56,15 +56,17 @@ class AppRuntimePipelineContract(unittest.TestCase):
         self.assertNotIn("last_run_ms +=", self.tasks)
 
     def test_line_request_pipeline_order_is_owned_by_line_motion(self):
-        positions = [
-            self.line.index("LineDirectionPredictor_Record"),
-            self.line.index("LineDirectionPredictor_Predict"),
-            self.line.index("LineLookupControl_Step"),
-            self.line.index("LineCascadeControl_Step"),
-            self.line.index("LineRecovery_Step"),
-        ]
-        self.assertEqual(positions, sorted(positions))
-        self.assertIn("sample->position.type == LINE_PATTERN_NOISE", self.line)
+        self.assertIn("BuildOfficialBaselineRequest", self.line)
+        self.assertIn("BuildAssistedRequest", self.line)
+        self.assertIn(
+            "#if LINE_FOLLOWING_CONTROL_MODE == "
+            "LINE_CONTROL_MODE_OFFICIAL_BASELINE",
+            self.line,
+        )
+        self.assertLess(
+            self.line.index("LineOfficialControl_Step"),
+            self.line.rindex("LineRecovery_Step"),
+        )
         self.assertIn("ClearRequest(now_ms, request)", self.line)
 
     def test_control_publishes_only_valid_line_requests(self):
@@ -92,7 +94,26 @@ class AppRuntimePipelineContract(unittest.TestCase):
         self.assertIn("LINE_CASCADE_MAX_COMMAND (140)", config)
         self.assertIn("SAFETY_RUNNING_SPEED_LIMIT (450)", safety)
 
-    def test_optional_mpu6050_is_serviced_and_fails_soft(self):
+    def test_official_baseline_uses_only_fresh_ybimu_z_rate(self):
+        for token in (
+            "YbImu_Init",
+            "YbImu_Service",
+            "YbImu_GetSnapshot",
+            "gyro_rad_s[2]",
+            "YBIMU_RAD_TO_DEG",
+            "YBIMU_STALE_TIMEOUT_MS",
+            "LineOfficialControl_Step",
+        ):
+            self.assertIn(token, self.line)
+        official = self.line[
+            self.line.index("BuildOfficialBaselineRequest") :
+            self.line.index("BuildAssistedRequest")
+        ]
+        for forbidden in ("euler_deg", "mag_uT", "quat", "yaw_angle_deg"):
+            self.assertNotIn(forbidden, official)
+        self.assertIn("BSP_I2C_Service", self.tasks)
+
+    def test_assisted_mpu6050_fallback_remains_available(self):
         for token in (
             "Mpu6050_Init",
             "Mpu6050_Service",
@@ -103,11 +124,15 @@ class AppRuntimePipelineContract(unittest.TestCase):
             "yaw_angle_deg",
         ):
             self.assertIn(token, self.line)
-        self.assertIn("BSP_I2C_Service", self.tasks)
         self.assertIn(
             "inputs.imu_required = LINE_FOLLOWING_REQUIRE_IMU != 0",
             self.safety,
         )
+
+    def test_sensor_services_imu_state_machine_every_timeslice(self):
+        self.assertIn("AppLineMotion_ServiceImu(now_ms);", self.sensor)
+        self.assertNotIn("SENSOR_RUNTIME_IMU_SERVICE_CYCLES", self.sensor)
+        self.assertNotIn("imu_cycle", self.sensor)
 
 
 class RecoveryReachabilityRuntime(unittest.TestCase):
