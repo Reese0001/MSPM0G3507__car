@@ -74,6 +74,7 @@ SOURCES := \
     modules/key/key.c \
     modules/led/led.c \
     modules/line_tracking/controller/line_lookup_control.c \
+    modules/line_tracking/controller/line_official_control.c \
     modules/line_tracking/controller/line_cascade_control.c \
     modules/line_tracking/prediction/line_direction_predictor.c \
     modules/line_tracking/decoder/line_position.c \

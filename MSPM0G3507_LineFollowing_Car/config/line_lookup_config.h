@@ -23,6 +23,12 @@
     {140, 0}, {140, 0}, {130, 12}, {115, 28},                           \
     {95, 45}, {80, 60}, {70, 65}, {60, 60}
 
+/* YbImu 仅抑制转向角速度；数据无效时修正量必须为零。 */
+#define LINE_YAW_RATE_DEADBAND_DPS (2.0f)
+#define LINE_YAW_DAMPING_GAIN      (0.18f)
+#define LINE_YAW_DAMPING_LIMIT     (24)
+#define LINE_NOISE_HOLD_MS         (20U)
+
 /* SafetyTask latches D1 when a task heartbeat goes silent this long. */
 #define APP_CONTROL_HEARTBEAT_TIMEOUT_MS (30U)
 #define APP_SENSOR_HEARTBEAT_TIMEOUT_MS (20U)
