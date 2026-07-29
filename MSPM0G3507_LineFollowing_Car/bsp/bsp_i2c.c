@@ -64,39 +64,39 @@ static bool stop_with_error = false;
 static void line_drive_low(uint32_t iomux, uint32_t pin)
 {
     DL_GPIO_initDigitalOutput(iomux);
-    DL_GPIO_clearPins(MPU6050_I2C_PORT, pin);
-    DL_GPIO_enableOutput(MPU6050_I2C_PORT, pin);
+    DL_GPIO_clearPins(YBIMU_I2C_PORT, pin);
+    DL_GPIO_enableOutput(YBIMU_I2C_PORT, pin);
 }
 
 static void line_release(uint32_t iomux, uint32_t pin)
 {
-    DL_GPIO_disableOutput(MPU6050_I2C_PORT, pin);
+    DL_GPIO_disableOutput(YBIMU_I2C_PORT, pin);
     DL_GPIO_initDigitalInput(iomux);
 }
 
 static bool line_is_high(uint32_t pin)
 {
-    return (DL_GPIO_readPins(MPU6050_I2C_PORT, pin) & pin) != 0U;
+    return (DL_GPIO_readPins(YBIMU_I2C_PORT, pin) & pin) != 0U;
 }
 
 static void scl_low(void)
 {
-    line_drive_low(MPU6050_I2C_SCL_IOMUX, MPU6050_I2C_SCL_PIN);
+    line_drive_low(YBIMU_I2C_SCL_IOMUX, YBIMU_I2C_SCL_PIN);
 }
 
 static void scl_release(void)
 {
-    line_release(MPU6050_I2C_SCL_IOMUX, MPU6050_I2C_SCL_PIN);
+    line_release(YBIMU_I2C_SCL_IOMUX, YBIMU_I2C_SCL_PIN);
 }
 
 static void sda_low(void)
 {
-    line_drive_low(MPU6050_I2C_SDA_IOMUX, MPU6050_I2C_SDA_PIN);
+    line_drive_low(YBIMU_I2C_SDA_IOMUX, YBIMU_I2C_SDA_PIN);
 }
 
 static void sda_release(void)
 {
-    line_release(MPU6050_I2C_SDA_IOMUX, MPU6050_I2C_SDA_PIN);
+    line_release(YBIMU_I2C_SDA_IOMUX, YBIMU_I2C_SDA_PIN);
 }
 
 static void schedule_phase(I2cPhase next, uint32_t now_us)
@@ -159,8 +159,8 @@ bool BSP_I2C_Init(void)
     sda_release();
     transfer_status = BSP_I2C_STATUS_IDLE;
     transaction_started = false;
-    return line_is_high(MPU6050_I2C_SCL_PIN) &&
-           line_is_high(MPU6050_I2C_SDA_PIN);
+    return line_is_high(YBIMU_I2C_SCL_PIN) &&
+           line_is_high(YBIMU_I2C_SDA_PIN);
 }
 
 bool BSP_I2C_BeginRead(uint8_t address,
@@ -231,8 +231,8 @@ void BSP_I2C_Service(uint32_t now_us)
         case I2C_PHASE_START_RELEASE:
             scl_release();
             sda_release();
-            if (!line_is_high(MPU6050_I2C_SCL_PIN) ||
-                !line_is_high(MPU6050_I2C_SDA_PIN)) {
+            if (!line_is_high(YBIMU_I2C_SCL_PIN) ||
+                !line_is_high(YBIMU_I2C_SDA_PIN)) {
                 transfer_status = BSP_I2C_STATUS_ERROR;
                 return;
             }
@@ -258,7 +258,7 @@ void BSP_I2C_Service(uint32_t now_us)
             break;
         case I2C_PHASE_TX_BIT_HIGH:
             scl_release();
-            if (!line_is_high(MPU6050_I2C_SCL_PIN)) {
+            if (!line_is_high(YBIMU_I2C_SCL_PIN)) {
                 next_step_us = now_us + 1U;
                 break;
             }
@@ -282,14 +282,14 @@ void BSP_I2C_Service(uint32_t now_us)
             break;
         case I2C_PHASE_TX_ACK_HIGH:
             scl_release();
-            if (!line_is_high(MPU6050_I2C_SCL_PIN)) {
+            if (!line_is_high(YBIMU_I2C_SCL_PIN)) {
                 next_step_us = now_us + 1U;
                 break;
             }
             schedule_phase(I2C_PHASE_TX_ACK_SAMPLE, now_us);
             break;
         case I2C_PHASE_TX_ACK_SAMPLE:
-            if (line_is_high(MPU6050_I2C_SDA_PIN)) {
+            if (line_is_high(YBIMU_I2C_SDA_PIN)) {
                 scl_low();
                 begin_stop(true, now_us);
             } else {
@@ -303,7 +303,7 @@ void BSP_I2C_Service(uint32_t now_us)
             break;
         case I2C_PHASE_RESTART_RELEASE_SCL:
             scl_release();
-            if (!line_is_high(MPU6050_I2C_SCL_PIN)) {
+            if (!line_is_high(YBIMU_I2C_SCL_PIN)) {
                 next_step_us = now_us + 1U;
                 break;
             }
@@ -325,7 +325,7 @@ void BSP_I2C_Service(uint32_t now_us)
             break;
         case I2C_PHASE_RX_BIT_HIGH:
             scl_release();
-            if (!line_is_high(MPU6050_I2C_SCL_PIN)) {
+            if (!line_is_high(YBIMU_I2C_SCL_PIN)) {
                 next_step_us = now_us + 1U;
                 break;
             }
@@ -333,7 +333,7 @@ void BSP_I2C_Service(uint32_t now_us)
             break;
         case I2C_PHASE_RX_BIT_SAMPLE:
             rx_byte = (uint8_t)(rx_byte << 1);
-            if (line_is_high(MPU6050_I2C_SDA_PIN)) {
+            if (line_is_high(YBIMU_I2C_SDA_PIN)) {
                 rx_byte |= 1U;
             }
             scl_low();
@@ -358,7 +358,7 @@ void BSP_I2C_Service(uint32_t now_us)
             break;
         case I2C_PHASE_RX_ACK_HIGH:
             scl_release();
-            if (!line_is_high(MPU6050_I2C_SCL_PIN)) {
+            if (!line_is_high(YBIMU_I2C_SCL_PIN)) {
                 next_step_us = now_us + 1U;
                 break;
             }
@@ -384,7 +384,7 @@ void BSP_I2C_Service(uint32_t now_us)
             break;
         case I2C_PHASE_STOP_SCL_HIGH:
             scl_release();
-            if (!line_is_high(MPU6050_I2C_SCL_PIN)) {
+            if (!line_is_high(YBIMU_I2C_SCL_PIN)) {
                 next_step_us = now_us + 1U;
                 break;
             }

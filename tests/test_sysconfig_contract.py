@@ -31,13 +31,17 @@ class SysConfigContractTests(unittest.TestCase):
         self.assertIn('"PA11"', self.syscfg)
         self.assertIn("OLED_I2C", self.syscfg)
 
+    def test_pa1_pa0_serve_ybimu_software_i2c(self):
+        self.assertIn('GPIO5.$name                         = "YBIMU_I2C"', self.syscfg)
+        self.assertIn('GPIO5.associatedPins[0].pin.$assign = "PA1"', self.syscfg)
+        self.assertIn('GPIO5.associatedPins[1].pin.$assign = "PA0"', self.syscfg)
+
     def test_watchdog_timer_period_is_one_millisecond(self):
         self.assertIn('TIMER1.timerPeriod        = "1 ms"', self.syscfg)
         self.assertIn('TIMER1.timerMode          = "PERIODIC"', self.syscfg)
 
     def test_other_unfitted_modules_do_not_initialize_peripherals(self):
         for token in (
-            "YBIMU_I2C",
             "ULTRASONIC_TRIG",
             "ULTRASONIC_ECHO",
             'UART3.$name                    = "K230"',

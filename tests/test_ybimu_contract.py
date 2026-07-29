@@ -90,8 +90,8 @@ class YbImuContract(unittest.TestCase):
         self.assertIn("length > BSP_I2C_MAX_TRANSFER", combined)
         for token in (
             "ti_msp_dl_config.h",
-            "MPU6050_I2C_SCL_PIN",
-            "MPU6050_I2C_SDA_PIN",
+            "YBIMU_I2C_SCL_PIN",
+            "YBIMU_I2C_SDA_PIN",
             "DL_GPIO_disableOutput",
             "BSP_I2C_STATUS_BUSY",
             "BSP_I2C_TRANSACTION_TIMEOUT_US",
@@ -149,7 +149,7 @@ class YbImuContract(unittest.TestCase):
         self.assertIn("calibration_value = 0x01U", source)
         self.assertIn("service_calibration", source)
 
-    def test_active_profile_uses_mpu6050_not_ybimu(self):
+    def test_active_profile_builds_ybimu_nonblocking_driver(self):
         active = (
             (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
             + (ROOT / "app/sensor/sensor_runtime.c").read_text(encoding="utf-8")
@@ -158,10 +158,10 @@ class YbImuContract(unittest.TestCase):
         profile = (ROOT / "config/line_following_profile.h").read_text(
             encoding="utf-8"
         )
-        self.assertIn("LINE_FOLLOWING_USE_IMU (1)", profile)
+        self.assertIn("LINE_FOLLOWING_USE_YBIMU (1)", profile)
         self.assertIn("BSP_I2C_Service", active)
-        self.assertIn("Mpu6050_Service", active)
-        self.assertNotIn("YbImu_Service", active)
+        makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+        self.assertIn("modules/optional/ybimu/ybimu.c", makefile)
 
     def test_magnetic_heading_has_plausibility_and_change_gates(self):
         source = (ROOT / "modules/optional/ybimu/ybimu.c").read_text(encoding="utf-8")
@@ -182,8 +182,8 @@ class YbImuContract(unittest.TestCase):
         self.assertTrue(path.exists(), path)
         text = path.read_text(encoding="utf-8")
         for token in (
-            "PA12",
-            "PA13",
+            "PA1",
+            "PA0",
             "0x23",
             "60s",
             "X/Y/Z",

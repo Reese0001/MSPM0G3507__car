@@ -83,6 +83,8 @@ SOURCES := \
     modules/motor/uart/motor_uart.c \
     modules/motor/adapter/motor_adapter.c \
     modules/motor/safety/motor_safety.c \
+    modules/optional/ybimu/ybimu_protocol.c \
+    modules/optional/ybimu/ybimu.c \
     modules/mpu6050/mpu6050_kalman.c \
     modules/mpu6050/mpu6050.c
 
@@ -129,6 +131,7 @@ CPPFLAGS := \
     -Imodules/motor/safety \
     -Imodules/motor/uart \
     -Imodules/mpu6050 \
+    -Imodules/optional/ybimu \
     -Imodules/display \
     -Imodules/display/i2c \
     -Imodules/display/ssd1306 \

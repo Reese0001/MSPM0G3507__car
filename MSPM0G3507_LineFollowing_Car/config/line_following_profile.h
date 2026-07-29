@@ -1,12 +1,14 @@
 #ifndef LINE_FOLLOWING_PROFILE_H
 #define LINE_FOLLOWING_PROFILE_H
 
-/*
- * Current burn profile: eight-channel line sensor, MPU6050 and two motors.
- * Change these switches when the corresponding modules are physically fitted.
- */
+/* 八路灰度始终是主循迹源；IMU 只做可旁路的转向角速度阻尼。 */
+#define LINE_CONTROL_MODE_ASSISTED          (0U)
+#define LINE_CONTROL_MODE_OFFICIAL_BASELINE (1U)
+
+#define LINE_FOLLOWING_CONTROL_MODE (LINE_CONTROL_MODE_OFFICIAL_BASELINE)
 #define LINE_FOLLOWING_POWER_QUALIFIED (1)
 #define LINE_FOLLOWING_USE_ULTRASONIC (0)
+#define LINE_FOLLOWING_USE_YBIMU (1)
 #define LINE_FOLLOWING_USE_IMU (1)
 #define LINE_FOLLOWING_REQUIRE_IMU (0)
 #define LINE_FOLLOWING_IMU_STARTUP_TIMEOUT_MS (2600U)
