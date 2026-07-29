@@ -6,17 +6,25 @@
 #include "../mailbox/app_mailbox.h"
 #include "../safety/safety_runtime.h"
 #include "../safety/safety_supervisor.h"
-#include "../../modules/mpu6050/mpu6050.h"
-#include "../../modules/mpu6050/mpu6050_config.h"
+#include "../../config/line_following_profile.h"
 #include "../../modules/diagnostics/boot_trace.h"
 #include "../../modules/display/runtime_log.h"
 #include "../../modules/display/ssd1306/ssd1306.h"
-#include "../../modules/line_tracking/controller/line_cascade_control.h"
 #include "../../modules/line_tracking/recovery/line_recovery.h"
 #include "../../modules/motor/safety/motor_safety.h"
 #include "../../shared/module_status.h"
 
-#define IMU_LOG_PERIOD_MS (500U)
+#if LINE_FOLLOWING_CONTROL_MODE == LINE_CONTROL_MODE_OFFICIAL_BASELINE
+#include "../../modules/line_tracking/controller/line_official_control.h"
+#include "../../modules/optional/ybimu/ybimu.h"
+#include "../../modules/optional/ybimu/ybimu_config.h"
+#else
+#include "../../modules/line_tracking/controller/line_cascade_control.h"
+#include "../../modules/mpu6050/mpu6050.h"
+#include "../../modules/mpu6050/mpu6050_config.h"
+#endif
+
+#define CONTROL_LOG_PERIOD_MS (500U)
 
 static bool display_ready;
 static bool observed;
@@ -42,8 +50,10 @@ static bool safety_loop_seen;
 static bool sensor_frame_seen;
 static bool control_request_seen;
 static uint8_t previous_task_mask;
+#if LINE_FOLLOWING_CONTROL_MODE != LINE_CONTROL_MODE_OFFICIAL_BASELINE
 static Mpu6050State previous_mpu_state;
-static uint32_t last_imu_log_ms;
+#endif
+static uint32_t last_control_log_ms;
 
 static int clamp_log_value(float value)
 {
@@ -56,6 +66,7 @@ static int clamp_log_value(float value)
     return (int)(value + (value >= 0.0f ? 0.5f : -0.5f));
 }
 
+#if LINE_FOLLOWING_CONTROL_MODE != LINE_CONTROL_MODE_OFFICIAL_BASELINE
 static void format_signed_3(char *out, int value)
 {
     unsigned int magnitude;
@@ -80,6 +91,7 @@ static const char *imu_state_label(Mpu6050State state)
         return "IMU DEG";
     }
 }
+#endif
 
 static const char *recovery_state_label(LineRecoveryState state)
 {
@@ -97,6 +109,56 @@ static const char *recovery_state_label(LineRecoveryState state)
     }
 }
 
+#if LINE_FOLLOWING_CONTROL_MODE == LINE_CONTROL_MODE_OFFICIAL_BASELINE
+static bool observe_baseline(uint32_t now_ms,
+                             const SafetyRuntimeDiagnostics *runtime,
+                             char payload[18])
+{
+    AppLineSample line = {0};
+    LineOfficialControlDiagnostics control = {0};
+    YbImuSnapshot imu = {0};
+    bool redraw = false;
+    bool imu_fresh;
+    int position;
+
+    if ((uint32_t)(now_ms - last_control_log_ms) < CONTROL_LOG_PERIOD_MS) {
+        return false;
+    }
+    last_control_log_ms = now_ms;
+    LineOfficialControl_GetDiagnostics(&control);
+
+    if (AppMailbox_ReadLineSample(&line)) {
+        position = line.position.type == LINE_PATTERN_WIDE ?
+                       line.position.candidate_position :
+                       line.position.stable_position;
+        (void)snprintf(payload, 18U, "B%02X P%+d D%c",
+                       (unsigned int)line.position.black_bits,
+                       position,
+                       control.direction < 0 ? 'L' : 'R');
+        redraw |= RuntimeLog_Push(now_ms, payload);
+    }
+
+    imu_fresh = YbImu_GetSnapshot(&imu) &&
+                ModuleStatus_IsFresh(&imu.status, now_ms,
+                                     YBIMU_STALE_TIMEOUT_MS);
+    if (imu_fresh) {
+        (void)snprintf(payload, 18U, "G%+04d C%+04d I%u",
+                       clamp_log_value(control.yaw_rate_dps),
+                       (int)control.damping_command,
+                       control.imu_used ? 1U : 0U);
+        redraw |= RuntimeLog_Push(now_ms, payload);
+    } else {
+        redraw |= RuntimeLog_Push(now_ms, "IMU BYPASS");
+    }
+
+    (void)snprintf(payload, 18U, "CMD %03d/%03d",
+                   runtime->last_request.valid ?
+                       (int)runtime->last_request.left_speed : 0,
+                   runtime->last_request.valid ?
+                       (int)runtime->last_request.right_speed : 0);
+    return redraw | RuntimeLog_Push(now_ms, payload);
+}
+#else
 static bool observe_imu(uint32_t now_ms,
                         const LineRecoveryDiagnostics *recovery,
                         char payload[18])
@@ -110,10 +172,10 @@ static bool observe_imu(uint32_t now_ms,
         redraw |= RuntimeLog_Push(now_ms, imu_state_label(state));
         previous_mpu_state = state;
     }
-    if ((uint32_t)(now_ms - last_imu_log_ms) < IMU_LOG_PERIOD_MS) {
+    if ((uint32_t)(now_ms - last_control_log_ms) < CONTROL_LOG_PERIOD_MS) {
         return redraw;
     }
-    last_imu_log_ms = now_ms;
+    last_control_log_ms = now_ms;
     fresh = AppMailbox_ReadImu(&imu) &&
             ModuleStatus_IsFresh(&imu.status, now_ms, MPU6050_STALE_MS);
     if (!fresh) {
@@ -136,6 +198,7 @@ static bool observe_imu(uint32_t now_ms,
     format_signed_3(&payload[9], clamp_log_value(imu.yaw_rate_dps));
     return redraw | RuntimeLog_Push(now_ms, payload);
 }
+#endif
 
 void RuntimeObserver_Init(bool ready)
 {
@@ -163,8 +226,10 @@ void RuntimeObserver_Init(bool ready)
     sensor_frame_seen = false;
     control_request_seen = false;
     previous_task_mask = 0xFFU;
+#if LINE_FOLLOWING_CONTROL_MODE != LINE_CONTROL_MODE_OFFICIAL_BASELINE
     previous_mpu_state = MPU6050_STATE_DEGRADED;
-    last_imu_log_ms = 0U;
+#endif
+    last_control_log_ms = 0U;
 }
 
 void RuntimeObserver_MarkSafetyLoop(void)
@@ -216,7 +281,11 @@ bool RuntimeObserver_Update(uint32_t now_ms)
     safety = SafetySupervisor_GetState();
     LineRecovery_GetDiagnostics(&recovery_diagnostics);
     recovery = recovery_diagnostics.state;
+#if LINE_FOLLOWING_CONTROL_MODE == LINE_CONTROL_MODE_OFFICIAL_BASELINE
+    redraw |= observe_baseline(now_ms, &runtime, payload);
+#else
     redraw |= observe_imu(now_ms, &recovery_diagnostics, payload);
+#endif
 
     if (!logged_arm_wait_config && runtime.arm_waiting_for_config) {
         redraw |= RuntimeLog_Push(now_ms, "ARM WAIT CFG");

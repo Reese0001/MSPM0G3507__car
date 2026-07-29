@@ -23,12 +23,13 @@ class RuntimeObserverContract(unittest.TestCase):
             '"UART TIMEOUT"',
             '"WATCHDOG"',
             "SafetyRuntime_IsSensorHeartbeatMissing",
-            "AppMailbox_ReadImu",
-            "Mpu6050_GetState",
-            "LineCascadeControl_IsImuUsed",
-            '"IMU READY"',
-            '"IMU DEG"',
-            '"U Y+000 G+000"',
+            "AppMailbox_ReadLineSample",
+            "LineOfficialControl_GetDiagnostics",
+            "YbImu_GetSnapshot",
+            '"IMU BYPASS"',
+            '"B%02X P%+d D%c"',
+            '"G%+04d C%+04d I%u"',
+            '"CMD %03d/%03d"',
             "format_signed_3",
             "LineRecovery_GetDiagnostics",
             "yaw_delta_deg",
@@ -45,6 +46,19 @@ class RuntimeObserverContract(unittest.TestCase):
         self.assertNotIn("RuntimeLog_Push(now_ms", tasks)
         self.assertIn("RuntimeObserver_Update", tasks)
         self.assertNotIn('"TEST RUN"', tasks)
+
+    def test_baseline_diagnostics_do_not_consume_absolute_attitude(self):
+        source = (ROOT / "app/log/runtime_observer.c").read_text(encoding="utf-8")
+        start = source.index("static bool observe_baseline")
+        baseline = source[start : source.index("#else", start)]
+        for forbidden in (
+            "yaw_angle_deg",
+            "euler_deg",
+            "mag_uT",
+            "quat",
+            "magnetic_heading_healthy",
+        ):
+            self.assertNotIn(forbidden, baseline)
 
 
 if __name__ == "__main__":
