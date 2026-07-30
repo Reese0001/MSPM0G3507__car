@@ -71,6 +71,8 @@ SOURCES := \
     modules/motor/uart/motor_uart.c \
     modules/imu/mpu6050.c \
     modules/imu/yaw_estimator.c \
+    modules/wifi/wifi_at_probe.c \
+    modules/wifi/wifi_uart.c \
     modules/time/delay.c \
     modules/time/timer.c
 
@@ -105,6 +107,7 @@ CPPFLAGS := \
     -Imodules/motor/uart \
     -Imodules/motor/feedback \
     -Imodules/imu \
+    -Imodules/wifi \
     -Imodules/display \
     -Imodules/display/i2c \
     -Imodules/display/ssd1306 \

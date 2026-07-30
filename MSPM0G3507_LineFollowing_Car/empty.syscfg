@@ -24,6 +24,7 @@ const TIMER1  = TIMER.addInstance();
 const TIMER2  = TIMER.addInstance();
 const UART    = scripting.addModule("/ti/driverlib/UART", {}, false);
 const UART2   = UART.addInstance();
+const UART3   = UART.addInstance();
 
 /**
  * Write custom configuration values to the imported modules.
@@ -134,6 +135,15 @@ UART2.rxPinConfig.onlyInternalResistor = scripting.forceWrite(false);
 UART2.rxPinConfig.passedPeripheralType = scripting.forceWrite("Digital");
 UART2.rxPinConfig.$name                = "ti_driverlib_gpio_GPIOPinGeneric3";
 
+UART3.$name                            = "Wifi";
+UART3.targetBaudRate                   = 115200;
+UART3.uartClkSrc                       = "MFCLK";
+UART3.enabledInterrupts                = ["RX"];
+UART3.peripheral.txPin.$assign         = "PA21";
+UART3.peripheral.rxPin.$assign         = "PA22";
+UART3.txPinConfig.$name                = "ti_driverlib_gpio_GPIOPinGeneric5";
+UART3.rxPinConfig.$name                = "ti_driverlib_gpio_GPIOPinGeneric6";
+
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future
  * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
@@ -144,3 +154,4 @@ Board.peripheral.swclkPin.$suggestSolution = "PA20";
 Board.peripheral.swdioPin.$suggestSolution = "PA19";
 PWM1.peripheral.$suggestSolution           = "TIMA0";
 UART2.peripheral.$suggestSolution          = "UART1";
+UART3.peripheral.$suggestSolution          = "UART2";

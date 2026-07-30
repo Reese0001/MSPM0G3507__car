@@ -25,6 +25,16 @@ class SysConfigContractTests(unittest.TestCase):
         self.assertIn('UART2.peripheral.rxPin.$assign         = "PB7"', self.syscfg)
         self.assertIn("UART2.targetBaudRate                   = 115200", self.syscfg)
 
+    def test_wifi_uart2_pins_baud_and_rx_interrupt(self):
+        for setting in (
+            'UART3.$name                            = "Wifi"',
+            'UART3.peripheral.txPin.$assign         = "PA21"',
+            'UART3.peripheral.rxPin.$assign         = "PA22"',
+            "UART3.targetBaudRate                   = 115200",
+            'UART3.enabledInterrupts                = ["RX"]',
+        ):
+            self.assertIn(setting, self.syscfg)
+
     def test_pa10_pa11_serve_the_oled_not_debug_uart(self):
         self.assertNotIn('"UART_0"', self.syscfg)
         self.assertIn('"PA10"', self.syscfg)
@@ -45,8 +55,6 @@ class SysConfigContractTests(unittest.TestCase):
             "ULTRASONIC_TRIG",
             "ULTRASONIC_ECHO",
             'UART3.$name                    = "K230"',
-            '"PA21"',
-            '"PA22"',
         ):
             self.assertNotIn(token, self.syscfg)
 
