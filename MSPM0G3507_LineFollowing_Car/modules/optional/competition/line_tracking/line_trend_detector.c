@@ -104,8 +104,8 @@ bool LineTrendDetector_Update(const LineEstimate *estimate,
     uint8_t active_count;
 
     if (estimate == 0 || snapshot == 0 || result == 0 ||
-        !ModuleStatus_IsFresh(&estimate->status, now_ms, LINE_SENSOR_STALE_MS) ||
-        !ModuleStatus_IsFresh(&snapshot->status, now_ms, LINE_SENSOR_STALE_MS)) {
+        !ModuleStatus_IsFresh(&estimate->status, now_ms, FOUR_LINE_STALE_MS) ||
+        !ModuleStatus_IsFresh(&snapshot->status, now_ms, FOUR_LINE_STALE_MS)) {
         publish_invalid(result, now_ms);
         return false;
     }

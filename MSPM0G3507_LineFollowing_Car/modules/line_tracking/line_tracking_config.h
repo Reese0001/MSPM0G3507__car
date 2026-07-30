@@ -1,13 +1,38 @@
 #ifndef LINE_TRACKING_CONFIG_H
 #define LINE_TRACKING_CONFIG_H
 
-/* Official AD0/AD1/AD2/OUT example waits 50 us after changing address. */
-#define LINE_MUX_SETTLE_US (50U)
-/* Official line-following example defines ACTIVE_LEVEL=1 for a black line. */
-#define LINE_SENSOR_BLACK_ACTIVE_LEVEL (1U)
-#define LINE_SENSOR_STALE_MS (20U)
-/* A blocking eight-channel frame scan must finish inside this budget. */
-#define LINE_SCAN_FRAME_BUDGET_US (600U)
-#define LINE_PREDICTION_HORIZON_S (0.020f)
+/* OUT is low while the module is over the black line; expose black as 1. */
+#define FOUR_LINE_BLACK_ACTIVE_LEVEL (0U)
+#define FOUR_LINE_STALE_MS (40U)
+#define FOUR_LINE_SAMPLE_PERIOD_MS (2U)
+#define LAP_MARKER_MIN_BITS (4U)
+#define LINE_POSITION_ADJACENT_STEP (1)
+#define LINE_POSITION_JUMP_ACCEPT_FRAMES (2U)
+#define LINE_PREDICTION_HORIZON_S (0.012f)
+#define LINE_MOTOR_TURN_SIGN (-1)
+#define LINE_HISTORY_FRAMES (5U)
+#define LINE_HISTORY_RATE_LAG (3U)
+#define LINE_FILTER_ALPHA (0.40f)
+#define LINE_KP (20.0f)
+#define LINE_KD (0.06f)
+#define LINE_KYAW (0.30f)
+#define LINE_TURN_LIMIT (65.0f)
+#define LINE_NOISE_HOLD_MS (16U)
+#define LINE_TREND_EPSILON (0.05f)
+#define LINE_SENSOR_TO_TEST_POINT_MM (50)
+#define STOP_LINE_MIN_BITS (3U)
+#define STOP_LINE_MIN_DISTANCE_MM (4500U)
+#define STOP_LINE_MIN_ELAPSED_MS (5000U)
+#define STOP_LINE_MIN_FRAMES (2U)
+#define STOP_LINE_LEAVE_FRAMES (3U)
+#define LINE_STRAIGHT_SPEED_MM_S (400.0f)
+#define LINE_CURVE_SPEED_MM_S (320.0f)
+#define LINE_SHARP_CURVE_SPEED_MM_S (260.0f)
+#define DRIVE_COMMAND_MAX (450)
+#define DRIVE_SPEED_KP (0.20f)
+#define DRIVE_SPEED_KI (0.04f)
+#define DRIVE_DIFF_KP (0.25f)
+#define DRIVE_DIFF_KI (0.02f)
+#define LINE_KTHETA (1.0f)
 
 #endif

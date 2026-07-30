@@ -192,15 +192,16 @@ int main(void)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_active_line_motion_does_not_depend_on_old_feature_pipeline(self):
-        line_motion = (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
+        line_motion = (ROOT / "modules/line_tracking/line_follower.c").read_text(encoding="utf-8")
         tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
-        self.assertIn("LineRecovery_Step", line_motion)
-        self.assertIn("LineCascadeControl_Step", line_motion)
-        self.assertIn("LineLookupControl_Step", line_motion)
-        self.assertIn("LineDirectionPredictor_Predict", line_motion)
+        self.assertIn("LineFollower_Step", tasks)
         for forbidden in (
             "LineFeatureExtractor_Update",
             "LineEstimator_Update(&line_features",
+            "LineRecovery_Step",
+            "LineCascadeControl_Step",
+            "LineLookupControl_Step",
+            "LineDirectionPredictor_Predict",
             "AppScheduler_",
         ):
             self.assertNotIn(forbidden, line_motion + tasks)

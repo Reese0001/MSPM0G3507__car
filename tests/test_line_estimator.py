@@ -4,14 +4,12 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1] / "MSPM0G3507_LineFollowing_Car"
-WEIGHTS = (-7, -5, -3, -1, 1, 3, 5, 7)
+FOUR_WEIGHTS = (-3, -1, 1, 3)
 
 
-def weighted_error(bits):
-    active = [WEIGHTS[index] for index in range(8) if bits & (1 << index)]
+def four_channel_error(bits):
+    active = [FOUR_WEIGHTS[index] for index in range(4) if bits & (1 << index)]
     return None if not active else sum(active) / len(active)
-
-
 def straight_target(frames):
     stable = 0
     targets = []
@@ -28,54 +26,55 @@ def straight_target(frames):
 
 
 class LineScannerContract(unittest.TestCase):
-    def test_scanner_is_nonblocking_and_publishes_atomic_snapshot(self):
-        source = (ROOT / "modules/line_tracking/scanner/line_scanner.c").read_text(
+    def test_four_channel_scanner_reads_pa24_to_pa27_once_per_sample(self):
+        source = (ROOT / "modules/line_tracking/scanner/four_line_scanner.c").read_text(
             encoding="utf-8"
         )
-        header = (ROOT / "modules/line_tracking/scanner/line_scanner.h").read_text(
-            encoding="utf-8"
-        )
-        self.assertNotIn("delay_ms", source)
-        self.assertNotIn("delay_us", source)
-        self.assertNotRegex(source, r"while\s*\(")
         for token in (
-            "LINE_SCAN_SELECT",
-            "LINE_SCAN_SETTLE",
-            "LINE_SCAN_SAMPLE",
-            "LineSensorSnapshot",
-            "ModuleStatus status",
-            "black_bits",
-            "LineScanner_Service",
-            "LineScanner_GetSnapshot",
+            "DL_GPIO_PIN_24",
+            "DL_GPIO_PIN_25",
+            "DL_GPIO_PIN_26",
+            "DL_GPIO_PIN_27",
+            "DL_GPIO_readPins(GPIOA",
+            "FOUR_LINE_BLACK_ACTIVE_LEVEL",
         ):
-            self.assertIn(token, source + header)
+            self.assertIn(token, source)
+        self.assertEqual(source.count("uint32_t levels = DL_GPIO_readPins("), 1)
+        self.assertNotIn("BSP_LineMux", source)
 
-    def test_mux_settle_time_is_tunable_and_initially_ten_us(self):
+    def test_four_channel_configuration_owns_the_sampling_contract(self):
         config = (ROOT / "modules/line_tracking/line_tracking_config.h").read_text(
             encoding="utf-8"
         )
-        self.assertRegex(config, r"LINE_MUX_SETTLE_US\s+\(50U\)")
-        self.assertRegex(config, r"LINE_SENSOR_BLACK_ACTIVE_LEVEL\s+\(1U\)")
-        self.assertRegex(config, r"LINE_SENSOR_STALE_MS\s+\(20U\)")
+        for token in (
+            "FOUR_LINE_BLACK_ACTIVE_LEVEL (0U)",
+            "FOUR_LINE_STALE_MS (40U)",
+            "FOUR_LINE_SAMPLE_PERIOD_MS (2U)",
+            "LINE_MOTOR_TURN_SIGN (-1)",
+            "LINE_HISTORY_FRAMES (5U)",
+            "LINE_KP (20.0f)",
+            "LINE_KD (0.06f)",
+            "LINE_KYAW (0.30f)",
+        ):
+            self.assertIn(token, config)
 
-    def test_bsp_owns_confirmed_gray_mux_pins(self):
-        source = (ROOT / "modules/line_tracking/scanner/line_mux.c").read_text(
+    def test_four_channel_bit_order_is_explicit(self):
+        source = (ROOT / "modules/line_tracking/scanner/four_line_scanner.c").read_text(
             encoding="utf-8"
         )
-        for pin in ("DL_GPIO_PIN_15", "DL_GPIO_PIN_16", "DL_GPIO_PIN_17", "DL_GPIO_PIN_18"):
-            self.assertIn(pin, source)
-        self.assertEqual(source.count("DL_GPIO_writePinsVal("), 1)
-        self.assertNotIn("delay_", source)
+        for pin, bit in (("X2", "0x01U"), ("X1", "0x02U"),
+                         ("X3", "0x04U"), ("X4", "0x08U")):
+            self.assertRegex(source, rf"FOUR_LINE_{pin}_PIN\).*{bit}")
 
 
 class LineEstimatorContract(unittest.TestCase):
-    def test_all_patterns_are_bounded_and_mirror_symmetric(self):
-        for bits in range(1, 256):
-            value = weighted_error(bits)
-            mirror_bits = int(f"{bits:08b}"[::-1], 2)
-            mirror = weighted_error(mirror_bits)
-            self.assertGreaterEqual(value, -7)
-            self.assertLessEqual(value, 7)
+    def test_four_bit_patterns_are_bounded_and_mirror_symmetric(self):
+        for bits in range(1, 16):
+            value = four_channel_error(bits)
+            mirror_bits = int(f"{bits:04b}"[::-1], 2)
+            mirror = four_channel_error(mirror_bits)
+            self.assertGreaterEqual(value, -3)
+            self.assertLessEqual(value, 3)
             self.assertAlmostEqual(value + mirror, 0.0)
 
     def test_estimator_contract_has_trend_confidence_and_events(self):
@@ -265,22 +264,6 @@ class LineControllerContract(unittest.TestCase):
         for base_speed in range(1, 451):
             correction_limit = base_speed * 80 // 100
             self.assertGreaterEqual(base_speed - correction_limit, 0)
-
-    def test_hard_corner_has_separate_low_speed_pivot_commands(self):
-        source = (ROOT / "modules/optional/competition/line_tracking/line_controller.c").read_text(
-            encoding="utf-8"
-        )
-        config = (ROOT / "modules/optional/competition/line_tracking/line_control_config.h").read_text(
-            encoding="utf-8"
-        )
-        recovery = (ROOT / "modules/line_tracking/recovery/line_recovery.c").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn("LINE_HARD_TURN_FORWARD (40)", config)
-        self.assertIn("LINE_HARD_TURN_COMMAND (120)", config)
-        self.assertIn("hard_turn_forward", source)
-        self.assertIn("hard_turn_command", source)
-        self.assertNotIn("if (left < 0 || right < 0)", recovery)
 
     def test_single_sensor_turn_keeps_both_wheels_within_command_limit(self):
         source = (ROOT / "modules/optional/competition/line_tracking/line_controller.c").read_text(

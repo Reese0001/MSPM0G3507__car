@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../../../line_tracking/scanner/line_scanner.h"
+#include "../../../line_tracking/scanner/four_line_scanner.h"
 
 typedef struct {
     ModuleStatus status;

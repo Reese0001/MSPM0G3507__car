@@ -61,11 +61,11 @@ class MotorConfigurationContract(unittest.TestCase):
     def test_boot_records_configuration_and_exposes_read_only_status(self):
         self.assertRegex(self.boot_h, r"\bbool\s+AppBoot_IsMotorConfigured\s*\(void\)")
         self.assertRegex(self.boot_h, r"\bbool\s+AppBoot_IsDisplayReady\s*\(void\)")
-        for event in ("BOOT", "OLED OK", "OLED FAIL", "AUTO START", "MOTOR CFG"):
+        for event in ("LINE CAR BOOT", "MOTOR CFG"):
             self.assertIn(event, self.boot_c)
         self.assertTrue("CFG OK" in self.boot_c or "UART TIMEOUT" in self.boot_c)
         self.assertIn("Set_Motor(5)", self.boot_c)
-        self.assertIn("RuntimeLog_Draw", self.boot_c)
+        self.assertIn("Ssd1306_DrawText", self.boot_c)
         self.assertIn("Ssd1306_FlushDirty", self.boot_c)
 
     def test_boot_does_not_arm_or_request_motor_speed(self):

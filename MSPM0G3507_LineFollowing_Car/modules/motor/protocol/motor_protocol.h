@@ -1,6 +1,8 @@
 #ifndef __APP_MOTOR_USART_H_
 #define __APP_MOTOR_USART_H_
 
+#include <stdbool.h>
+
 #include "ti_msp_dl_config.h"
 #include "stdio.h"
 #include "string.h"
@@ -31,7 +33,8 @@ typedef enum _motor_type  //此类型用做判断死区	This type is used to det
 extern int Encoder_Offset[4];
 extern int Encoder_Now[4];
 extern float g_Speed[4];
-extern uint8_t g_recv_flag;
+extern volatile uint8_t g_recv_flag;
+extern volatile bool g_recv_speed_frame;
 
 
 bool send_motor_type(motor_type_t data);
@@ -41,11 +44,6 @@ bool send_pulse_phase(uint16_t data);
 bool send_wheel_diameter(float data);
 void send_motor_PID(float P,float I,float D);
 void send_upload_data(bool ALLEncoder_Switch,bool TenEncoder_Switch,bool Speed_Switch);
-void Contrl_Speed(int16_t M1_speed,int16_t M2_speed,int16_t M3_speed,int16_t M4_speed);
-bool Motor_SendSpeedFrame(int16_t M1_speed, int16_t M2_speed,
-                          int16_t M3_speed, int16_t M4_speed);
-void Contrl_Pwm(int16_t M1_pwm,int16_t M2_pwm,int16_t M3_pwm,int16_t M4_pwm);
-
 void Deal_Control_Rxtemp(uint8_t rxtemp);
 void Deal_data_real(void);
 

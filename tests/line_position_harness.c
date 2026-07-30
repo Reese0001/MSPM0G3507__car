@@ -16,109 +16,94 @@ int main(void)
 {
     LinePositionResult result;
 
-    /* Each of the 15 legal patterns decodes on the first frame after reset. */
+    /* The four physical channels decode in left-to-right bit order. */
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x01U).stable_position == 7);
+    result = LinePosition_Update(0x01U);
+    CHECK(result.stable_position == -3);
+    CHECK(result.weighted_error == -3.0f && result.confidence == 55U &&
+          result.reliable);
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x03U).stable_position == 6);
+    CHECK(LinePosition_Update(0x03U).stable_position == -2);
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x02U).stable_position == 5);
+    CHECK(LinePosition_Update(0x02U).stable_position == -1);
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x06U).stable_position == 4);
+    result = LinePosition_Update(0x06U);
+    CHECK(result.stable_position == 0 && result.weighted_error == 0.0f &&
+          result.confidence == 100U && result.reliable);
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x04U).stable_position == 3);
+    CHECK(LinePosition_Update(0x04U).stable_position == 1);
     LinePosition_Reset();
     CHECK(LinePosition_Update(0x0CU).stable_position == 2);
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x08U).stable_position == 1);
-    LinePosition_Reset();
-    CHECK(LinePosition_Update(0x18U).stable_position == 0);
-    LinePosition_Reset();
-    CHECK(LinePosition_Update(0x10U).stable_position == -1);
-    LinePosition_Reset();
-    CHECK(LinePosition_Update(0x30U).stable_position == -2);
-    LinePosition_Reset();
-    CHECK(LinePosition_Update(0x20U).stable_position == -3);
-    LinePosition_Reset();
-    CHECK(LinePosition_Update(0x60U).stable_position == -4);
-    LinePosition_Reset();
-    CHECK(LinePosition_Update(0x40U).stable_position == -5);
-    LinePosition_Reset();
-    CHECK(LinePosition_Update(0xC0U).stable_position == -6);
-    LinePosition_Reset();
-    CHECK(LinePosition_Update(0x80U).stable_position == -7);
+    CHECK(LinePosition_Update(0x08U).stable_position == 3);
 
     /* Legal frames report LINE_PATTERN_POSITION. */
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x18U).type == LINE_PATTERN_POSITION);
+    CHECK(LinePosition_Update(0x06U).type == LINE_PATTERN_POSITION);
 
     /* A contiguous run of three or more sensors is WIDE. */
     LinePosition_Reset();
     result = LinePosition_Update(0x07U);
     CHECK(result.type == LINE_PATTERN_WIDE);
+    CHECK(result.candidate_position < 0);
+    CHECK(result.weighted_error < 0.0f && result.confidence == 45U &&
+          result.reliable);
+    LinePosition_Reset();
+    result = LinePosition_Update(0x0EU);
+    CHECK(result.type == LINE_PATTERN_WIDE);
     CHECK(result.candidate_position > 0);
     LinePosition_Reset();
-    result = LinePosition_Update(0xE0U);
-    CHECK(result.type == LINE_PATTERN_WIDE);
-    CHECK(result.candidate_position < 0);
-    LinePosition_Reset();
-    CHECK(LinePosition_Update(0xFFU).type == LINE_PATTERN_WIDE);
+    CHECK(LinePosition_Update(0x0FU).type == LINE_PATTERN_WIDE);
 
     /* Separated runs are NOISE. */
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x11U).type == LINE_PATTERN_NOISE);
+    CHECK(LinePosition_Update(0x05U).type == LINE_PATTERN_NOISE);
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x81U).type == LINE_PATTERN_NOISE);
+    CHECK(LinePosition_Update(0x09U).type == LINE_PATTERN_NOISE);
 
     /* No black sensor is LOST. */
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x00U).type == LINE_PATTERN_LOST);
+    result = LinePosition_Update(0x00U);
+    CHECK(result.type == LINE_PATTERN_LOST && !result.reliable &&
+          result.confidence == 0U);
 
-    /* +7 -> +6 (adjacent) is accepted immediately. */
+    /* A far left-to-right jump needs two matching samples. */
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x01U).stable_position == 7);
-    result = LinePosition_Update(0x03U);
-    CHECK(result.type == LINE_PATTERN_POSITION);
-    CHECK(result.stable_position == 6);
-
-    /* +7 -> -7 is rejected on the first frame ... */
-    LinePosition_Reset();
-    CHECK(LinePosition_Update(0x01U).stable_position == 7);
-    result = LinePosition_Update(0x80U);
-    CHECK(result.stable_position == 7);
-    CHECK(result.candidate_position == -7);
+    CHECK(LinePosition_Update(0x01U).stable_position == -3);
+    result = LinePosition_Update(0x08U);
+    CHECK(result.stable_position == -3);
+    CHECK(result.candidate_position == 3);
     CHECK(result.candidate_frames == 1U);
-    /* ... and accepted on the second identical frame. */
-    result = LinePosition_Update(0x80U);
-    CHECK(result.stable_position == -7);
+    result = LinePosition_Update(0x08U);
+    CHECK(result.stable_position == 3);
     CHECK(result.candidate_frames == 2U);
 
     /* A changing far candidate never gets accepted. */
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x01U).stable_position == 7);
-    CHECK(LinePosition_Update(0x80U).stable_position == 7);
-    CHECK(LinePosition_Update(0x40U).stable_position == 7);
-    CHECK(LinePosition_Update(0x80U).stable_position == 7);
+    CHECK(LinePosition_Update(0x01U).stable_position == -3);
+    CHECK(LinePosition_Update(0x08U).stable_position == -3);
+    CHECK(LinePosition_Update(0x04U).stable_position == -3);
+    CHECK(LinePosition_Update(0x08U).stable_position == -3);
 
-    /* Illegal frames hold the stable value and restart debouncing. */
+    /* Lost frames hold the stable value and restart debouncing. */
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x01U).stable_position == 7);
+    CHECK(LinePosition_Update(0x01U).stable_position == -3);
     result = LinePosition_Update(0x00U);
     CHECK(result.type == LINE_PATTERN_LOST);
-    CHECK(result.stable_position == 7);
-    result = LinePosition_Update(0x80U);
-    CHECK(result.stable_position == 7);
+    CHECK(result.stable_position == -3);
+    result = LinePosition_Update(0x08U);
+    CHECK(result.stable_position == -3);
     result = LinePosition_Update(0x00U);
-    CHECK(result.stable_position == 7);
+    CHECK(result.stable_position == -3);
     CHECK(result.candidate_frames == 0U);
-    result = LinePosition_Update(0x80U);
-    CHECK(result.stable_position == 7);
-    result = LinePosition_Update(0x80U);
-    CHECK(result.stable_position == -7);
+    result = LinePosition_Update(0x08U);
+    CHECK(result.stable_position == -3);
+    result = LinePosition_Update(0x08U);
+    CHECK(result.stable_position == 3);
 
     /* Raw bits are echoed back for diagnostics. */
     LinePosition_Reset();
-    CHECK(LinePosition_Update(0x18U).black_bits == 0x18U);
+    CHECK(LinePosition_Update(0x06U).black_bits == 0x06U);
 
     return 0;
 }

@@ -44,50 +44,35 @@ GEN_OPT     := $(BUILD_DIR)/device.opt
 
 STARTUP_SRC := $(SDK_DIR)/source/ti/devices/msp/m0p/startup_system_files/ticlang/startup_mspm0g350x_ticlang.c
 
-# Source set mirrors the .cproject sourceEntries exclusion list. Firmware has
-# one active native runtime entry: empty.c -> app/tasks/app_tasks.c. Older application
-# schedulers and optional hardware modules stay in the tree for reference/tests
-# but are not linked into the car image.
+# One native runtime and one control path. Reference code is excluded.
 SOURCES := \
     empty.c \
     app/boot/app_boot.c \
-    modules/diagnostics/boot_trace.c \
-    modules/line_tracking/recovery/line_recovery.c \
-    app/safety/safety_supervisor.c \
-    modules/display/dashboard.c \
-    modules/display/runtime_log.c \
-    app/mailbox/app_mailbox.c \
-    app/run/run_controller.c \
-    app/sensor/sensor_runtime.c \
-    app/control/control_runtime.c \
-    app/line/line_motion.c \
-    app/log/runtime_observer.c \
     app/tasks/app_tasks.c \
-    app/safety/safety_runtime.c \
     bsp/bsp_i2c.c \
-    modules/line_tracking/scanner/line_mux.c \
-    modules/display/i2c/oled_i2c.c \
-    modules/time/delay.c \
-    modules/time/timer.c \
     modules/buzzer/buzzer.c \
+    modules/diagnostics/boot_trace.c \
+    modules/display/dashboard.c \
+    modules/display/i2c/oled_i2c.c \
     modules/display/ssd1306/ssd1306.c \
     modules/key/key.c \
     modules/led/led.c \
-    modules/line_tracking/controller/line_lookup_control.c \
-    modules/line_tracking/controller/line_official_control.c \
-    modules/line_tracking/controller/line_cascade_control.c \
-    modules/line_tracking/prediction/line_direction_predictor.c \
     modules/line_tracking/decoder/line_position.c \
-    modules/line_tracking/scanner/line_scanner.c \
+    modules/line_tracking/lap_tracker.c \
+    modules/line_tracking/stop_line_detector.c \
+    modules/line_tracking/line_follower.c \
+    modules/line_tracking/scanner/four_line_scanner.c \
     modules/motor/configuration/motor_configuration.c \
+    modules/motor/drive.c \
+    modules/motor/feedback/motor_feedback.c \
+    modules/motor/feedback/differential_controller.c \
+    modules/motor/feedback/stop_controller.c \
     modules/motor/protocol/motor_protocol.c \
     modules/motor/uart/motor_uart.c \
-    modules/motor/adapter/motor_adapter.c \
-    modules/motor/safety/motor_safety.c \
-    modules/optional/ybimu/ybimu_protocol.c \
-    modules/optional/ybimu/ybimu.c \
-    modules/mpu6050/mpu6050_kalman.c \
-    modules/mpu6050/mpu6050.c
+    modules/imu/mpu6050.c \
+    modules/imu/yaw_estimator.c \
+    modules/time/delay.c \
+    modules/time/timer.c
 
 # Object names are flattened so no nested directories have to be created.
 mangle = $(OBJ_DIR)/$(subst /,_,$(basename $(1))).o
@@ -103,15 +88,7 @@ CPPFLAGS := \
     -I$(BUILD_DIR) \
     -Iapp \
     -Iapp/boot \
-    -Iapp/mailbox \
-    -Iapp/run \
-    -Iapp/sensor \
-    -Iapp/control \
-    -Iapp/line \
-    -Iapp/log \
-    -Iapp/safety \
     -Iapp/tasks \
-    -Iconfig \
     -Ishared \
     -Ibsp \
     -Imodules \
@@ -120,19 +97,14 @@ CPPFLAGS := \
     -Imodules/key \
     -Imodules/led \
     -Imodules/line_tracking \
-    -Imodules/line_tracking/controller \
     -Imodules/line_tracking/decoder \
-    -Imodules/line_tracking/prediction \
-    -Imodules/line_tracking/recovery \
     -Imodules/line_tracking/scanner \
     -Imodules/motor \
-    -Imodules/motor/adapter \
     -Imodules/motor/configuration \
     -Imodules/motor/protocol \
-    -Imodules/motor/safety \
     -Imodules/motor/uart \
-    -Imodules/mpu6050 \
-    -Imodules/optional/ybimu \
+    -Imodules/motor/feedback \
+    -Imodules/imu \
     -Imodules/display \
     -Imodules/display/i2c \
     -Imodules/display/ssd1306 \

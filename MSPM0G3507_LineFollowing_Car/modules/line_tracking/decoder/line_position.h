@@ -1,27 +1,25 @@
 #ifndef LINE_POSITION_H
 #define LINE_POSITION_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
-/*
- * Decode the eight-channel black-line bitmap into one of the 15 legal
- * positions (-7..+7) and debounce large jumps. Bit 0 = sensor X1
- * (right side when looking forward), bit 7 = sensor X8 (left side).
- */
-
 typedef enum {
-    LINE_PATTERN_LOST = 0,   /* no sensor sees the line            */
-    LINE_PATTERN_POSITION,   /* 1 sensor or 2 adjacent sensors     */
-    LINE_PATTERN_WIDE,       /* one contiguous run of 3+ sensors   */
-    LINE_PATTERN_NOISE       /* separated runs (illegal pattern)   */
+    LINE_PATTERN_LOST = 0,
+    LINE_PATTERN_POSITION,
+    LINE_PATTERN_WIDE,
+    LINE_PATTERN_NOISE
 } LinePatternType;
 
 typedef struct {
-    LinePatternType type;    /* classification of the current frame     */
-    int8_t stable_position;  /* debounced position, -7..+7              */
-    int8_t candidate_position; /* latest decoded position               */
-    uint8_t candidate_frames;  /* consecutive frames with this candidate */
-    uint8_t black_bits;      /* raw bitmap of the current frame         */
+    LinePatternType type;
+    int8_t stable_position;
+    int8_t candidate_position;
+    uint8_t candidate_frames;
+    uint8_t black_bits;
+    float weighted_error;
+    uint8_t confidence;
+    bool reliable;
 } LinePositionResult;
 
 void LinePosition_Reset(void);

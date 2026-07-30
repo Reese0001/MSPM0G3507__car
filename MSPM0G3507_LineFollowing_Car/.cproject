@@ -12,13 +12,13 @@
                     <extension id="com.ti.ccs.errorparser.CompilerErrorParser_TI" point="com.ti.ccs.project.ErrorParser"/>
                 </extensions>
                 <sourceEntries>
-<entry excluding="Build_LineFollowing|Debug|application|bsp/bsp_k230_uart.c|bsp/bsp_ultrasonic.c|bsp/debug_uart.c|modules/diagnostics/freertos_startup_wrappers.S|modules/line_tracking/decoder/line_start_gate.c|modules/line_tracking/line_controller.c|modules/line_tracking/line_estimator.c|modules/line_tracking/line_event_classifier.c|modules/line_tracking/line_features.c|modules/line_tracking/line_trend_detector.c|modules/optional/competition|modules/optional/k230|modules/optional/legacy|modules/optional/ultrasonic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                    <entry excluding="Build_LineFollowing|Debug|application|bsp/bsp_k230_uart.c|bsp/bsp_ultrasonic.c|bsp/debug_uart.c|modules/diagnostics/freertos_startup_wrappers.S|modules/line_tracking/decoder/line_start_gate.c|modules/line_tracking/line_controller.c|modules/line_tracking/line_estimator.c|modules/line_tracking/line_event_classifier.c|modules/line_tracking/line_features.c|modules/line_tracking/line_trend_detector.c|modules/optional/competition|modules/optional/k230|modules/optional/legacy|modules/optional/ultrasonic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
                 </sourceEntries>
             </storageModule>
             <storageModule moduleId="cdtBuildSystem" version="4.0.0">
                 <configuration artifactExtension="out" artifactName="${ProjName}" buildProperties="" cleanCommand="${CG_CLEAN_CMD}" description="" id="com.ti.ccstudio.buildDefinitions.TMS470.Debug.762579381" name="Debug" parent="com.ti.ccstudio.buildDefinitions.TMS470.Debug">
                     <folderInfo id="com.ti.ccstudio.buildDefinitions.TMS470.Debug.762579381." name="/" resourcePath="">
-                        <toolChain id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.DebugToolchain.1510982444" name="TI Build Tools" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.DebugToolchain" targetTool="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.linkerDebug.853279943">
+                        <toolChain id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.DebugToolchain.1510982444" name="TI Build Tools" secondaryOutputs="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex.outputType__BIN.1691147065;com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.objcopy.outputType__BIN.1289747888" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.DebugToolchain" targetTool="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.linkerDebug.853279943">
                             <option id="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS.1168111170" superClass="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS" valueType="stringList">
                                 <listOptionValue value="DEVICE_CONFIGURATION_ID=Cortex M.MSPM0G3507"/>
                                 <listOptionValue value="DEVICE_CORE_ID="/>
@@ -32,7 +32,7 @@
                             </option>
                             <option id="com.ti.ccstudio.buildDefinitions.core.OPT_CODEGEN_VERSION.31516675" superClass="com.ti.ccstudio.buildDefinitions.core.OPT_CODEGEN_VERSION" value="TICLANG_4.0.4.LTS" valueType="string"/>
                             <targetPlatform id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.targetPlatformDebug.1990606885" name="Platform" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.targetPlatformDebug"/>
-                            <builder buildPath="${BuildDirectory}" id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.builderDebug.491234472" name="GNU Make.Debug" parallelBuildOn="true" parallelizationNumber="optimal" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.builderDebug"/>
+                            <builder buildPath="${BuildDirectory}" id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.builderDebug.491234472" keepEnvironmentInBuildfile="false" name="GNU Make" parallelBuildOn="true" parallelizationNumber="optimal" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.builderDebug"/>
                             <tool id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.compilerDebug.1428801599" name="Arm Compiler" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.exe.compilerDebug">
                                 <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.compilerID.GENERATE_DWARF_DEBUG.921528310" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.compilerID.GENERATE_DWARF_DEBUG" value="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.compilerID.GENERATE_DWARF_DEBUG.GDWARF_3" valueType="enumerated"/>
                                 <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.compilerID.ENDIAN_NESS__BIG_LITTLE.731225077" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.compilerID.ENDIAN_NESS__BIG_LITTLE" value="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.compilerID.ENDIAN_NESS__BIG_LITTLE.MLITTLE_ENDIAN" valueType="enumerated"/>
@@ -45,30 +45,16 @@
                                     <listOptionValue value="${COM_TI_MSPM0_SDK_INSTALL_DIR}/source"/>
                                     <listOptionValue value="${PROJECT_ROOT}/app"/>
                                     <listOptionValue value="${PROJECT_ROOT}/app/boot"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/app/control"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/app/line"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/app/log"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/app/mailbox"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/app/run"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/app/safety"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/app/sensor"/>
                                     <listOptionValue value="${PROJECT_ROOT}/app/tasks"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/config"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules"/>
                                     <listOptionValue value="${PROJECT_ROOT}/shared"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/modules/mpu6050"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/optional/ybimu"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/motor"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/modules/motor/adapter"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/motor/configuration"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/motor/protocol"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/modules/motor/safety"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/motor/uart"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/controller"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/decoder"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/prediction"/>
-                                    <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/recovery"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/line_tracking/scanner"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/led"/>
                                     <listOptionValue value="${PROJECT_ROOT}/modules/key"/>
@@ -115,8 +101,16 @@
                                     <listOptionValue value="libc.a"/>
                                 </option>
                             </tool>
-                            <tool id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex.2074646574" name="Arm Hex Utility" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex"/>
-                            <tool id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.objcopy.20988894" name="Arm Objcopy Utility" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.objcopy"/>
+                            <tool id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex.2074646574" name="Arm Hex Utility" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex">
+                                <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex.TOOL_ENABLE.737176886" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex.TOOL_ENABLE" value="true" valueType="boolean"/>
+                                <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex.OUTPUT_FORMAT.1538119788" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex.OUTPUT_FORMAT" value="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex.OUTPUT_FORMAT.TI_TXT" valueType="enumerated"/>
+                                <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex.OUTPUT_FILE.242661358" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex.OUTPUT_FILE" value="${ProjName}.txt" valueType="string"/>
+                                <outputType id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex.outputType__BIN.1691147065" name="Binary File" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.hex.outputType__BIN"/>
+                            </tool>
+                            <tool id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.objcopy.20988894" name="Arm Objcopy Utility" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.objcopy">
+                                <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.objcopy.TOOL_ENABLE.1827276459" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.objcopy.TOOL_ENABLE" value="true" valueType="boolean"/>
+                                <outputType id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.objcopy.outputType__BIN.1289747888" name="Binary File" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.objcopy.outputType__BIN"/>
+                            </tool>
                             <tool id="com.ti.ccstudio.buildDefinitions.sysConfig.1273682083" name="SysConfig" superClass="com.ti.ccstudio.buildDefinitions.sysConfig">
                                 <option id="com.ti.ccstudio.buildDefinitions.sysConfig.PRODUCTS.1629281926" superClass="com.ti.ccstudio.buildDefinitions.sysConfig.PRODUCTS" valueType="stringList">
                                     <listOptionValue value="${COM_TI_MSPM0_SDK_SYSCONFIG_MANIFEST}"/>

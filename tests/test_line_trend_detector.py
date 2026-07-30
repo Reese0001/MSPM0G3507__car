@@ -86,7 +86,7 @@ class LineTrendDetectorContract(unittest.TestCase):
         )
 
     def test_active_runtime_does_not_keep_stale_trend_state(self):
-        line_motion = (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
+        line_motion = (ROOT / "modules/line_tracking/line_follower.c").read_text(encoding="utf-8")
         tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
         active = line_motion + tasks
         self.assertNotIn("static LineTrendResult", active)

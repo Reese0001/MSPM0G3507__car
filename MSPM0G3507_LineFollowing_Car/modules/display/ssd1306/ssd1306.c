@@ -8,10 +8,13 @@
 #define SSD1306_CONTROL_DATA 0x40U
 #define SSD1306_FONT_WIDTH 5U
 #define SSD1306_CELL_WIDTH 6U
+#define SSD1306_FLUSH_CHUNK (16U)
 
 static uint8_t framebuffer[SSD1306_PAGES][SSD1306_WIDTH];
 static uint8_t dirty_pages;
 static bool display_present;
+static uint8_t flush_page;
+static uint8_t flush_column;
 
 /* Classic 5x7 font, ASCII 0x20..0x7E, column-major. */
 static const uint8_t font5x7[95][5] = {
@@ -109,27 +112,12 @@ bool Ssd1306_Init(void)
     return Ssd1306_FlushDirty();
 }
 
-bool Ssd1306_WritePage(uint8_t page, const uint8_t data[128])
-{
-    static uint8_t message[1U + SSD1306_WIDTH];
-
-    if (page >= SSD1306_PAGES || data == 0) {
-        return false;
-    }
-    if (!send_command((uint8_t)(0xB0U | page)) ||
-        !send_command(0x00U) || !send_command(0x10U)) {
-        return false;
-    }
-    message[0] = SSD1306_CONTROL_DATA;
-    (void)memcpy(&message[1], data, SSD1306_WIDTH);
-    return BSP_OledI2C_Write(SSD1306_ADDRESS_7BIT, message,
-                             (uint16_t)sizeof(message));
-}
-
 void Ssd1306_ClearBuffer(void)
 {
     (void)memset(framebuffer, 0, sizeof(framebuffer));
     dirty_pages = 0xFFU;
+    flush_page = 0U;
+    flush_column = 0U;
 }
 
 void Ssd1306_DrawText(uint8_t page, uint8_t column, const char *text)
@@ -162,22 +150,45 @@ void Ssd1306_DrawText(uint8_t page, uint8_t column, const char *text)
     dirty_pages |= (uint8_t)(1U << page);
 }
 
-bool Ssd1306_FlushNextDirtyPage(void)
+bool Ssd1306_FlushNextChunk(void)
 {
-    uint8_t page;
+    uint8_t command[4];
+    uint8_t data[1U + SSD1306_FLUSH_CHUNK];
+    uint8_t index;
 
     if (!display_present) {
         return false;
     }
-    for (page = 0U; page < SSD1306_PAGES; page++) {
-        if ((dirty_pages & (uint8_t)(1U << page)) == 0U) {
-            continue;
-        }
-        if (!Ssd1306_WritePage(page, framebuffer[page])) {
-            return false;
-        }
-        dirty_pages &= (uint8_t)~(1U << page);
+    if (dirty_pages == 0U) {
         return true;
+    }
+    for (index = 0U; index < SSD1306_PAGES; index++) {
+        if ((dirty_pages & (uint8_t)(1U << flush_page)) != 0U) {
+            break;
+        }
+        flush_page = (uint8_t)((flush_page + 1U) % SSD1306_PAGES);
+        flush_column = 0U;
+    }
+    command[0] = SSD1306_CONTROL_COMMAND;
+    command[1] = (uint8_t)(0xB0U | flush_page);
+    command[2] = (uint8_t)(flush_column & 0x0FU);
+    command[3] = (uint8_t)(0x10U | (flush_column >> 4U));
+    if (!BSP_OledI2C_Write(SSD1306_ADDRESS_7BIT, command,
+                           (uint16_t)sizeof(command))) {
+        return false;
+    }
+    data[0] = SSD1306_CONTROL_DATA;
+    (void)memcpy(&data[1], &framebuffer[flush_page][flush_column],
+                 SSD1306_FLUSH_CHUNK);
+    if (!BSP_OledI2C_Write(SSD1306_ADDRESS_7BIT, data,
+                           (uint16_t)sizeof(data))) {
+        return false;
+    }
+    flush_column = (uint8_t)(flush_column + SSD1306_FLUSH_CHUNK);
+    if (flush_column >= SSD1306_WIDTH) {
+        dirty_pages &= (uint8_t)~(1U << flush_page);
+        flush_page = (uint8_t)((flush_page + 1U) % SSD1306_PAGES);
+        flush_column = 0U;
     }
     return true;
 }
@@ -185,7 +196,7 @@ bool Ssd1306_FlushNextDirtyPage(void)
 bool Ssd1306_FlushDirty(void)
 {
     while (dirty_pages != 0U) {
-        if (!Ssd1306_FlushNextDirtyPage()) {
+        if (!Ssd1306_FlushNextChunk()) {
             return false;
         }
     }

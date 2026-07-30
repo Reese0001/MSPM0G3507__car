@@ -33,13 +33,11 @@ class NativeRuntimeContract(unittest.TestCase):
         for token in (
             "void AppTasks_Init(void)",
             "void AppTasks_Poll(uint32_t now_ms)",
-            "{APP_TASK_SAFETY, safety_task, APP_TASK_BASE_TICK_MS",
-            "{APP_TASK_SENSOR, sensor_task, 2U * APP_TASK_BASE_TICK_MS",
-            "{APP_TASK_DISPLAY, display_task, 10U * APP_TASK_BASE_TICK_MS",
-            "SensorRuntime_Step",
-            "ControlRuntime_RunOnce",
-            "SafetyRuntime_Step",
-            "RuntimeObserver_Update",
+            "FOUR_LINE_SAMPLE_PERIOD_MS",
+            "DISPLAY_PERIOD_MS  (200U)",
+            "sample_and_control(now_ms)",
+            "Drive_Service(now_ms)",
+            "Dashboard_Render(&diagnostics)",
         ):
             self.assertIn(token, tasks)
         for token in (
@@ -50,14 +48,9 @@ class NativeRuntimeContract(unittest.TestCase):
         ):
             self.assertNotIn(token, tasks)
 
-    def test_mailbox_is_plain_latest_value_storage(self):
-        mailbox = (ROOT / "app/mailbox/app_mailbox.c").read_text(
-            encoding="utf-8"
-        )
-        self.assertNotIn("FreeRTOS", mailbox)
-        self.assertNotIn("taskENTER_CRITICAL", mailbox)
-        self.assertNotIn("taskEXIT_CRITICAL", mailbox)
-        self.assertNotIn("pvPortMalloc", mailbox)
+    def test_runtime_has_no_mailbox_layer(self):
+        mailbox = ROOT / "app/mailbox"
+        self.assertFalse(any(mailbox.glob("*.[ch]")))
 
 
 if __name__ == "__main__":

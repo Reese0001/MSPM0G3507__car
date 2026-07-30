@@ -8,7 +8,8 @@ float g_Speed[4];
 int Encoder_Offset[4];
 int Encoder_Now[4];
 
-uint8_t g_recv_flag;
+volatile uint8_t g_recv_flag;
+volatile bool g_recv_speed_frame;
 uint8_t g_recv_buff[RXBUFF_LEN];
 uint8_t g_recv_buff_deal[RXBUFF_LEN];
 
@@ -65,15 +66,12 @@ void send_motor_PID(float P,float I,float D)
 //需要接收数据的开关	Switch that needs to receive data
 void send_upload_data(bool ALLEncoder_Switch,bool TenEncoder_Switch,bool Speed_Switch)
 {
-	sprintf((char*)send_buff,"$upload:%d,%d,%d#",ALLEncoder_Switch,TenEncoder_Switch,Speed_Switch);
-	Send_Motor_ArrayU8(send_buff, strlen((char*)send_buff));
-}
-
-//控制速度	Controlling Speed
-void Contrl_Speed(int16_t M1_speed,int16_t M2_speed,int16_t M3_speed,int16_t M4_speed)
-{
-	sprintf((char*)send_buff,"$spd:%d,%d,%d,%d#",M1_speed,M2_speed,M3_speed,M4_speed);
-	Send_Motor_ArrayU8(send_buff, strlen((char*)send_buff));
+	int length = snprintf((char *)send_buff, sizeof(send_buff),
+	                      "$upload:%d,%d,%d#", ALLEncoder_Switch,
+	                      TenEncoder_Switch, Speed_Switch);
+	if (length > 0 && length < (int)sizeof(send_buff)) {
+		(void)Motor_Usart_SendArrayBounded(send_buff, (uint16_t)length);
+	}
 }
 
 bool Motor_SendSpeedFrame(int16_t M1_speed, int16_t M2_speed,
@@ -87,15 +85,6 @@ bool Motor_SendSpeedFrame(int16_t M1_speed, int16_t M2_speed,
     }
     return Motor_Usart_SendArrayBounded(send_buff, (uint16_t)length);
 }
-
-
-//控制pwm	Control PWM
-void Contrl_Pwm(int16_t M1_pwm,int16_t M2_pwm,int16_t M3_pwm,int16_t M4_pwm)
-{
-	sprintf((char*)send_buff,"$pwm:%d,%d,%d,%d#",M1_pwm,M2_pwm,M3_pwm,M4_pwm);
-	Send_Motor_ArrayU8(send_buff, strlen((char*)send_buff));
-}
-
 
 //////////********************接收部分********************///////////
 //////////*****************Receiving part****************///////////
@@ -136,6 +125,8 @@ void Deal_Control_Rxtemp(uint8_t rxtemp)
 				start_flag = 0;
 				step = 0;
 				g_recv_flag = 1;
+				g_recv_speed_frame =
+					(strncmp((char *)g_recv_buff_deal, "MSPD:", 5U) == 0);
 				memcpy(g_recv_buff_deal,g_recv_buff,RXBUFF_LEN); //只有正确的才会赋值	Only correct ones will be assigned
 //                printf("g_recv_buff_deal = %X\r\n",g_recv_buff_deal);
 			}

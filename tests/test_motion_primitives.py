@@ -46,19 +46,16 @@ class MotionPrimitiveContract(unittest.TestCase):
 
     def test_search_line_yaw_limit_is_owned_by_optional_primitives(self):
         source = (OPTIONAL / "motion_primitives.c").read_text(encoding="utf-8")
-        recovery_config = (ROOT / "config/line_recovery_config.h").read_text(
-            encoding="utf-8"
-        )
         primitive_config = (ROOT / "config/motion_primitives_config.h").read_text(
             encoding="utf-8"
         )
         self.assertIn("MOTION_SEARCH_LINE_MAX_YAW_DEG (45.0f)", primitive_config)
         self.assertIn("MOTION_SEARCH_LINE_MAX_YAW_DEG", source)
-        self.assertNotIn("LINE_RECOVERY_MAX_YAW_DEG", source + recovery_config)
+        self.assertNotIn("LINE_RECOVERY_MAX_YAW_DEG", source)
 
     def test_active_tasks_do_not_call_legacy_blocking_tracking_or_primitives(self):
         tasks = (ROOT / "app/tasks/app_tasks.c").read_text(encoding="utf-8")
-        line_motion = (ROOT / "app/line/line_motion.c").read_text(encoding="utf-8")
+        line_motion = (ROOT / "modules/line_tracking/line_follower.c").read_text(encoding="utf-8")
         active = tasks + line_motion
         for forbidden in (
             "LineWalking",

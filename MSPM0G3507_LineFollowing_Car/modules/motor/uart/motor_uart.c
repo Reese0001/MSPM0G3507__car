@@ -2,6 +2,7 @@
 
 #include "../../time/timer.h"
 #include "../protocol/motor_protocol.h"
+#include "../feedback/motor_feedback.h"
 
 // 电机串口初始化
 void Motor_Usart_init(void)
@@ -78,6 +79,19 @@ bool Motor_EmergencyStop_FromISR(void)
     static const uint8_t stop_frame[] = "$spd:0,0,0,0#";
     return Motor_Usart_SendArrayBounded(stop_frame,
                                         (uint16_t)(sizeof(stop_frame) - 1U));
+}
+
+void Motor_Usart_Service(uint32_t now_ms)
+{
+    if (g_recv_flag == 0U) {
+        return;
+    }
+    if (g_recv_speed_frame) {
+        Deal_data_real();
+        MotorFeedback_Publish(g_Speed[3], g_Speed[1], now_ms);
+    }
+    g_recv_flag = 0U;
+    g_recv_speed_frame = false;
 }
 
 

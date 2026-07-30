@@ -55,31 +55,32 @@ GPIO2.associatedPins[0].direction   = "INPUT";
 GPIO2.associatedPins[0].$name       = "K1";
 GPIO2.associatedPins[0].pin.$assign = "PA2";
 
-GPIO3.$name                         = "GRAY_ADDR";
-GPIO3.associatedPins.create(3);
-GPIO3.associatedPins[0].$name       = "AD0";
-GPIO3.associatedPins[0].pin.$assign = "PA15";
-GPIO3.associatedPins[1].$name       = "AD1";
-GPIO3.associatedPins[1].pin.$assign = "PA16";
-GPIO3.associatedPins[2].$name       = "AD2";
-GPIO3.associatedPins[2].pin.$assign = "PA17";
+GPIO3.$name                         = "LINE_INPUTS";
+GPIO3.associatedPins.create(4);
+GPIO3.associatedPins[0].direction   = "INPUT";
+GPIO3.associatedPins[0].$name       = "LINE_X1";
+GPIO3.associatedPins[0].pin.$assign = "PA24";
+GPIO3.associatedPins[1].direction   = "INPUT";
+GPIO3.associatedPins[1].$name       = "LINE_X2";
+GPIO3.associatedPins[1].pin.$assign = "PA25";
+GPIO3.associatedPins[2].direction   = "INPUT";
+GPIO3.associatedPins[2].$name       = "LINE_X3";
+GPIO3.associatedPins[2].pin.$assign = "PA26";
+GPIO3.associatedPins[3].direction   = "INPUT";
+GPIO3.associatedPins[3].$name       = "LINE_X4";
+GPIO3.associatedPins[3].pin.$assign = "PA27";
 
-GPIO4.$name                         = "GRAY_DATA";
-GPIO4.associatedPins[0].direction   = "INPUT";
-GPIO4.associatedPins[0].$name       = "OUT";
-GPIO4.associatedPins[0].pin.$assign = "PA18";
-
-GPIO5.$name                         = "YBIMU_I2C";
+GPIO5.$name                         = "MPU6050_I2C";
 GPIO5.associatedPins.create(2);
 GPIO5.associatedPins[0].direction   = "INPUT";
 GPIO5.associatedPins[0].$name       = "SCL";
-GPIO5.associatedPins[0].pin.$assign = "PA1";
+GPIO5.associatedPins[0].pin.$assign = "PA12";
 GPIO5.associatedPins[1].direction   = "INPUT";
 GPIO5.associatedPins[1].$name       = "SDA";
-GPIO5.associatedPins[1].pin.$assign = "PA0";
+GPIO5.associatedPins[1].pin.$assign = "PA13";
 
 /* Pin names must be unique across all GPIO groups, so the OLED software I2C
-   lines are CLK/DAT here; YBIMU_I2C already owns SCL/SDA. */
+   lines are CLK/DAT here; MPU6050_I2C already owns SCL/SDA. */
 GPIO6.$name                         = "OLED_I2C";
 GPIO6.associatedPins.create(2);
 GPIO6.associatedPins[0].direction   = "INPUT";

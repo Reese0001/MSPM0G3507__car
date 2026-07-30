@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "../../../line_tracking/line_model.h"
-#include "../../../line_tracking/scanner/line_scanner.h"
+#include "../../../line_tracking/scanner/four_line_scanner.h"
 
 void LineTrendDetector_Init(void);
 void LineTrendDetector_Reset(void);

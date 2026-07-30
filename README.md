@@ -1,160 +1,160 @@
-# MSPM0G3507 八路灰度循迹小车
+# MSPM0G3507 赛题循迹小车
 
-本仓库是基于 TI MSPM0G3507、两轮差速底盘、L 型 520 减速电机、YbImu 九轴姿态模块、八路灰度模块和 SSD1306 OLED 的循迹小车工程。当前固件为裸机协作式时间片调度，不依赖 FreeRTOS：安全、传感、控制和显示任务由固定周期表驱动，应用层不使用动态内存。
+本工程当前只实现 2026 电赛 H 题的循迹阶段：
 
-八路灰度数据每 2 ms 推进一次扫描并解码为 `-7`～`+7` 的 15 个合法位置。默认使用官方资料风格的开环查表作为主循迹，YbImu 只提供 Z 轴角速度阻尼来减少转向抖动；不使用磁航向、绝对 yaw 或四元数控制。IMU 数据无效或超过 50 ms 时自动旁路，灰度循迹继续运行。
+- 小车放在 A 点停车基准线上；
+- RESET 后电机保持零速；
+- 按下 K1 启动计时并顺时针循迹；
+- 完成一圈再次识别 A 点停车线后立即停车；
+- OLED 保留总用时，便于检查“≤20 s”目标。
 
-## 主工程与环境
+钢球平衡控制暂未接入本固件，避免它干扰循迹调试。
 
-CCS 工程目录：[`MSPM0G3507_LineFollowing_Car/`](MSPM0G3507_LineFollowing_Car/)
+## 唯一运行链
 
-- CCS Theia：`ccs2050`
-- TI Arm Clang：4.0.4 LTS
-- MSPM0 SDK：2.10.00.04
-- SysConfig：1.26.2
-- 串口电机协议：115200
-
-在 CCS Theia 中导入：
-
-1. 选择 **File → Import → Existing Projects into Workspace**。
-2. 选择仓库中的 `MSPM0G3507_LineFollowing_Car` 目录。
-3. 确认 MSPM0 SDK 和 TI Arm Clang 版本正确。
-4. 执行 **Project → Clean**，然后 **Build Project**。
-
-`MSPM0G3507_LineFollowing_Car/empty.syscfg` 是外设配置的唯一真实来源。不要手改 `Debug/` 或 `build/cli/` 中的 SysConfig 生成文件。
-
-命令行复现构建：
-
-```powershell
- & 'D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe' -C MSPM0G3507_LineFollowing_Car rebuild
+```text
+八路灰度（后台分时完整帧） + MPU6050 Z 轴角速度
+                ↓
+          LineFollower
+                ↓
+             Drive
+                ↓
+       UART 电机板（M2/M4）
 ```
 
-产物：
+正式固件不使用 FreeRTOS、mailbox、Yb 九轴 IMU、双控制模式或多套安全层。当前使用 MPU6050（PA12/PA13）进行非阻塞陀螺仪读取；主循环采用固定周期的裸机协作调度，只有 `Drive` 可以发送电机速度帧。
 
-- CCS/XDS110：`MSPM0G3507_LineFollowing_Car/Debug/MSPM0G3507_LineFollowing_Car.out`
-- CLI：`build/cli/MSPM0G3507_LineFollowing_Car/MSPM0G3507_LineFollowing_Car.out`
-- Intel HEX：`dist/firmware/MSPM0G3507_LineFollowing_Car.hex`
-- UniFlash TI-TXT：`dist/firmware/MSPM0G3507_LineFollowing_Car.txt`
+### 循迹规则
 
-`build/` 和 `dist/` 不入库。修改源码后必须重新 clean build 并生成镜像，不能继续烧录旧文件。
+- 面向车头：X1 在右侧，X8 在左侧。
+- X1～X8 权重为 `+7,+5,+3,+1,-1,-3,-5,-7`。
+- 单点、相邻双点解码为 15 个合法位置；宽黑线按所有有效 X 通道加权求中心，保留左右方向。
+- 启动首帧立即接受；运行中任何合法位置变化都需要连续两帧确认，减少直线小摆动。
+- 主控制为灰度位置查表：中心命令 125，弯道逐级降速；同向快速外移时预减速，最终限制在 `0..140`。
+- 多段噪声最多保持上一命令 20 ms，之后进入丢线处理。
+- 丢线后沿最后偏差/趋势方向单向原地找线，不倒车、不左右来回摆动；首次就是全白时默认向右。
+- 连续 3 帧重新检测到可信线后恢复正常循迹。
 
-## 当前接线
+### IMU 辅助
+
+MPU6050 使用地址 `0x68`，先写 `PWR_MGMT_1=0` 唤醒，再读取陀螺仪寄存器 `0x43..0x48`。当前只使用 Z 轴角速度：
+
+```text
+低通后的 gyro_z × 0.18 → 转向阻尼，死区 2°/s，限幅 ±24
+```
+
+IMU 不是启动条件。通信失败或数据过期时修正严格归零，灰度循迹继续运行：
+
+- `IMU OFF`：没有新鲜数据；
+- `IMU OK`：数据有效但处于死区；
+- `IMU USED`：本帧产生了非零转向修正。
+
+没有编码器可靠速度反馈，因此当前不使用速度 PID；也不使用绝对 yaw 锁定或 FOC。
+
+## A 点计时与停车
+
+A 点的启停线会让较多灰度通道同时变黑。固件用独立 `LapTracker` 识别：
+
+1. K1 按下时开始计时，但忽略车底当前的起点标线；
+2. 连续 3 帧离开宽线后确认已经驶离 A 点；
+3. 运行至少 3 s 后，再连续 3 帧检测到 6 路及以上黑线，判定返回 A 点；
+4. 电机请求立即归零，并冻结 OLED 总时间。
+
+该逻辑对应赛题的 5 cm 停车基准线。停车偏差 ≤2 cm 仍需通过实车调整传感器前伸距离、制动惯性和返回线阈值。
+
+## 接线
 
 | 功能 | MSPM0G3507 引脚 | 说明 |
 |---|---|---|
-| 电机驱动 UART1 | PB6 TX / PB7 RX | 115200；M2/M4 为驱动轮 |
-| SSD1306 OLED | PA10 SCL / PA11 SDA | 软件 I2C，7 位地址 `0x3C` |
-| YbImu 九轴 IMU | PA1 SCL / PA0 SDA | 3.3V、共地，软件 I2C，地址 `0x23` |
-| 灰度通道选择 | PA15 AD0 / PA16 AD1 / PA17 AD2 | 选择 X1～X8 |
-| 灰度数字输出 | PA18 OUT | 低电平表示黑线；与 BSL Invoke 复用 |
-| LED D1/D2 | PB2 / PB3 | 故障指示 / 心跳 |
-| 按键 K1 | PA2 | GPIO 输入；RESET 后按下 K1 才允许运行 |
-| 蜂鸣器 | PB24 | TIMA0 PWM |
+| 电机 UART | PB6 TX / PB7 RX | 115200；M2 右轮、M4 左轮，M1/M3 始终为零 |
+| SSD1306 OLED | PA10 SCL / PA11 SDA | 软件 I2C，地址 `0x3C` |
+| MPU6050 | PA12 SCL / PA13 SDA | VCC 接 3.3V、GND 共地、AD0 接 GND，地址 `0x68`；INT 暂不接 |
+| 灰度选通 | PA15 AD0 / PA16 AD1 / PA17 AD2 | 依次选择 X1～X8 |
+| 灰度 OUT | PA18 | 低电平表示黑线；与 BSL Invoke 复用 |
+| K1 | PA2 | RESET 后按一次开始 |
+| D1 / D2 | PB2 / PB3 | 故障 / 心跳 |
 
-面向车头时，X1 在右侧、X8 在左侧。灰度模块不是通过 I2C 地址读取；固件依次选通 X1～X8，再从 PA18 读取当前通道。
+`empty.syscfg` 是引脚与外设配置的唯一真实来源，不要手改 `Debug/` 或 `build/cli/` 内的生成文件。
 
-## UniFlash 烧录
-
-首次烧录保持 12.6 V 电机电源断开，只连接 USB、MCU 和必要传感器。
-
-1. 运行 `gmake ... rebuild`，先清理缓存再生成最新镜像。
-2. 关闭 CCS 串口监视器及其他占用目标 COM 口的软件。
-3. 在 UniFlash 中选择 MSPM0G3507 的串口 BSL 连接方式。
-4. 只加载并烧录 `dist/firmware/MSPM0G3507_LineFollowing_Car.txt`（TI-TXT）。
-5. 进入 BSL、执行下载并确认 Verify 成功。
-6. 退出 BSL，重新上电运行。
-
-PA18 同时连接灰度模块 OUT 和芯片 BSL Invoke。若无法进入 BSL，先断电，临时断开灰度模块的 PA18 信号线，完成烧录后再恢复。不要带电插拔。
-
-## OLED 运行日志与启动
-
-OLED 是启动和运行时的流动行为日志，不是固定诊断页。RESET 后完成外设和电机配置，但保持零速；按下 K1 只解除运行门控，没有有效循迹请求时仍保持停车。D1 常亮表示故障，D2 正常以 250 ms 周期心跳。常见日志顺序如下，时间戳会随硬件响应变化：
+## OLED 诊断页
 
 ```text
-0000 BOOT
-0012 OLED OK
-0022 MOTOR CFG
-0525 CFG OK
-.... SAFETY TASK
-.... SENSOR FRAME
-PRESS K1
-.... MOTOR ARMED
-.... SAFETY RUN
-.... CONTROL REQ
-.... Bxx P+n DR
-.... G+000 C+000 I0
-.... CMD lll/rrr
-.... TX Lxxx Rxxx
+RUN K1 SAFE / WAIT / STOP t
+LINE Bxx P+x
+REQ Lxxx Rxxx
+OUT M2xxx M4xxx
+MODE FOLLOW / SEEK L / SEEK R
+IMU OFF / OK / USED
+GYR +xxx COR +xx
+ERR NONE / 错误原因
 ```
 
-首次硬件测试必须先断开或架空驱动轮，再接通 12.6 V，按 RESET，配置完成后按 K1，并在放下驱动轮前观察 OLED 完整显示上述日志。OLED 使用 3.3 V 并与 MCU 共地；SCL 接 PA10、SDA 接 PA11，地址为 `0x3C`。调试串口保持 115200。
+- RESET 后 `REQ`、`OUT` 都应为 0。
+- K1 后中心线时 M2/M4 应平滑上升。
+- `B00` 时应进入 `SEEK L/R`，不能静止卡死。
+- 手动绕 Z 轴转动车体时 `GYR` 应变化；超过死区后显示 `IMU USED`。
+- 断开 IMU 应显示 `IMU OFF`，但小车仍按灰度运行。
+- `STOP` 后显示冻结的整圈时间，输出为零。
 
-`Bxx P±n D L/R` 分别是灰度位图、当前位置和锁定的找线方向；`G±nnn C±nnn I0/1` 分别是 Z 轴角速度、阻尼修正和本帧是否使用阻尼；`CMD lll/rrr` 是左右轮请求。`IMU BYPASS` 表示 IMU 过期或无效，只取消阻尼，不会让小车停车。
-
-若 OLED 出现 `UART TIMEOUT`、`WATCHDOG`、`DIR WAIT` 或 `LINE SAFE STOP`，立即断开 12.6 V 电源并诊断；`LINE SEEK L/R` 是正常单向找线状态。驱动轮落地时不得反复按 RESET。OLED 不亮时先检查 3.3 V、共地、PA10/PA11 方向、地址和 UniFlash 是否烧录了刚生成的 `.txt`。
-
-## 循迹控制
-
-- 单个黑点或两个相邻黑点映射为 15 个合法位置：`-7`～`+7`。
-- 面向车头从左侧 X8 移向右侧 X1 时，稳定位置应从 `-7` 递增到 `+7`。
-- 默认 `LINE_CONTROL_MODE_OFFICIAL_BASELINE`：查表按偏差降低基础速度并增大左右轮差速，中心命令 140，边缘基础命令 60；进入恢复/电机层前始终限制为 `0..140`。
-- `-1/0/+1` 共用直行输出，抑制直线上的小幅左右摆动；分离噪声帧先保持上次命令 20 ms，避免瞬时毛刺造成停顿。
-- YbImu 仅使用 `gyro_rad_s[2]`：`turn -= yaw_rate_dps × 0.18`，2°/s 死区，阻尼命令限制在 `±24`。安装方向相反时只调整 `YBIMU_BODY_Z_SIGN`。
-- IMU 无效、故障或超过 50 ms 时阻尼量立即归零，不阻止灰度控制请求，也不参与丢线恢复。
-- 宽黑帧可以提供偏置转向，但居中宽黑帧不会覆盖最后可靠方向；丢线后按该方向单向旋转找线，不倒车、不来回摆动。
-- 找到连续 3 个可信新帧后进入 300 ms 低速对齐，再恢复正常循迹；只有急停、传感器数据过期或非法状态才进入 `LINE SAFE STOP`。
-- 旧的“位置 + 绝对航向”辅助模式仍保留为编译期回退；在 `config/line_following_profile.h` 修改 `LINE_FOLLOWING_CONTROL_MODE` 即可切换，默认固件不走该路径。
-- 赛道不写死尺寸或固定路线：圆弧、直角、折线和回头弯统一按局部灰度偏差、Z 轴阻尼与丢线恢复处理。
-- 电机输出由安全运行层统一提交，UART 帧最快每 5 ms 一次，零速命令可立即发送。
-
-## 时间片调度
-
-任务表按安全 → 传感 → 控制 → 显示的固定顺序运行：
-
-- 安全：1 ms，唯一拥有电机输出权限。
-- 传感：2 ms，推进灰度扫描并推进一次 YbImu 非阻塞状态机。
-- 控制：有新传感帧且 K1 已启动时运行一次。
-- 显示：10 ms，每次只发送一页流动日志；避免 OLED 刷屏阻塞传感和电机控制。
-
-YbImu 软件 I2C 由主循环每轮只推进一个位级状态，传感时间片只启动或收取一次寄存器事务，不忙等。若主循环曾被阻塞，调度器跳过过期时间片，不突发补跑旧任务。
-
-OLED 每 500 ms 输出灰度、锁定方向、Z 轴角速度、阻尼量和左右轮命令。移动小车时 `G` 应随绕 Z 轴转动而变化；`I1` 表示阻尼实际参与，`I0` 表示处于死区，`IMU BYPASS` 表示数据过期/无效。三种状态都不改变八路灰度的主控地位。
+OLED 每 200 ms 更新一次诊断快照，并把每页拆成 16 字节小块发送；
+每个 2 ms 调度周期最多发送一块，避免整页软件 I2C 阻塞循迹。
 
 ## 电机安全
 
-- 所有速度请求必须经过 `Motor_Safety_RequestSpeed()`。
-- 启动采用 0→30% 的 1000 ms soft-start，禁止直接输出 100%。
-- 200 ms 没有新的合法请求时，看门狗锁存故障并发送固定零速帧。
-- M1/M3 始终保持零速，M2/M4 为左右驱动轮。
-- 电机 UART、控制任务或传感任务失联会锁存故障并点亮 D1。
+- K1 是唯一启动门控。
+- 1 s 内限制在目标的 30%，之后继续平滑达到目标。
+- 每 5 ms 的输出变化最多 3 个命令单位，降低一冲一冲和机械抖动。
+- 命令超过 50 ms 未更新，或 1 ms 看门狗达到 200 ms，立即发送零速。
+- 换向先归零并等待 120 ms。
+- UART 超时锁定零速，RESET 后重新初始化。
 
-首次接通电机动力前：
-
-```text
-[ ] 12.6 V 当前断开，USB-only 诊断已通过
-[ ] MCU、灰度模块、OLED、YbImu 和电机驱动板共地
-[ ] YbImu PA1→SCL、PA0→SDA、3V3→VCC、GND→GND 已确认
-[ ] PB6→驱动 RX、PB7←驱动 TX 已确认
-[ ] PA15/PA16/PA17/PA18 接线和 X1～X8 顺序已确认
-[ ] M2/M4 对应左右驱动轮，M1/M3 不使用
-[ ] 驱动轮已架空，周围无人且无线缠绕物
-[ ] 可以立即切断 12.6 V 电机电源
-```
-
-验收顺序不得跳级：
+第一次接通 12.6 V 前：
 
 ```text
-USB-only 诊断 → 架空轮 → 低速落地 → 丢线测试 → 直角/急弯 → 全程
+[ ] 电机轮已架空
+[ ] MCU、灰度、OLED、MPU6050、电机板已共地
+[ ] M2 是右轮，M4 是左轮
+[ ] 可以随时切断 12.6 V
 ```
 
-详细判据和结果记录见 [`docs/verification/sensor-platform-test-record.md`](docs/verification/sensor-platform-test-record.md)。
+## 干净构建与 UniFlash
 
-## 软件验证
+工程使用 TI Arm Clang 4.0.4、MSPM0 SDK 2.10.00.04 和 SysConfig 1.26.2。
 
 ```powershell
-python -m unittest discover -s tests -v
+& 'D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe' -C MSPM0G3507_LineFollowing_Car clean
+& 'D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe' -C MSPM0G3507_LineFollowing_Car -j4 all
+& 'D:\DevTools\ti\ccs2050\ccs\utils\bin\gmake.exe' -C MSPM0G3507_LineFollowing_Car images
 ```
 
-当前软件基线已通过离线测试和 TI Arm Clang clean build。以上结果只证明代码路径、配置合同和工具链兼容性；实际转向符号、电机方向、传感器极性、控制参数及最大任务延迟仍必须通过分阶段实车验收确认。
+UniFlash 只加载：
 
-更多资料见 [`docs/README.md`](docs/README.md)、[`docs/hardware/final-wiring.md`](docs/hardware/final-wiring.md) 和 [`PROJECT_SKILLS.md`](PROJECT_SKILLS.md)。
+```text
+dist/firmware/MSPM0G3507_LineFollowing_Car.txt
+```
+
+烧录时先断开 12.6 V。PA18 与 BSL Invoke 复用；若无法进入 BSL，断电后临时拔掉灰度 OUT，烧录完成再恢复，禁止带电插拔。
+
+## 测试
+
+```powershell
+python -m unittest discover -s tests -p 'test_*.py' -v
+```
+
+软件测试和 clean build 只能证明数据流、限幅、门控和工具链正确。首次落地仍应按“架空轮 → 低速直线 → 弯道 → 丢线 → 整圈停车”的顺序验收。
+## PWM tuning
+
+Tune the line-following PWM only at the top of
+`modules/line_tracking/line_follower.c`:
+
+| Constant | Current value | Purpose |
+|---|---:|---|
+| `LINE_STRAIGHT_COMMAND` | 125 | Center-line base PWM. Increase by 5 only after the straight is stable. |
+| `LINE_CURVE_COMMAND` | 105 | Base PWM for medium curves. Reduce first if the car enters a bend too fast. |
+| `LINE_TURN_COMMAND` | 75 | Base PWM for sharp turns. Increase by 5 only if it lacks turning authority. |
+| `LINE_ENTRY_BRAKE_COMMAND` | 14 | Extra braking when the line position expands outward on the same side. |
+| `LINE_TURN_SLEW_STEP` | 24 | Maximum target differential change per 2 ms line frame. |
+| `DRIVE_SLEW_STEP` | 3 | Maximum applied PWM change per 5 ms motor output frame. Lower is smoother. |
+
+Tune in this order: straight speed, curve speed, entry braking, then sharp-turn
+speed. Change one value at a time. Do not add an integral term to line following.

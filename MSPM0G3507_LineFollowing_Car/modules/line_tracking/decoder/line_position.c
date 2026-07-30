@@ -2,40 +2,18 @@
 
 #include <stdbool.h>
 
-#include "../../../config/line_lookup_config.h"
+#include "../line_tracking_config.h"
 
-/*
- * Signed position for each of the 15 legal sensor patterns.
- * Zero-initialized entries collide with the legal center value (0x18),
- * so legality is decided by pattern shape first, never by this table.
- */
-static const int8_t position_by_bits[256] = {
-    [0x01] = 7,  [0x03] = 6,  [0x02] = 5,  [0x06] = 4,
-    [0x04] = 3,  [0x0C] = 2,  [0x08] = 1,  [0x18] = 0,
-    [0x10] = -1, [0x30] = -2, [0x20] = -3, [0x60] = -4,
-    [0x40] = -5, [0xC0] = -6, [0x80] = -7
+static const int8_t position_by_bits[16] = {
+    [0x01] = -3, [0x03] = -2, [0x02] = -1,
+    [0x06] = 0,  [0x04] = 1,  [0x0C] = 2,  [0x08] = 3
 };
+static const int8_t sensor_position[4] = {-3, -1, 1, 3};
 
 static bool has_stable;
 static int8_t stable_position;
 static int8_t candidate_position;
 static uint8_t candidate_frames;
-
-static int8_t wide_position(uint8_t bits)
-{
-    static const int8_t sensor_position[8] = {7, 5, 3, 1, -1, -3, -5, -7};
-    int16_t sum = 0;
-    uint8_t count = 0U;
-    uint8_t index;
-
-    for (index = 0U; index < 8U; index++) {
-        if ((bits & (uint8_t)(1U << index)) != 0U) {
-            sum += sensor_position[index];
-            count++;
-        }
-    }
-    return count == 0U ? 0 : (int8_t)(sum / (int16_t)count);
-}
 
 void LinePosition_Reset(void)
 {
@@ -45,78 +23,117 @@ void LinePosition_Reset(void)
     candidate_frames = 0U;
 }
 
-/* Classify the raw bitmap by run shape: 0 runs, 1 run of 1-2 (legal),
- * 1 run of 3+ (wide), or more than 1 separated run (noise). */
-static LinePatternType ClassifyBits(uint8_t bits)
+static LinePatternType classify_bits(uint8_t bits)
 {
-    uint8_t run_count = 0U;
-    uint8_t longest_run = 0U;
-    uint8_t current_run = 0U;
+    uint8_t runs = 0U;
+    uint8_t longest = 0U;
+    uint8_t current = 0U;
     uint8_t index;
 
-    if (bits == 0x00U) {
+    if (bits == 0U) {
         return LINE_PATTERN_LOST;
     }
-
-    for (index = 0U; index < 8U; index++) {
+    for (index = 0U; index < 4U; index++) {
         if ((bits & (uint8_t)(1U << index)) != 0U) {
-            if (current_run == 0U) {
-                run_count++;
+            if (current == 0U) {
+                runs++;
             }
-            current_run++;
-            if (current_run > longest_run) {
-                longest_run = current_run;
+            current++;
+            if (current > longest) {
+                longest = current;
             }
         } else {
-            current_run = 0U;
+            current = 0U;
         }
     }
-
-    if (run_count > 1U) {
+    if (runs > 1U) {
         return LINE_PATTERN_NOISE;
     }
-    if (longest_run >= 3U) {
-        return LINE_PATTERN_WIDE;
+    return longest >= 3U ? LINE_PATTERN_WIDE : LINE_PATTERN_POSITION;
+}
+
+static int8_t wide_position(uint8_t bits)
+{
+    int16_t sum = 0;
+    uint8_t count = 0U;
+    uint8_t index;
+
+    for (index = 0U; index < 4U; index++) {
+        if ((bits & (uint8_t)(1U << index)) != 0U) {
+            sum += sensor_position[index];
+            count++;
+        }
     }
-    return LINE_PATTERN_POSITION;
+    return count == 0U ? 0 : (int8_t)(sum / (int16_t)count);
+}
+
+static float weighted_error(uint8_t bits)
+{
+    int16_t sum = 0;
+    uint8_t count = 0U;
+    uint8_t index;
+
+    for (index = 0U; index < 4U; index++) {
+        if ((bits & (uint8_t)(1U << index)) != 0U) {
+            sum += sensor_position[index];
+            count++;
+        }
+    }
+    return count == 0U ? 0.0f : (float)sum / (float)count;
+}
+
+static uint8_t confidence_for(uint8_t bits, LinePatternType type)
+{
+    if (type == LINE_PATTERN_WIDE) {
+        return 45U;
+    }
+    switch (bits) {
+    case 0x06U:
+        return 100U;
+    case 0x02U:
+    case 0x04U:
+        return 90U;
+    case 0x03U:
+    case 0x0CU:
+        return 80U;
+    case 0x01U:
+    case 0x08U:
+        return 55U;
+    default:
+        return 0U;
+    }
 }
 
 LinePositionResult LinePosition_Update(uint8_t black_bits)
 {
-    LinePositionResult result;
-    LinePatternType type = ClassifyBits(black_bits);
+    LinePositionResult result = {0};
+    uint8_t bits = black_bits & 0x0FU;
+    LinePatternType type = classify_bits(bits);
 
     if (type == LINE_PATTERN_WIDE) {
-        /* A corner often presents three or more adjacent sensors. Keep its
-         * signed side for steering and direction prediction. */
-        candidate_position = wide_position(black_bits);
+        candidate_position = wide_position(bits);
         candidate_frames = 1U;
     } else if (type != LINE_PATTERN_POSITION) {
-        /* Illegal frame: hold the stable value and restart debouncing. */
         candidate_position = stable_position;
         candidate_frames = 0U;
     } else {
-        int decoded = (int)position_by_bits[black_bits];
-        int held = (int)stable_position;
-        int delta = decoded - held;
+        int8_t decoded = position_by_bits[bits];
+        int delta = (int)decoded - (int)stable_position;
 
-        if (decoded == (int)candidate_position && candidate_frames > 0U) {
-            if (candidate_frames < 0xFFU) {
+        if (decoded == candidate_position && candidate_frames != 0U) {
+            if (candidate_frames != 0xFFU) {
                 candidate_frames++;
             }
         } else {
-            candidate_position = (int8_t)decoded;
+            candidate_position = decoded;
             candidate_frames = 1U;
         }
-
         if (delta < 0) {
             delta = -delta;
         }
-
-        if (!has_stable ||
-            delta <= LINE_POSITION_ADJACENT_STEP ||
+        if (!has_stable || delta <= LINE_POSITION_ADJACENT_STEP ||
             candidate_frames >= LINE_POSITION_JUMP_ACCEPT_FRAMES) {
-            stable_position = (int8_t)decoded;
+            stable_position = decoded;
             has_stable = true;
         }
     }
@@ -125,6 +142,13 @@ LinePositionResult LinePosition_Update(uint8_t black_bits)
     result.stable_position = stable_position;
     result.candidate_position = candidate_position;
     result.candidate_frames = candidate_frames;
-    result.black_bits = black_bits;
+    result.black_bits = bits;
+    result.weighted_error = type == LINE_PATTERN_POSITION ||
+                            type == LINE_PATTERN_WIDE ?
+                                weighted_error(bits) :
+                                (float)stable_position;
+    result.confidence = confidence_for(bits, type);
+    result.reliable = type == LINE_PATTERN_POSITION ||
+                      type == LINE_PATTERN_WIDE;
     return result;
 }
