@@ -36,6 +36,24 @@ class WifiAtProbeTests(unittest.TestCase):
             )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_probe_state_is_plumbed_to_oled_dashboard(self):
+        app_tasks = (PROJECT / "app/tasks/app_tasks.c").read_text(
+            encoding="utf-8"
+        )
+        dashboard_header = (PROJECT / "modules/display/dashboard.h").read_text(
+            encoding="utf-8"
+        )
+        dashboard = (PROJECT / "modules/display/dashboard.c").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("WifiUart_Init(now_ms);", app_tasks)
+        self.assertIn("WifiUart_Service(now_ms);", app_tasks)
+        self.assertIn("WifiUart_GetProbeState()", app_tasks)
+        self.assertIn("WifiAtProbeState wifi_state;", dashboard_header)
+        self.assertIn("ESP OK", dashboard)
+        self.assertIn("ESP TIMEOUT", dashboard)
+
 
 if __name__ == "__main__":
     unittest.main()

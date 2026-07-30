@@ -20,6 +20,7 @@
 #include "../../modules/motor/uart/motor_uart.h"
 #include "../../modules/imu/mpu6050.h"
 #include "../../modules/time/timer.h"
+#include "../../modules/wifi/wifi_uart.h"
 #include "../../shared/module_status.h"
 
 #define DISPLAY_PERIOD_MS  (200U)
@@ -162,6 +163,7 @@ static void render_dashboard(void)
 {
     diagnostics.run_started = run_started;
     diagnostics.motor_ready = AppBoot_IsMotorConfigured();
+    diagnostics.wifi_state = WifiUart_GetProbeState();
     (void)MotorFeedback_GetSnapshot(&diagnostics.feedback, Get_Time());
     diagnostics.distance_mm = MotorFeedback_GetDistanceMm();
     diagnostics.stop = stop_status;
@@ -174,6 +176,7 @@ void AppTasks_Init(void)
 {
     uint32_t now_ms = Get_Time();
 
+    WifiUart_Init(now_ms);
     FourLineScanner_Init();
     LinePosition_Reset();
     LineFollower_Init();
@@ -209,6 +212,7 @@ void AppTasks_Poll(uint32_t now_ms)
                     diagnostics.request.right_speed) * 0.5f : 0.0f);
     MotorFeedback_UpdateOdometry(now_ms);
     Mpu6050_Service(now_ms);
+    WifiUart_Service(now_ms);
     poll_key(now_ms);
     if (due(now_ms, last_scanner_ms, FOUR_LINE_SAMPLE_PERIOD_MS)) {
         last_scanner_ms = now_ms;

@@ -9,6 +9,7 @@
 #include "../motor/drive.h"
 #include "../motor/feedback/motor_feedback.h"
 #include "../motor/feedback/stop_controller.h"
+#include "../wifi/wifi_at_probe.h"
 
 typedef struct {
     bool run_started;
@@ -20,6 +21,7 @@ typedef struct {
     DriveStatus drive;
     MotorFeedbackSnapshot feedback;
     StopControllerStatus stop;
+    WifiAtProbeState wifi_state;
     float distance_mm;
 } AppDiagnostics;
 

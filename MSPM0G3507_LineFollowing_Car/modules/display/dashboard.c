@@ -59,5 +59,17 @@ void Dashboard_Render(const AppDiagnostics *data)
     (void)snprintf(text, sizeof(text), "YAW%+03d TURN%+03d",
                    (int)round_float(data->line.yaw_rate_dps),
                    (int)data->line.turn_command);
+    Ssd1306_DrawText(6U, 0U, text);
+    switch (data->wifi_state) {
+    case WIFI_AT_PROBE_OK:
+        (void)snprintf(text, sizeof(text), "ESP OK");
+        break;
+    case WIFI_AT_PROBE_TIMEOUT:
+        (void)snprintf(text, sizeof(text), "ESP TIMEOUT");
+        break;
+    default:
+        (void)snprintf(text, sizeof(text), "ESP WAIT");
+        break;
+    }
     Ssd1306_DrawText(7U, 0U, text);
 }
