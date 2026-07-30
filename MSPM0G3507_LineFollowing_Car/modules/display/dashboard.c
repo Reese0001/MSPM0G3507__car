@@ -52,7 +52,7 @@ void Dashboard_Render(const AppDiagnostics *data)
                    (int)(data->feedback.right_speed_mm_s -
                          data->feedback.left_speed_mm_s));
     Ssd1306_DrawText(5U, 0U, text);
-    if (((data->line.timestamp_ms / 500U) & 0x01U) == 0U) {
+    if (((data->timestamp_ms / 500U) & 0x01U) == 0U) {
         (void)snprintf(text, sizeof(text), "DST%04d ANG%+03d",
                        (int)(data->distance_mm / 10.0f),
                        (int)round_float(data->line.yaw_angle_deg));

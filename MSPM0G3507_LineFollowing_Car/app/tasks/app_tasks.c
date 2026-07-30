@@ -164,6 +164,7 @@ static void render_dashboard(void)
     diagnostics.run_started = run_started;
     diagnostics.motor_ready = AppBoot_IsMotorConfigured();
     diagnostics.wifi_state = WifiUart_GetProbeState();
+    diagnostics.timestamp_ms = Get_Time();
     (void)MotorFeedback_GetSnapshot(&diagnostics.feedback, Get_Time());
     diagnostics.distance_mm = MotorFeedback_GetDistanceMm();
     diagnostics.stop = stop_status;

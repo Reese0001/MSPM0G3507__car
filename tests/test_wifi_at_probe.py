@@ -64,7 +64,8 @@ class WifiAtProbeTests(unittest.TestCase):
         self.assertIn("ESP WAIT", dashboard)
         self.assertIn("Ssd1306_DrawText(7U, 0U, text);", dashboard)
         self.assertIn('"YAW%+03d TURN%+03d"', dashboard)
-        self.assertIn("data->line.timestamp_ms / 500U", dashboard)
+        self.assertIn("data->timestamp_ms / 500U", dashboard)
+        self.assertIn("diagnostics.timestamp_ms = Get_Time();", app_tasks)
         self.assertEqual(dashboard.count("Ssd1306_DrawText(6U, 0U, text);"), 1)
 
 

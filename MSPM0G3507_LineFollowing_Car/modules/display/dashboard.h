@@ -22,6 +22,7 @@ typedef struct {
     MotorFeedbackSnapshot feedback;
     StopControllerStatus stop;
     WifiAtProbeState wifi_state;
+    uint32_t timestamp_ms;
     float distance_mm;
 } AppDiagnostics;
 
