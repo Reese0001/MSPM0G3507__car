@@ -16,7 +16,9 @@ int main(void)
 
     WifiAtProbe_Init(&probe, 0U);
     assert(WifiAtProbe_TakeSendRequest(&probe, 500U));
-    WifiAtProbe_Service(&probe, 2001U);
+    WifiAtProbe_Service(&probe, 1999U);
+    assert(WifiAtProbe_GetState(&probe) == WIFI_AT_PROBE_WAITING_FOR_OK);
+    WifiAtProbe_Service(&probe, 2000U);
     assert(WifiAtProbe_GetState(&probe) == WIFI_AT_PROBE_TIMEOUT);
 
     return 0;

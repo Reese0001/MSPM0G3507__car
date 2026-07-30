@@ -56,10 +56,6 @@ void Dashboard_Render(const AppDiagnostics *data)
                    (int)(data->distance_mm / 10.0f),
                    (int)round_float(data->line.yaw_angle_deg));
     Ssd1306_DrawText(6U, 0U, text);
-    (void)snprintf(text, sizeof(text), "YAW%+03d TURN%+03d",
-                   (int)round_float(data->line.yaw_rate_dps),
-                   (int)data->line.turn_command);
-    Ssd1306_DrawText(6U, 0U, text);
     switch (data->wifi_state) {
     case WIFI_AT_PROBE_OK:
         (void)snprintf(text, sizeof(text), "ESP OK");

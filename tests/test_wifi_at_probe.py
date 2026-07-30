@@ -46,13 +46,25 @@ class WifiAtProbeTests(unittest.TestCase):
         dashboard = (PROJECT / "modules/display/dashboard.c").read_text(
             encoding="utf-8"
         )
+        wifi_uart = (PROJECT / "modules/wifi/wifi_uart.c").read_text(
+            encoding="utf-8"
+        )
 
         self.assertIn("WifiUart_Init(now_ms);", app_tasks)
         self.assertIn("WifiUart_Service(now_ms);", app_tasks)
         self.assertIn("WifiUart_GetProbeState()", app_tasks)
         self.assertIn("WifiAtProbeState wifi_state;", dashboard_header)
+        self.assertIn(
+            "static const uint8_t at_command[] = {'A', 'T', '\\r', '\\n'};",
+            wifi_uart,
+        )
+        self.assertIn('"DST%04d ANG%+03d"', dashboard)
         self.assertIn("ESP OK", dashboard)
         self.assertIn("ESP TIMEOUT", dashboard)
+        self.assertIn("ESP WAIT", dashboard)
+        self.assertIn("Ssd1306_DrawText(7U, 0U, text);", dashboard)
+        self.assertNotIn('"YAW%+03d TURN%+03d"', dashboard)
+        self.assertEqual(dashboard.count("Ssd1306_DrawText(6U, 0U, text);"), 1)
 
 
 if __name__ == "__main__":
